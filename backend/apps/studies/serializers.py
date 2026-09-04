@@ -9,12 +9,26 @@ class ParticipationSerializer(serializers.ModelSerializer):
         read_only_fields = ("member",)
 
 class StudySerializer(serializers.ModelSerializer):
-    leader_name = serializers.CharField(source="leader.name", read_only=True)
+    leader_name = serializers.SerializerMethodField()
     participations = ParticipationSerializer(many=True, read_only=True)
+
+    def get_leader_name(self, obj):
+        return obj.leader.name if obj.leader else "미정"
+
     class Meta:
         model = Study
-        fields = ("id", "title", "leader", "leader_name", "description", "prerequisites", "recommended", "participations")
+        fields = (
+            "id",
+            "title",
+            "leader",
+            "leader_name",
+            "description",
+            "prerequisites",
+            "recommended",
+            "participations",
+        )
 
+        
 class SemesterSerializer(serializers.ModelSerializer):
     studies = StudySerializer(many=True, read_only=True)
     class Meta:

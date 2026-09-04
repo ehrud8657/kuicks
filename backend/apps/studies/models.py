@@ -11,7 +11,13 @@ class Semester(models.Model):
 class Study(models.Model):
     semester = models.ForeignKey(Semester, on_delete=models.PROTECT, related_name="studies")
     title = models.CharField("스터디명", max_length=100)
-    leader = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="led_studies")
+    leader = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="led_studies",
+        null=True,
+        blank=True,
+    )
     description = models.TextField("설명", blank=True)
     prerequisites = models.CharField("선이수과목", max_length=200, blank=True)
     recommended = models.CharField("권장과목", max_length=200, blank=True)
