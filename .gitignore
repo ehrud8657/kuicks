@@ -12,3 +12,4 @@ build/
 .idea/
 .vscode/
 .dart-appdata/
+backend/members*.csv
