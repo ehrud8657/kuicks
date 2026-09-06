@@ -1,3 +1,29 @@
+enum MemberRole { dormant, member, leader, admin }
+
+class Member {
+  const Member({
+    required this.studentId,
+    required this.name,
+    required this.role,
+    required this.mustChangePassword,
+  });
+
+  final String studentId;
+  final String name;
+  final MemberRole role;
+  final bool mustChangePassword;
+
+  factory Member.fromJson(Map<String, dynamic> json) => Member(
+    studentId: json['student_id'] as String,
+    name: json['name'] as String,
+    role: MemberRole.values.firstWhere(
+      (value) => value.name == json['role'],
+      orElse: () => MemberRole.member,
+    ),
+    mustChangePassword: json['must_change_password'] as bool? ?? false,
+  );
+}
+
 enum ParticipationStatus { active, completed, excellent, withdrawn }
 
 class Participant {
