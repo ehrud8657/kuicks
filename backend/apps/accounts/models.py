@@ -23,7 +23,8 @@ class MemberManager(BaseUserManager):
 
 class Member(AbstractUser):
     class Role(models.TextChoices):
-        MEMBER = "member", "일반 회원"
+        DORMANT = "dormant", "휴회원"
+        MEMBER = "member", "정회원"
         LEADER = "leader", "스터디장"
         ADMIN = "admin", "운영진"
 
@@ -39,4 +40,12 @@ class Member(AbstractUser):
 
     def __str__(self):
         return f"{self.name} ({self.student_id})"
+
+    def save(self, *args, **kwargs):
+        # role이 실제 권한의 단일 진실 공급원(source of truth)이 되도록,
+        # 운영진일 때만 Admin 접근/전권한(is_staff, is_superuser)을 갖도록 저장 시점에 항상 동기화한다.
+        is_admin_role = self.role == self.Role.ADMIN
+        self.is_staff = is_admin_role
+        self.is_superuser = is_admin_role
+        super().save(*args, **kwargs)
 
