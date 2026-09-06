@@ -48,8 +48,11 @@ class ApiClient {
   String _errorMessage(http.Response response, String fallback) {
     try {
       final body = jsonDecode(utf8.decode(response.bodyBytes));
-      if (body is Map<String, dynamic> && body['message'] is String) {
-        return body['message'] as String;
+      if (body is Map<String, dynamic>) {
+        // DRF의 ValidationError/PermissionDenied는 message가 아니라 detail로 내려온다
+        // (예: CSRF 실패, 인증 만료 등). message를 우선하되 detail도 놓치지 않는다.
+        if (body['message'] is String) return body['message'] as String;
+        if (body['detail'] is String) return body['detail'] as String;
       }
     } catch (_) {
       // 응답이 JSON이 아니면 기본 메시지로 대체

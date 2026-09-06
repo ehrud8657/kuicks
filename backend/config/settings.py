@@ -7,6 +7,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "unsafe-development-key")
 DEBUG = os.getenv("DJANGO_DEBUG", "true").lower() == "true"
 ALLOWED_HOSTS = [x for x in os.getenv("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",") if x]
+# Render는 배포된 호스트명을 이 환경변수로 주입한다. 첫 배포 때 도메인을 몰라도
+# DisallowedHost로 막히지 않도록 자동으로 허용 목록에 넣는다.
+_render_hostname = os.getenv("RENDER_EXTERNAL_HOSTNAME")
+if _render_hostname:
+    ALLOWED_HOSTS.append(_render_hostname)
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -24,6 +29,9 @@ INSTALLED_APPS = [
 ]
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    # nginx 없이 배포(Render 등)해도 Django Admin/DRF의 static 파일이 서빙되도록.
+    # SecurityMiddleware 바로 다음에 와야 한다.
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -59,6 +67,10 @@ USE_I18N = True
 USE_TZ = True
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
+STORAGES = {
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "staticfiles": {"BACKEND": "whitenoise.storage.CompressedStaticFilesStorage"},
+}
 MEDIA_URL = "media/"
 MEDIA_ROOT = BASE_DIR / "media"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
@@ -66,12 +78,31 @@ AUTH_USER_MODEL = "accounts.Member"
 
 CORS_ALLOWED_ORIGINS = [x for x in os.getenv("CORS_ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:8080").split(",") if x]
 CORS_ALLOW_CREDENTIALS = True
-CSRF_TRUSTED_ORIGINS = CORS_ALLOWED_ORIGINS
+# 보통 프론트 허용 목록과 동일하지만, 배포 구조상 다르게 줘야 하면 CSRF_TRUSTED_ORIGINS로 따로 지정 가능.
+CSRF_TRUSTED_ORIGINS = [x for x in os.getenv("CSRF_TRUSTED_ORIGINS", ",".join(CORS_ALLOWED_ORIGINS)).split(",") if x]
+
 if DEBUG:
     # 로컬 개발 중 Flutter web은 매 실행마다 임의 포트를 쓰므로 고정 목록 대신 localhost 전 포트를 허용한다.
     CORS_ALLOWED_ORIGIN_REGEXES = [r"^http://localhost:\d+$", r"^http://127\.0\.0\.1:\d+$"]
+    SESSION_COOKIE_SAMESITE = "Lax"
+    CSRF_COOKIE_SAMESITE = "Lax"
+    SESSION_COOKIE_SECURE = False
+    CSRF_COOKIE_SECURE = False
+else:
+    # 배포 환경: 프론트/백엔드를 같은 도메인(리버스 프록시로 /api만 라우팅)으로 서빙하면
+    # 기본값(Lax)으로 충분하다. 서로 다른 서브도메인으로 나눠 배포할 경우에만
+    # CROSS_SITE_COOKIES=true로 켜서 SameSite=None + HTTPS 쿠키를 사용한다.
+    CROSS_SITE_COOKIES = os.getenv("CROSS_SITE_COOKIES", "false").lower() == "true"
+    SESSION_COOKIE_SAMESITE = "None" if CROSS_SITE_COOKIES else "Lax"
+    CSRF_COOKIE_SAMESITE = "None" if CROSS_SITE_COOKIES else "Lax"
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    # nginx/Render 등 리버스 프록시가 TLS를 종료하는 일반적인 배포 구조를 가정.
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+    SECURE_SSL_REDIRECT = True
+
 REST_FRAMEWORK = {
-    "DEFAULT_AUTHENTICATION_CLASSES": ["rest_framework.authentication.SessionAuthentication"],
+    "DEFAULT_AUTHENTICATION_CLASSES": ["apps.accounts.authentication.LocalDevSessionAuthentication"],
     "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.AllowAny"],
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 20,
