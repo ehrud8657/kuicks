@@ -1,0 +1,23 @@
+{
+  "buildCommand": "bash build.sh",
+  "outputDirectory": "build/web",
+  "framework": null,
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://kuics-backend.onrender.com/api/:path*"
+    },
+    {
+      "source": "/admin/:path*",
+      "destination": "https://kuics-backend.onrender.com/admin/:path*"
+    },
+    {
+      "source": "/static/:path*",
+      "destination": "https://kuics-backend.onrender.com/static/:path*"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
