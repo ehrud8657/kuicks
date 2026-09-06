@@ -810,6 +810,17 @@ class _LoginDialogState extends State<LoginDialog> {
   );
 }
 
+const passwordRuleHint = '영문, 숫자, 특수문자를 모두 포함한 10자 이상으로 입력해주세요.';
+
+String? validatePasswordComposition(String? value) {
+  if (value == null || value.isEmpty) return '새 비밀번호를 입력해주세요.';
+  if (value.length < 10) return '비밀번호는 최소 10자 이상이어야 합니다.';
+  if (!RegExp(r'[A-Za-z]').hasMatch(value)) return '영문자를 포함해야 합니다.';
+  if (!RegExp(r'[0-9]').hasMatch(value)) return '숫자를 포함해야 합니다.';
+  if (!RegExp(r'[^A-Za-z0-9]').hasMatch(value)) return '특수문자를 포함해야 합니다.';
+  return null;
+}
+
 class ChangePasswordDialog extends StatefulWidget {
   const ChangePasswordDialog({super.key, required this.forced});
   final bool forced;
@@ -882,11 +893,11 @@ class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
                 obscureText: true,
                 decoration: const InputDecoration(
                   labelText: '새 비밀번호',
+                  helperText: passwordRuleHint,
+                  helperMaxLines: 2,
                   prefixIcon: Icon(Icons.lock_outline),
                 ),
-                validator: (value) => value == null || value.isEmpty
-                    ? '새 비밀번호를 입력해주세요.'
-                    : null,
+                validator: validatePasswordComposition,
               ),
               const SizedBox(height: 12),
               TextFormField(
