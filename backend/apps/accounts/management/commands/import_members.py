@@ -20,9 +20,15 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument("csv_file")
+        parser.add_argument(
+            "--update",
+            action="store_true",
+            help="이미 등록된 학번의 이름/회원상태도 CSV 내용으로 갱신합니다. "
+                 "비밀번호와 로그인 상태는 절대 건드리지 않습니다.",
+        )
 
     def handle(self, *args, **options):
-        created = skipped = 0
+        created = updated = skipped = 0
         try:
             with open(options["csv_file"], encoding="utf-8-sig", newline="") as file:
                 sample = file.read(4096)
@@ -37,9 +43,6 @@ class Command(BaseCommand):
                     if not student_id or not name:
                         skipped += 1
                         continue
-                    if Member.objects.filter(student_id=student_id).exists():
-                        skipped += 1
-                        continue
                     if status_label:
                         role = ROLE_LABEL_TO_VALUE.get(status_label)
                         if role is None:
@@ -50,11 +53,40 @@ class Command(BaseCommand):
                             skipped += 1
                             continue
                     else:
-                        role = Member.Role.MEMBER
+                        role = None  # 빈칸이면 신규는 정회원, 기존 회원은 상태를 건드리지 않는다
+
+                    existing = Member.objects.filter(student_id=student_id).first()
+                    if existing:
+                        if not options["update"]:
+                            skipped += 1
+                            continue
+                        changes = []
+                        if existing.name != name:
+                            changes.append(f"이름 {existing.name} -> {name}")
+                            existing.name = name
+                        if role is not None and existing.role != role:
+                            changes.append(f"상태 {existing.get_role_display()} -> {status_label}")
+                            existing.role = role
+                        if not changes:
+                            skipped += 1
+                            continue
+                        # is_staff/is_superuser는 save()에서 role 기준으로 재계산되므로 함께 저장해야 한다.
+                        # 비밀번호와 must_change_password는 의도적으로 제외한다.
+                        existing.save(update_fields=("name", "role", "is_staff", "is_superuser"))
+                        self.stdout.write(f"UPDATED {student_id} ({', '.join(changes)})")
+                        updated += 1
+                        continue
+
                     password = f"{INITIAL_PASSWORD_PREFIX}{student_id}"
-                    Member.objects.create_user(student_id=student_id, name=name, password=password, role=role)
+                    Member.objects.create_user(
+                        student_id=student_id, name=name, password=password,
+                        role=role or Member.Role.MEMBER,
+                    )
                     self.stdout.write(f"CREATED {student_id} ({name}, {status_label or '정회원'})")
                     created += 1
         except OSError as exc:
             raise CommandError(str(exc)) from exc
-        self.stdout.write(self.style.SUCCESS(f"생성 {created}명, 건너뜀 {skipped}명"))
+        summary = f"생성 {created}명, 수정 {updated}명, 건너뜀 {skipped}명"
+        if not options["update"] and skipped:
+            summary += " (--update 를 붙이면 기존 회원의 이름/회원상태도 갱신합니다)"
+        self.stdout.write(self.style.SUCCESS(summary))
