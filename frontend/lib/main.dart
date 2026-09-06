@@ -48,7 +48,10 @@ class SiteShell extends StatefulWidget {
 
 class _SiteShellState extends State<SiteShell> {
   SitePage page = SitePage.home;
-  bool loggedIn = false;
+  Member? currentMember;
+  bool restoringSession = true;
+
+  bool get loggedIn => currentMember != null;
 
   static const labels = {
     SitePage.home: 'Home',
@@ -58,6 +61,29 @@ class _SiteShellState extends State<SiteShell> {
     SitePage.board: 'Board',
     SitePage.contact: 'Contact',
   };
+
+  @override
+  void initState() {
+    super.initState();
+    _restoreSession();
+  }
+
+  Future<void> _restoreSession() async {
+    try {
+      final member = await ApiClient().fetchMe();
+      if (!mounted) return;
+      setState(() {
+        currentMember = member;
+        restoringSession = false;
+      });
+      if (member != null && member.mustChangePassword) {
+        _promptChangePassword(forced: true);
+      }
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => restoringSession = false);
+    }
+  }
 
   void navigate(SitePage next) {
     setState(() => page = next);
@@ -106,12 +132,50 @@ class _SiteShellState extends State<SiteShell> {
             ? [
                 ...nav,
                 const SizedBox(width: 10),
-                OutlinedButton(
-                  onPressed: () => loggedIn
-                      ? navigate(SitePage.myPage)
-                      : _showLogin(context),
-                  child: Text(loggedIn ? 'My Page' : 'Login'),
-                ),
+                if (loggedIn)
+                  PopupMenuButton<String>(
+                    tooltip: '마이페이지 메뉴',
+                    onSelected: (value) => value == 'logout'
+                        ? _logout()
+                        : navigate(SitePage.myPage),
+                    itemBuilder: (context) => [
+                      PopupMenuItem(
+                        value: 'mypage',
+                        child: Text('마이페이지 (${currentMember!.name})'),
+                      ),
+                      const PopupMenuItem(value: 'logout', child: Text('로그아웃')),
+                    ],
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 10,
+                      ),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: const Color(0xFFB31B34)),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.person_outline,
+                            size: 18,
+                            color: Color(0xFFB31B34),
+                          ),
+                          SizedBox(width: 6),
+                          Text(
+                            'My Page',
+                            style: TextStyle(color: Color(0xFFB31B34)),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                else
+                  OutlinedButton(
+                    onPressed: () => _showLogin(context),
+                    child: const Text('Login'),
+                  ),
                 const SizedBox(width: 40),
               ]
             : null,
@@ -142,6 +206,15 @@ class _SiteShellState extends State<SiteShell> {
                           ? navigate(SitePage.myPage)
                           : _showLogin(context),
                     ),
+                    if (loggedIn)
+                      ListTile(
+                        leading: const Icon(Icons.logout),
+                        title: const Text('로그아웃'),
+                        onTap: () {
+                          Navigator.maybePop(context);
+                          _logout();
+                        },
+                      ),
                   ],
                 ),
               ),
@@ -151,7 +224,13 @@ class _SiteShellState extends State<SiteShell> {
         child: switch (page) {
           SitePage.home => HomePage(onStudy: () => navigate(SitePage.study)),
           SitePage.study => const StudyPage(),
-          SitePage.myPage => const MyPage(),
+          SitePage.myPage => currentMember == null
+              ? const PlaceholderPage(page: SitePage.myPage)
+              : MyPage(
+                  member: currentMember!,
+                  onLogout: _logout,
+                  onChangePassword: () => _promptChangePassword(forced: false),
+                ),
           _ => PlaceholderPage(page: page),
         },
       ),
@@ -159,11 +238,46 @@ class _SiteShellState extends State<SiteShell> {
   }
 
   Future<void> _showLogin(BuildContext context) async {
-    final result = await showDialog<bool>(
+    final member = await showDialog<Member>(
       context: context,
       builder: (context) => const LoginDialog(),
     );
-    if (result == true && mounted) setState(() => loggedIn = true);
+    if (member == null || !mounted) return;
+    setState(() => currentMember = member);
+    if (member.mustChangePassword) {
+      _promptChangePassword(forced: true);
+    }
+  }
+
+  Future<void> _logout() async {
+    try {
+      await ApiClient().logout();
+    } catch (_) {
+      // 세션이 이미 끊겨있어도 로컬 상태는 정리한다.
+    }
+    if (!mounted) return;
+    setState(() {
+      currentMember = null;
+      page = SitePage.home;
+    });
+  }
+
+  Future<void> _promptChangePassword({required bool forced}) async {
+    final changed = await showDialog<bool>(
+      barrierDismissible: !forced,
+      context: context,
+      builder: (context) => ChangePasswordDialog(forced: forced),
+    );
+    if (changed == true && mounted && currentMember != null) {
+      setState(
+        () => currentMember = Member(
+          studentId: currentMember!.studentId,
+          name: currentMember!.name,
+          role: currentMember!.role,
+          mustChangePassword: false,
+        ),
+      );
+    }
   }
 }
 
@@ -591,7 +705,44 @@ class LoginDialog extends StatefulWidget {
 
 class _LoginDialogState extends State<LoginDialog> {
   final formKey = GlobalKey<FormState>();
+  final studentIdController = TextEditingController();
+  final passwordController = TextEditingController();
   bool obscure = true;
+  bool submitting = false;
+  String? errorMessage;
+
+  @override
+  void dispose() {
+    studentIdController.dispose();
+    passwordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    if (!formKey.currentState!.validate()) return;
+    setState(() {
+      submitting = true;
+      errorMessage = null;
+    });
+    try {
+      final member = await ApiClient().login(
+        studentIdController.text.trim(),
+        passwordController.text,
+      );
+      if (mounted) Navigator.pop(context, member);
+    } on ApiException catch (e) {
+      setState(() {
+        submitting = false;
+        errorMessage = e.message;
+      });
+    } catch (_) {
+      setState(() {
+        submitting = false;
+        errorMessage = '서버에 연결할 수 없습니다.';
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) => AlertDialog(
     title: const Text('학번으로 로그인'),
@@ -602,7 +753,16 @@ class _LoginDialogState extends State<LoginDialog> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            if (errorMessage != null) ...[
+              Text(
+                errorMessage!,
+                style: const TextStyle(color: Color(0xFFB31B34)),
+              ),
+              const SizedBox(height: 12),
+            ],
             TextFormField(
+              controller: studentIdController,
+              enabled: !submitting,
               decoration: const InputDecoration(
                 labelText: '학번',
                 prefixIcon: Icon(Icons.badge_outlined),
@@ -612,7 +772,10 @@ class _LoginDialogState extends State<LoginDialog> {
             ),
             const SizedBox(height: 12),
             TextFormField(
+              controller: passwordController,
+              enabled: !submitting,
               obscureText: obscure,
+              onFieldSubmitted: (_) => _submit(),
               decoration: InputDecoration(
                 labelText: '비밀번호',
                 prefixIcon: const Icon(Icons.lock_outline),
@@ -630,21 +793,158 @@ class _LoginDialogState extends State<LoginDialog> {
     ),
     actions: [
       TextButton(
-        onPressed: () => Navigator.pop(context),
+        onPressed: submitting ? null : () => Navigator.pop(context),
         child: const Text('취소'),
       ),
       FilledButton(
-        onPressed: () {
-          if (formKey.currentState!.validate()) Navigator.pop(context, true);
-        },
-        child: const Text('로그인'),
+        onPressed: submitting ? null : _submit,
+        child: submitting
+            ? const SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : const Text('로그인'),
       ),
     ],
   );
 }
 
+class ChangePasswordDialog extends StatefulWidget {
+  const ChangePasswordDialog({super.key, required this.forced});
+  final bool forced;
+  @override
+  State<ChangePasswordDialog> createState() => _ChangePasswordDialogState();
+}
+
+class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
+  final formKey = GlobalKey<FormState>();
+  final passwordController = TextEditingController();
+  final confirmController = TextEditingController();
+  bool submitting = false;
+  String? errorMessage;
+
+  @override
+  void dispose() {
+    passwordController.dispose();
+    confirmController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    if (!formKey.currentState!.validate()) return;
+    setState(() {
+      submitting = true;
+      errorMessage = null;
+    });
+    try {
+      await ApiClient().changePassword(passwordController.text);
+      if (mounted) Navigator.pop(context, true);
+    } on ApiException catch (e) {
+      setState(() {
+        submitting = false;
+        errorMessage = e.message;
+      });
+    } catch (_) {
+      setState(() {
+        submitting = false;
+        errorMessage = '서버에 연결할 수 없습니다.';
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => PopScope(
+    canPop: !widget.forced,
+    child: AlertDialog(
+      title: const Text('비밀번호 변경'),
+      content: SizedBox(
+        width: 360,
+        child: Form(
+          key: formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (widget.forced) ...[
+                const Text('처음 로그인하셨네요. 계속 진행하려면 비밀번호를 바꿔주세요.'),
+                const SizedBox(height: 12),
+              ],
+              if (errorMessage != null) ...[
+                Text(
+                  errorMessage!,
+                  style: const TextStyle(color: Color(0xFFB31B34)),
+                ),
+                const SizedBox(height: 12),
+              ],
+              TextFormField(
+                controller: passwordController,
+                enabled: !submitting,
+                obscureText: true,
+                decoration: const InputDecoration(
+                  labelText: '새 비밀번호',
+                  prefixIcon: Icon(Icons.lock_outline),
+                ),
+                validator: (value) => value == null || value.isEmpty
+                    ? '새 비밀번호를 입력해주세요.'
+                    : null,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: confirmController,
+                enabled: !submitting,
+                obscureText: true,
+                onFieldSubmitted: (_) => _submit(),
+                decoration: const InputDecoration(
+                  labelText: '새 비밀번호 확인',
+                  prefixIcon: Icon(Icons.lock_outline),
+                ),
+                validator: (value) => value != passwordController.text
+                    ? '비밀번호가 일치하지 않습니다.'
+                    : null,
+              ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        if (!widget.forced)
+          TextButton(
+            onPressed: submitting ? null : () => Navigator.pop(context),
+            child: const Text('취소'),
+          ),
+        FilledButton(
+          onPressed: submitting ? null : _submit,
+          child: submitting
+              ? const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Text('변경'),
+        ),
+      ],
+    ),
+  );
+}
+
+String _roleLabel(MemberRole role) => switch (role) {
+  MemberRole.dormant => '휴회원',
+  MemberRole.member => '정회원',
+  MemberRole.leader => '스터디장',
+  MemberRole.admin => '운영진',
+};
+
 class MyPage extends StatelessWidget {
-  const MyPage({super.key});
+  const MyPage({
+    super.key,
+    required this.member,
+    required this.onLogout,
+    required this.onChangePassword,
+  });
+  final Member member;
+  final VoidCallback onLogout;
+  final VoidCallback onChangePassword;
+
   @override
   Widget build(BuildContext context) => PageFrame(
     key: const ValueKey('mypage'),
@@ -659,9 +959,30 @@ class MyPage extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 8),
-        const Text(
-          '나의 KUICS 활동',
-          style: TextStyle(fontSize: 32, fontWeight: FontWeight.w800),
+        Text(
+          '${member.name}님, 안녕하세요',
+          style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w800),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          '학번 ${member.studentId} · ${_roleLabel(member.role)}',
+          style: const TextStyle(color: Color(0xFF667085)),
+        ),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            OutlinedButton.icon(
+              onPressed: onChangePassword,
+              icon: const Icon(Icons.lock_reset),
+              label: const Text('비밀번호 변경'),
+            ),
+            const SizedBox(width: 12),
+            OutlinedButton.icon(
+              onPressed: onLogout,
+              icon: const Icon(Icons.logout),
+              label: const Text('로그아웃'),
+            ),
+          ],
         ),
         const SizedBox(height: 24),
         LayoutBuilder(
