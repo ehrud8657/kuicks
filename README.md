@@ -5,15 +5,15 @@
 ## 구성
 
 ```text
-quicks/
-├─ frontend/            Flutter Web
+kuicks/
+├─ frontend/            Flutter Web (Dockerfile: flutter build + nginx)
 ├─ backend/             Django + DRF
 │  ├─ apps/accounts/    학번 로그인, 회원, CSV 일괄 생성
 │  ├─ apps/studies/     학기, 스터디, 참여, 과제 제출 골격
 │  ├─ apps/boards/      공지사항 및 모집공고
 │  └─ apps/activities/  행사 및 참여 골격
 ├─ docs/                설계 및 API 문서
-└─ docker-compose.yml   PostgreSQL + backend 개발 환경
+└─ docker-compose.yml   PostgreSQL + backend + frontend(nginx) 전체 스택
 ```
 
 ## 빠른 시작
@@ -49,14 +49,16 @@ flutter run -d chrome --web-port 3000 --dart-define=API_BASE_URL=http://localhos
 flutter build web --dart-define=API_BASE_URL=https://새도메인.example/api
 ```
 
-### Docker로 DB와 Backend 실행
+### Docker로 전체 스택 실행 (같은 도메인 배포 구성)
+
+`docker-compose.yml`은 실제 배포와 동일하게 **프론트(nginx)와 백엔드를 같은 도메인**으로 묶는 구성입니다. nginx가 `/`는 Flutter web 빌드 결과물을, `/api`·`/admin`·`/static`·`/media`는 backend로 라우팅하므로 브라우저 입장에선 항상 하나의 origin만 봅니다 — CORS/CSRF/쿠키 설정이 단순해지는 이유입니다. 프론트는 `API_BASE_URL=/api`(상대 경로)로 빌드되어 이 구조를 그대로 전제합니다.
 
 ```powershell
 Copy-Item .env.example .env
 docker compose up --build
 ```
 
-첫 실행 후 별도 터미널에서 migration과 운영진 계정을 만듭니다.
+`http://localhost`로 접속하면 프론트와 API가 동시에 뜹니다. 첫 실행 후 별도 터미널에서 migration과 운영진 계정을 만듭니다.
 
 ```powershell
 docker compose exec backend python manage.py makemigrations accounts studies boards activities
@@ -64,16 +66,18 @@ docker compose exec backend python manage.py migrate
 docker compose exec backend python manage.py createsuperuser
 ```
 
+실제 배포 도메인이 정해지면 `.env`의 `CORS_ALLOWED_ORIGINS`만 그 주소로 바꾸면 됩니다. 프론트/백엔드를 서로 다른 서브도메인으로 나눠야 하는 경우에만 `CROSS_SITE_COOKIES=true`를 추가로 켭니다 (자세한 내용은 [DEVELOPMENT_GUIDE.md](./DEVELOPMENT_GUIDE.md) 참고).
+
 ## 회원 CSV 일괄 생성
 
-UTF-8 CSV의 헤더를 `학번,이름`으로 작성합니다.
+CSV(콤마/탭/세미콜론 구분자 자동 인식) 헤더를 `학번,이름,회원상태`로 작성합니다. `회원상태`는 `정회원`/`휴회원`/`스터디장`/`운영진` 중 하나이며 비워두면 정회원으로 생성됩니다.
 
 ```powershell
 cd backend
 python manage.py import_members members.csv
 ```
 
-명령은 임시 비밀번호를 한 번만 터미널에 출력하고 `must_change_password=true`로 계정을 생성합니다. 실서비스에서는 출력 결과를 안전하게 전달하고 즉시 폐기해야 합니다.
+초기 비밀번호는 `kuics!학번` 형식으로 고정 부여되고 `must_change_password=true`로 생성되어 최초 로그인 시 비밀번호 변경이 강제됩니다. 이미 등록된 학번은 건너뛰므로, 모집 중 새 명단이 들어올 때마다 CSV를 갱신해 같은 명령을 재실행하면 됩니다. 학번/이름이 담긴 CSV(`backend/members*.csv`)는 개인정보이므로 커밋하지 않습니다.
 
 ## 구현 범위
 
