@@ -522,13 +522,14 @@ class StudyCard extends StatelessWidget {
   final Study study;
   @override
   Widget build(BuildContext context) {
+    // 동명이인 구분을 위해 수료자 명단은 이름에 학번 뒷 2자리를 붙여 표기한다.
     final completed = study.participants
         .where((p) => p.status == ParticipationStatus.completed)
-        .map((p) => p.name)
+        .map((p) => p.label)
         .toList();
     final excellent = study.participants
         .where((p) => p.status == ParticipationStatus.excellent)
-        .map((p) => p.name)
+        .map((p) => p.label)
         .toList();
     return Card(
       clipBehavior: Clip.antiAlias,

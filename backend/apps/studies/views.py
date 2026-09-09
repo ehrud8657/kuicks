@@ -4,7 +4,7 @@ from .permissions import IsAssignedLeaderOrAdmin
 from .serializers import ParticipationSerializer, SemesterSerializer, StudySerializer
 
 class SemesterListView(generics.ListAPIView):
-    queryset = Semester.objects.prefetch_related("studies__participations__member").all()
+    queryset = Semester.objects.prefetch_related("studies__leader", "studies__participations__member").all()
     serializer_class = SemesterSerializer
     pagination_class = None
 

@@ -1,6 +1,9 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:http/browser_client.dart' as browser;
+// browser_client는 웹에서만 컴파일되므로 조건부 import로 분리한다.
+// (직접 import하면 VM에서 도는 flutter test가 컴파일 단계에서 실패한다.)
+import 'http_client_default.dart'
+    if (dart.library.js_interop) 'http_client_web.dart';
 import 'models.dart';
 
 class ApiException implements Exception {
@@ -19,11 +22,7 @@ class ApiClient {
     defaultValue: 'http://localhost:8000/api',
   );
 
-  static http.Client _createClient() {
-    // 세션 쿠키 기반 인증이라 cross-origin 요청에도 쿠키가 실려야 한다.
-    // (기본 http.Client는 브라우저에서 withCredentials가 꺼져있어 쿠키를 안 보낸다.)
-    return browser.BrowserClient()..withCredentials = true;
-  }
+  static http.Client _createClient() => createHttpClient();
 
   // 로그인 시 서버가 CSRF 토큰을 rotate하므로 절대 캐싱하지 않고
   // 상태를 바꾸는 요청(POST) 직전마다 매번 새로 받아온다.

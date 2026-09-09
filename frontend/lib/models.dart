@@ -27,12 +27,23 @@ class Member {
 enum ParticipationStatus { active, completed, excellent, withdrawn }
 
 class Participant {
-  const Participant({required this.name, required this.status});
+  const Participant({
+    required this.name,
+    required this.studentIdTail,
+    required this.status,
+  });
   final String name;
+
+  /// 학번 뒷 2자리. 동명이인을 구분하는 용도로만 쓰며 학번 전체는 받지 않는다.
+  final String studentIdTail;
   final ParticipationStatus status;
+
+  /// 명단 표기용 이름. 예: `홍길동(44)`
+  String get label => studentIdTail.isEmpty ? name : '$name($studentIdTail)';
 
   factory Participant.fromJson(Map<String, dynamic> json) => Participant(
     name: json['member_name'] as String? ?? '',
+    studentIdTail: json['student_id_tail'] as String? ?? '',
     status: ParticipationStatus.values.firstWhere(
       (value) => value.name == json['status'],
       orElse: () => ParticipationStatus.active,
@@ -62,7 +73,7 @@ class Study {
   factory Study.fromJson(Map<String, dynamic> json) => Study(
     id: json['id'] as int,
     title: json['title'] as String,
-    leader: json['leader_name'] as String? ?? '-',
+    leader: json['leader_name'] as String? ?? '미정',
     description: json['description'] as String? ?? '',
     prerequisites: json['prerequisites'] as String? ?? '없음',
     recommended: json['recommended'] as String? ?? '없음',
