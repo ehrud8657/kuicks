@@ -40,8 +40,19 @@ class PostListTests(TestCase):
         response = self.client.get(reverse("post-list"))
         self.assertEqual(response.json()["results"][0]["title"], "필독 공지")
 
-    def test_게시일이_없는_글은_보이지_않는다(self):
-        """게시일을 비워두면 임시 저장(비공개)으로 취급된다."""
+    def test_게시일을_지정하지_않으면_바로_게시된다(self):
+        """운영진이 Admin에서 게시일을 건드리지 않고 저장하는 경우."""
+        Post.objects.create(
+            category=Post.Category.NOTICE,
+            title="바로 올린 공지",
+            content="본문",
+            author=self.author,
+        )
+        titles = [item["title"] for item in self.client.get(reverse("post-list")).json()["results"]]
+        self.assertIn("바로 올린 공지", titles)
+
+    def test_게시일을_비우면_보이지_않는다(self):
+        """게시일을 명시적으로 비우면 임시 저장(비공개)으로 취급된다."""
         create_post(self.author, "작성 중인 글", published_at=None)
         titles = [item["title"] for item in self.client.get(reverse("post-list")).json()["results"]]
         self.assertNotIn("작성 중인 글", titles)
