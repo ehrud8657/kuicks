@@ -1544,6 +1544,7 @@ const _staffGroups = <_StaffGroup>[
       _Staff(name: '강근호', department: '컴퓨터학과'),
       _Staff(name: '이건하', department: '컴퓨터학과'),
       _Staff(name: '신채민', department: '컴퓨터학과'),
+      _Staff(name: '이호준', department: '컴퓨터학과'),
     ],
   ),
 ];
