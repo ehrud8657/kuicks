@@ -222,7 +222,10 @@ class _SiteShellState extends State<SiteShell> {
       body: AnimatedSwitcher(
         duration: const Duration(milliseconds: 220),
         child: switch (page) {
-          SitePage.home => HomePage(onStudy: () => navigate(SitePage.study)),
+          SitePage.home => HomePage(
+            onStudy: () => navigate(SitePage.study),
+            onBoard: () => navigate(SitePage.board),
+          ),
           SitePage.study => const StudyPage(),
           SitePage.board => const BoardPage(),
           SitePage.myPage => currentMember == null
@@ -296,9 +299,67 @@ class PageFrame extends StatelessWidget {
   );
 }
 
-class HomePage extends StatelessWidget {
-  const HomePage({super.key, required this.onStudy});
+/// KUICS NOW 카드에 채울 실제 데이터.
+class _HomeNow {
+  const _HomeNow({
+    this.notice,
+    this.recruit,
+    this.semester,
+    this.studies = const [],
+  });
+  final Post? notice;
+  final Post? recruit;
+  final Semester? semester;
+  final List<Study> studies;
+}
+
+class HomePage extends StatefulWidget {
+  const HomePage({super.key, required this.onStudy, required this.onBoard});
   final VoidCallback onStudy;
+  final VoidCallback onBoard;
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  late Future<_HomeNow> now;
+
+  @override
+  void initState() {
+    super.initState();
+    now = _load();
+  }
+
+  Future<_HomeNow> _load() async {
+    final client = ApiClient();
+    // 세 요청을 병렬로 보내 첫 화면 지연을 줄인다.
+    final results = await Future.wait<Object>([
+      client.fetchPosts(category: PostCategory.notice),
+      client.fetchPosts(category: PostCategory.recruit),
+      client.fetchSemesters(),
+    ]);
+    final notices = (results[0] as PostPage).posts;
+    final recruits = (results[1] as PostPage).posts;
+    final semesters = results[2] as List<Semester>;
+    // 학기는 최신순으로 내려오므로 첫 항목이 이번 학기다.
+    final semester = semesters.isEmpty ? null : semesters.first;
+    return _HomeNow(
+      notice: notices.isEmpty ? null : notices.first,
+      recruit: recruits.isEmpty ? null : recruits.first,
+      semester: semester,
+      studies: semester?.studies ?? const [],
+    );
+  }
+
+  String _studySummary(_HomeNow data) {
+    final semester = data.semester;
+    final studies = data.studies;
+    if (semester == null) return '등록된 학기가 없습니다.';
+    if (studies.isEmpty) return '${semester.name} · 등록된 스터디가 없습니다.';
+    if (studies.length == 1) return '${semester.name} · ${studies.first.title}';
+    return '${semester.name} · ${studies.first.title} 외 ${studies.length - 1}개';
+  }
+
   @override
   Widget build(BuildContext context) => PageFrame(
     key: const ValueKey('home'),
@@ -340,7 +401,7 @@ class HomePage extends StatelessWidget {
               ),
               const SizedBox(height: 28),
               FilledButton.icon(
-                onPressed: onStudy,
+                onPressed: widget.onStudy,
                 icon: const Icon(Icons.arrow_forward),
                 label: const Text('스터디 둘러보기'),
               ),
@@ -353,34 +414,56 @@ class HomePage extends StatelessWidget {
           style: TextStyle(fontWeight: FontWeight.w800, fontSize: 24),
         ),
         const SizedBox(height: 18),
-        LayoutBuilder(
-          builder: (context, constraints) {
-            final width = constraints.maxWidth >= 760
-                ? (constraints.maxWidth - 32) / 3
-                : constraints.maxWidth;
-            return Wrap(
-              spacing: 16,
-              runSpacing: 16,
-              children: [
-                _InfoCard(
-                  width: width,
-                  icon: Icons.campaign_outlined,
-                  title: '최근 공지',
-                  body: '2026-2학기 신규 회원 모집 예정',
-                ),
-                _InfoCard(
-                  width: width,
-                  icon: Icons.menu_book_outlined,
-                  title: '진행 중인 스터디',
-                  body: '웹 해킹 기초 외 3개 스터디',
-                ),
-                _InfoCard(
-                  width: width,
-                  icon: Icons.emoji_events_outlined,
-                  title: '최근 활동',
-                  body: 'CTF · 프로젝트 · 세미나 기록',
-                ),
-              ],
+        FutureBuilder<_HomeNow>(
+          future: now,
+          builder: (context, snapshot) {
+            final waiting = snapshot.connectionState == ConnectionState.waiting;
+            final data = snapshot.data;
+
+            // 첫 화면이라 실패해도 히어로까지 걷어내지 않고 카드 안에만 상태를 적는다.
+            String body(String Function(_HomeNow data) pick) {
+              if (waiting) return '불러오는 중…';
+              if (snapshot.hasError || data == null) return '불러오지 못했습니다.';
+              return pick(data);
+            }
+
+            return LayoutBuilder(
+              builder: (context, constraints) {
+                final width = constraints.maxWidth >= 760
+                    ? (constraints.maxWidth - 32) / 3
+                    : constraints.maxWidth;
+                return Wrap(
+                  spacing: 16,
+                  runSpacing: 16,
+                  children: [
+                    _InfoCard(
+                      width: width,
+                      icon: Icons.campaign_outlined,
+                      title: '최근 공지',
+                      body: body(
+                        (data) => data.notice?.title ?? '등록된 공지사항이 없습니다.',
+                      ),
+                      onTap: widget.onBoard,
+                    ),
+                    _InfoCard(
+                      width: width,
+                      icon: Icons.menu_book_outlined,
+                      title: '진행 중인 스터디',
+                      body: body(_studySummary),
+                      onTap: widget.onStudy,
+                    ),
+                    _InfoCard(
+                      width: width,
+                      icon: Icons.person_add_alt_outlined,
+                      title: '모집 공고',
+                      body: body(
+                        (data) => data.recruit?.title ?? '진행 중인 모집이 없습니다.',
+                      ),
+                      onTap: widget.onBoard,
+                    ),
+                  ],
+                );
+              },
             );
           },
         ),
@@ -395,29 +478,38 @@ class _InfoCard extends StatelessWidget {
     required this.icon,
     required this.title,
     required this.body,
+    this.onTap,
   });
   final double width;
   final IconData icon;
   final String title;
   final String body;
+  final VoidCallback? onTap;
   @override
   Widget build(BuildContext context) => SizedBox(
     width: width,
     child: Card(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(icon, color: const Color(0xFFB31B34)),
-            const SizedBox(height: 18),
-            Text(
-              title,
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-            ),
-            const SizedBox(height: 8),
-            Text(body, style: const TextStyle(color: Color(0xFF667085))),
-          ],
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(icon, color: const Color(0xFFB31B34)),
+              const SizedBox(height: 18),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(body, style: const TextStyle(color: Color(0xFF667085))),
+            ],
+          ),
         ),
       ),
     ),
