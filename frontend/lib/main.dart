@@ -19,10 +19,10 @@ class KuicsApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: crimson, primary: crimson),
         scaffoldBackgroundColor: const Color(0xFFF6F7F9),
         textTheme: Theme.of(context).textTheme.apply(
-          bodyColor: navy,
-          displayColor: navy,
-          fontFamily: 'sans-serif',
-        ),
+              bodyColor: navy,
+              displayColor: navy,
+              fontFamily: 'sans-serif',
+            ),
         cardTheme: const CardThemeData(
           color: Colors.white,
           elevation: 0,
@@ -223,9 +223,9 @@ class _SiteShellState extends State<SiteShell> {
         duration: const Duration(milliseconds: 220),
         child: switch (page) {
           SitePage.home => HomePage(
-            onStudy: () => navigate(SitePage.study),
-            onBoard: () => navigate(SitePage.board),
-          ),
+              onStudy: () => navigate(SitePage.study),
+              onBoard: () => navigate(SitePage.board),
+            ),
           SitePage.study => const StudyPage(),
           SitePage.board => const BoardPage(),
           SitePage.myPage => currentMember == null
@@ -290,25 +290,19 @@ class PageFrame extends StatelessWidget {
   final Widget child;
   @override
   Widget build(BuildContext context) => SingleChildScrollView(
-    child: Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 1180),
-        child: Padding(padding: const EdgeInsets.all(24), child: child),
-      ),
-    ),
-  );
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1180),
+            child: Padding(padding: const EdgeInsets.all(24), child: child),
+          ),
+        ),
+      );
 }
 
 /// KUICS NOW 카드에 채울 실제 데이터.
 class _HomeNow {
-  const _HomeNow({
-    this.notice,
-    this.recruit,
-    this.semester,
-    this.studies = const [],
-  });
+  const _HomeNow({this.notice, this.semester, this.studies = const []});
   final Post? notice;
-  final Post? recruit;
   final Semester? semester;
   final List<Study> studies;
 }
@@ -332,20 +326,17 @@ class _HomePageState extends State<HomePage> {
 
   Future<_HomeNow> _load() async {
     final client = ApiClient();
-    // 세 요청을 병렬로 보내 첫 화면 지연을 줄인다.
+    // 두 요청을 병렬로 보내 첫 화면 지연을 줄인다.
     final results = await Future.wait<Object>([
       client.fetchPosts(category: PostCategory.notice),
-      client.fetchPosts(category: PostCategory.recruit),
       client.fetchSemesters(),
     ]);
     final notices = (results[0] as PostPage).posts;
-    final recruits = (results[1] as PostPage).posts;
-    final semesters = results[2] as List<Semester>;
+    final semesters = results[1] as List<Semester>;
     // 학기는 최신순으로 내려오므로 첫 항목이 이번 학기다.
     final semester = semesters.isEmpty ? null : semesters.first;
     return _HomeNow(
       notice: notices.isEmpty ? null : notices.first,
-      recruit: recruits.isEmpty ? null : recruits.first,
       semester: semester,
       studies: semester?.studies ?? const [],
     );
@@ -362,114 +353,113 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) => PageFrame(
-    key: const ValueKey('home'),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 72),
-          decoration: BoxDecoration(
-            color: const Color(0xFF071B33),
-            borderRadius: BorderRadius.circular(24),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'KOREA UNIVERSITY\nINFORMATION & CYBER SECURITY',
-                style: TextStyle(
-                  color: Color(0xFFEF8496),
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 1.2,
-                ),
+        key: const ValueKey('home'),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 72),
+              decoration: BoxDecoration(
+                color: const Color(0xFF071B33),
+                borderRadius: BorderRadius.circular(24),
               ),
-              const SizedBox(height: 18),
-              const Text(
-                '보안을 배우고,\n함께 성장합니다.',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 42,
-                  fontWeight: FontWeight.w800,
-                  height: 1.2,
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'KOREA UNIVERSITY\nINSTITUTE of COMPUTER SECURITY',
+                    style: TextStyle(
+                      color: Color(0xFFEF8496),
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  const Text(
+                    '보안을 배우고,\n함께 성장합니다.',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 42,
+                      fontWeight: FontWeight.w800,
+                      height: 1.2,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'KUICS는 고려대학교 정보보호 동아리입니다.',
+                    style: TextStyle(color: Color(0xFFD0D5DD), fontSize: 17),
+                  ),
+                  const SizedBox(height: 28),
+                  FilledButton.icon(
+                    onPressed: widget.onStudy,
+                    icon: const Icon(Icons.arrow_forward),
+                    label: const Text('스터디 둘러보기'),
+                  ),
+                ],
               ),
-              const SizedBox(height: 16),
-              const Text(
-                'KUICS는 고려대학교 정보보호 동아리입니다.',
-                style: TextStyle(color: Color(0xFFD0D5DD), fontSize: 17),
-              ),
-              const SizedBox(height: 28),
-              FilledButton.icon(
-                onPressed: widget.onStudy,
-                icon: const Icon(Icons.arrow_forward),
-                label: const Text('스터디 둘러보기'),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 44),
-        const Text(
-          'KUICS NOW',
-          style: TextStyle(fontWeight: FontWeight.w800, fontSize: 24),
-        ),
-        const SizedBox(height: 18),
-        FutureBuilder<_HomeNow>(
-          future: now,
-          builder: (context, snapshot) {
-            final waiting = snapshot.connectionState == ConnectionState.waiting;
-            final data = snapshot.data;
+            ),
+            const SizedBox(height: 44),
+            const Text(
+              'KUICS NOW',
+              style: TextStyle(fontWeight: FontWeight.w800, fontSize: 24),
+            ),
+            const SizedBox(height: 18),
+            FutureBuilder<_HomeNow>(
+              future: now,
+              builder: (context, snapshot) {
+                final waiting =
+                    snapshot.connectionState == ConnectionState.waiting;
+                final data = snapshot.data;
 
-            // 첫 화면이라 실패해도 히어로까지 걷어내지 않고 카드 안에만 상태를 적는다.
-            String body(String Function(_HomeNow data) pick) {
-              if (waiting) return '불러오는 중…';
-              if (snapshot.hasError || data == null) return '불러오지 못했습니다.';
-              return pick(data);
-            }
+                // 첫 화면이라 실패해도 히어로까지 걷어내지 않고 카드 안에만 상태를 적는다.
+                String body(String Function(_HomeNow data) pick) {
+                  if (waiting) return '불러오는 중…';
+                  if (snapshot.hasError || data == null) return '불러오지 못했습니다.';
+                  return pick(data);
+                }
 
-            return LayoutBuilder(
-              builder: (context, constraints) {
-                final width = constraints.maxWidth >= 760
-                    ? (constraints.maxWidth - 32) / 3
-                    : constraints.maxWidth;
-                return Wrap(
-                  spacing: 16,
-                  runSpacing: 16,
-                  children: [
-                    _InfoCard(
-                      width: width,
-                      icon: Icons.campaign_outlined,
-                      title: '최근 공지',
-                      body: body(
-                        (data) => data.notice?.title ?? '등록된 공지사항이 없습니다.',
-                      ),
-                      onTap: widget.onBoard,
-                    ),
-                    _InfoCard(
-                      width: width,
-                      icon: Icons.menu_book_outlined,
-                      title: '진행 중인 스터디',
-                      body: body(_studySummary),
-                      onTap: widget.onStudy,
-                    ),
-                    _InfoCard(
-                      width: width,
-                      icon: Icons.person_add_alt_outlined,
-                      title: '모집 공고',
-                      body: body(
-                        (data) => data.recruit?.title ?? '진행 중인 모집이 없습니다.',
-                      ),
-                      onTap: widget.onBoard,
-                    ),
-                  ],
+                return LayoutBuilder(
+                  builder: (context, constraints) {
+                    final width = constraints.maxWidth >= 760
+                        ? (constraints.maxWidth - 32) / 3
+                        : constraints.maxWidth;
+                    return Wrap(
+                      spacing: 16,
+                      runSpacing: 16,
+                      children: [
+                        _InfoCard(
+                          width: width,
+                          icon: Icons.campaign_outlined,
+                          title: '최근 공지',
+                          body: body(
+                            (data) => data.notice?.title ?? '등록된 공지사항이 없습니다.',
+                          ),
+                          onTap: widget.onBoard,
+                        ),
+                        _InfoCard(
+                          width: width,
+                          icon: Icons.menu_book_outlined,
+                          title: '진행 중인 스터디',
+                          body: body(_studySummary),
+                          onTap: widget.onStudy,
+                        ),
+                        // activities API가 아직 없어 채울 데이터가 없다.
+                        _InfoCard(
+                          width: width,
+                          icon: Icons.emoji_events_outlined,
+                          title: '최근 활동',
+                          body: '준비 중입니다.',
+                        ),
+                      ],
+                    );
+                  },
                 );
               },
-            );
-          },
+            ),
+          ],
         ),
-      ],
-    ),
-  );
+      );
 }
 
 class _InfoCard extends StatelessWidget {
@@ -487,33 +477,33 @@ class _InfoCard extends StatelessWidget {
   final VoidCallback? onTap;
   @override
   Widget build(BuildContext context) => SizedBox(
-    width: width,
-    child: Card(
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(icon, color: const Color(0xFFB31B34)),
-              const SizedBox(height: 18),
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                ),
+        width: width,
+        child: Card(
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: onTap,
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(icon, color: const Color(0xFFB31B34)),
+                  const SizedBox(height: 18),
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(body, style: const TextStyle(color: Color(0xFF667085))),
+                ],
               ),
-              const SizedBox(height: 8),
-              Text(body, style: const TextStyle(color: Color(0xFF667085))),
-            ],
+            ),
           ),
         ),
-      ),
-    ),
-  );
+      );
 }
 
 class StudyPage extends StatefulWidget {
@@ -534,80 +524,80 @@ class _StudyPageState extends State<StudyPage> {
 
   @override
   Widget build(BuildContext context) => PageFrame(
-    key: const ValueKey('study'),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'STUDY',
-          style: TextStyle(
-            color: Color(0xFFB31B34),
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        const SizedBox(height: 8),
-        const Text(
-          '함께 배우는 KUICS 스터디',
-          style: TextStyle(fontSize: 32, fontWeight: FontWeight.w800),
-        ),
-        const SizedBox(height: 8),
-        const Text(
-          '학기를 선택하고 스터디별 커리큘럼과 수료자를 확인하세요.',
-          style: TextStyle(color: Color(0xFF667085)),
-        ),
-        const SizedBox(height: 28),
-        FutureBuilder<List<Semester>>(
-          future: semesters,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(
-                child: Padding(
-                  padding: EdgeInsets.all(64),
-                  child: CircularProgressIndicator(),
-                ),
-              );
-            }
-            if (snapshot.hasError) {
-              return _LoadError(
-                onRetry: () =>
-                    setState(() => semesters = ApiClient().fetchSemesters()),
-              );
-            }
-            final data = snapshot.data ?? const [];
-            if (data.isEmpty) return const _EmptyState();
-            if (selected >= data.length) selected = 0;
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: List.generate(
-                    data.length,
-                    (index) => ChoiceChip(
-                      label: Text(data[index].name),
-                      selected: selected == index,
-                      onSelected: (_) => setState(() => selected = index),
+        key: const ValueKey('study'),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'STUDY',
+              style: TextStyle(
+                color: Color(0xFFB31B34),
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              '함께 배우는 KUICS 스터디',
+              style: TextStyle(fontSize: 32, fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              '학기를 선택하고 스터디별 커리큘럼과 수료자를 확인하세요.',
+              style: TextStyle(color: Color(0xFF667085)),
+            ),
+            const SizedBox(height: 28),
+            FutureBuilder<List<Semester>>(
+              future: semesters,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(64),
+                      child: CircularProgressIndicator(),
                     ),
-                  ),
-                ),
-                const SizedBox(height: 20),
-                if (data[selected].studies.isEmpty)
-                  const _EmptyState(message: '이 학기에 등록된 스터디가 없습니다.')
-                else
-                  ...data[selected].studies.map(
-                    (study) => Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: StudyCard(study: study),
+                  );
+                }
+                if (snapshot.hasError) {
+                  return _LoadError(
+                    onRetry: () => setState(
+                        () => semesters = ApiClient().fetchSemesters()),
+                  );
+                }
+                final data = snapshot.data ?? const [];
+                if (data.isEmpty) return const _EmptyState();
+                if (selected >= data.length) selected = 0;
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: List.generate(
+                        data.length,
+                        (index) => ChoiceChip(
+                          label: Text(data[index].name),
+                          selected: selected == index,
+                          onSelected: (_) => setState(() => selected = index),
+                        ),
+                      ),
                     ),
-                  ),
-              ],
-            );
-          },
+                    const SizedBox(height: 20),
+                    if (data[selected].studies.isEmpty)
+                      const _EmptyState(message: '이 학기에 등록된 스터디가 없습니다.')
+                    else
+                      ...data[selected].studies.map(
+                            (study) => Padding(
+                              padding: const EdgeInsets.only(bottom: 12),
+                              child: StudyCard(study: study),
+                            ),
+                          ),
+                  ],
+                );
+              },
+            ),
+          ],
         ),
-      ],
-    ),
-  );
+      );
 }
 
 class StudyCard extends StatelessWidget {
@@ -659,17 +649,18 @@ class _DetailRow extends StatelessWidget {
   final String value;
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 4),
-    child: Row(
-      children: [
-        SizedBox(
-          width: 100,
-          child: Text(label, style: const TextStyle(color: Color(0xFF667085))),
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 100,
+              child:
+                  Text(label, style: const TextStyle(color: Color(0xFF667085))),
+            ),
+            Expanded(child: Text(value, textAlign: TextAlign.right)),
+          ],
         ),
-        Expanded(child: Text(value, textAlign: TextAlign.right)),
-      ],
-    ),
-  );
+      );
 }
 
 class _People extends StatelessWidget {
@@ -683,25 +674,25 @@ class _People extends StatelessWidget {
   final bool accent;
   @override
   Widget build(BuildContext context) => Align(
-    alignment: Alignment.centerLeft,
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          '$label (${names.length})',
-          style: TextStyle(
-            fontWeight: FontWeight.w700,
-            color: accent ? const Color(0xFFB31B34) : null,
-          ),
+        alignment: Alignment.centerLeft,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '$label (${names.length})',
+              style: TextStyle(
+                fontWeight: FontWeight.w700,
+                color: accent ? const Color(0xFFB31B34) : null,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              names.isEmpty ? '없음' : names.join(', '),
+              style: const TextStyle(color: Color(0xFF667085)),
+            ),
+          ],
         ),
-        const SizedBox(height: 4),
-        Text(
-          names.isEmpty ? '없음' : names.join(', '),
-          style: const TextStyle(color: Color(0xFF667085)),
-        ),
-      ],
-    ),
-  );
+      );
 }
 
 class _LoadError extends StatelessWidget {
@@ -709,19 +700,19 @@ class _LoadError extends StatelessWidget {
   final VoidCallback onRetry;
   @override
   Widget build(BuildContext context) => Card(
-    child: Padding(
-      padding: const EdgeInsets.all(32),
-      child: Column(
-        children: [
-          const Icon(Icons.cloud_off_outlined, size: 36),
-          const SizedBox(height: 12),
-          const Text('서버에 연결할 수 없습니다.'),
-          const SizedBox(height: 12),
-          OutlinedButton(onPressed: onRetry, child: const Text('다시 시도')),
-        ],
-      ),
-    ),
-  );
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            children: [
+              const Icon(Icons.cloud_off_outlined, size: 36),
+              const SizedBox(height: 12),
+              const Text('서버에 연결할 수 없습니다.'),
+              const SizedBox(height: 12),
+              OutlinedButton(onPressed: onRetry, child: const Text('다시 시도')),
+            ],
+          ),
+        ),
+      );
 }
 
 class _EmptyState extends StatelessWidget {
@@ -729,8 +720,8 @@ class _EmptyState extends StatelessWidget {
   final String message;
   @override
   Widget build(BuildContext context) => Card(
-    child: Padding(padding: const EdgeInsets.all(32), child: Text(message)),
-  );
+        child: Padding(padding: const EdgeInsets.all(32), child: Text(message)),
+      );
 }
 
 class PlaceholderPage extends StatelessWidget {
@@ -740,20 +731,20 @@ class PlaceholderPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final content = switch (page) {
       SitePage.about => (
-        'ABOUT',
-        'KUICS를 소개합니다',
-        '동아리 소개, 연혁, 운영진 콘텐츠가 들어갈 공간입니다.',
-      ),
+          'ABOUT',
+          'KUICS를 소개합니다',
+          '동아리 소개, 연혁, 운영진 콘텐츠가 들어갈 공간입니다.',
+        ),
       SitePage.activity => (
-        'ACTIVITY',
-        '우리의 활동 기록',
-        'CTF, 대회, 프로젝트 기록을 보여줄 공간입니다.',
-      ),
+          'ACTIVITY',
+          '우리의 활동 기록',
+          'CTF, 대회, 프로젝트 기록을 보여줄 공간입니다.',
+        ),
       SitePage.contact => (
-        'CONTACT',
-        'KUICS와 연결하기',
-        '이메일과 공식 SNS 링크가 들어갈 공간입니다.',
-      ),
+          'CONTACT',
+          'KUICS와 연결하기',
+          '이메일과 공식 SNS 링크가 들어갈 공간입니다.',
+        ),
       _ => ('KUICS', '준비 중입니다', '콘텐츠가 곧 추가됩니다.'),
     };
     return PageFrame(
@@ -834,69 +825,70 @@ class _LoginDialogState extends State<LoginDialog> {
 
   @override
   Widget build(BuildContext context) => AlertDialog(
-    title: const Text('학번으로 로그인'),
-    content: SizedBox(
-      width: 360,
-      child: Form(
-        key: formKey,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (errorMessage != null) ...[
-              Text(
-                errorMessage!,
-                style: const TextStyle(color: Color(0xFFB31B34)),
-              ),
-              const SizedBox(height: 12),
-            ],
-            TextFormField(
-              controller: studentIdController,
-              enabled: !submitting,
-              decoration: const InputDecoration(
-                labelText: '학번',
-                prefixIcon: Icon(Icons.badge_outlined),
-              ),
-              validator: (value) =>
-                  value == null || value.isEmpty ? '학번을 입력해주세요.' : null,
-            ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: passwordController,
-              enabled: !submitting,
-              obscureText: obscure,
-              onFieldSubmitted: (_) => _submit(),
-              decoration: InputDecoration(
-                labelText: '비밀번호',
-                prefixIcon: const Icon(Icons.lock_outline),
-                suffixIcon: IconButton(
-                  onPressed: () => setState(() => obscure = !obscure),
-                  icon: Icon(obscure ? Icons.visibility : Icons.visibility_off),
+        title: const Text('학번으로 로그인'),
+        content: SizedBox(
+          width: 360,
+          child: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (errorMessage != null) ...[
+                  Text(
+                    errorMessage!,
+                    style: const TextStyle(color: Color(0xFFB31B34)),
+                  ),
+                  const SizedBox(height: 12),
+                ],
+                TextFormField(
+                  controller: studentIdController,
+                  enabled: !submitting,
+                  decoration: const InputDecoration(
+                    labelText: '학번',
+                    prefixIcon: Icon(Icons.badge_outlined),
+                  ),
+                  validator: (value) =>
+                      value == null || value.isEmpty ? '학번을 입력해주세요.' : null,
                 ),
-              ),
-              validator: (value) =>
-                  value == null || value.isEmpty ? '비밀번호를 입력해주세요.' : null,
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: passwordController,
+                  enabled: !submitting,
+                  obscureText: obscure,
+                  onFieldSubmitted: (_) => _submit(),
+                  decoration: InputDecoration(
+                    labelText: '비밀번호',
+                    prefixIcon: const Icon(Icons.lock_outline),
+                    suffixIcon: IconButton(
+                      onPressed: () => setState(() => obscure = !obscure),
+                      icon: Icon(
+                          obscure ? Icons.visibility : Icons.visibility_off),
+                    ),
+                  ),
+                  validator: (value) =>
+                      value == null || value.isEmpty ? '비밀번호를 입력해주세요.' : null,
+                ),
+              ],
             ),
-          ],
+          ),
         ),
-      ),
-    ),
-    actions: [
-      TextButton(
-        onPressed: submitting ? null : () => Navigator.pop(context),
-        child: const Text('취소'),
-      ),
-      FilledButton(
-        onPressed: submitting ? null : _submit,
-        child: submitting
-            ? const SizedBox(
-                width: 18,
-                height: 18,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
-            : const Text('로그인'),
-      ),
-    ],
-  );
+        actions: [
+          TextButton(
+            onPressed: submitting ? null : () => Navigator.pop(context),
+            child: const Text('취소'),
+          ),
+          FilledButton(
+            onPressed: submitting ? null : _submit,
+            child: submitting
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Text('로그인'),
+          ),
+        ],
+      );
 }
 
 const passwordRuleHint = '영문, 숫자, 특수문자를 모두 포함한 10자 이상으로 입력해주세요.';
@@ -955,84 +947,84 @@ class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
 
   @override
   Widget build(BuildContext context) => PopScope(
-    canPop: !widget.forced,
-    child: AlertDialog(
-      title: const Text('비밀번호 변경'),
-      content: SizedBox(
-        width: 360,
-        child: Form(
-          key: formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (widget.forced) ...[
-                const Text('처음 로그인하셨네요. 계속 진행하려면 비밀번호를 바꿔주세요.'),
-                const SizedBox(height: 12),
-              ],
-              if (errorMessage != null) ...[
-                Text(
-                  errorMessage!,
-                  style: const TextStyle(color: Color(0xFFB31B34)),
-                ),
-                const SizedBox(height: 12),
-              ],
-              TextFormField(
-                controller: passwordController,
-                enabled: !submitting,
-                obscureText: true,
-                decoration: const InputDecoration(
-                  labelText: '새 비밀번호',
-                  helperText: passwordRuleHint,
-                  helperMaxLines: 2,
-                  prefixIcon: Icon(Icons.lock_outline),
-                ),
-                validator: validatePasswordComposition,
+        canPop: !widget.forced,
+        child: AlertDialog(
+          title: const Text('비밀번호 변경'),
+          content: SizedBox(
+            width: 360,
+            child: Form(
+              key: formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (widget.forced) ...[
+                    const Text('처음 로그인하셨네요. 계속 진행하려면 비밀번호를 바꿔주세요.'),
+                    const SizedBox(height: 12),
+                  ],
+                  if (errorMessage != null) ...[
+                    Text(
+                      errorMessage!,
+                      style: const TextStyle(color: Color(0xFFB31B34)),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+                  TextFormField(
+                    controller: passwordController,
+                    enabled: !submitting,
+                    obscureText: true,
+                    decoration: const InputDecoration(
+                      labelText: '새 비밀번호',
+                      helperText: passwordRuleHint,
+                      helperMaxLines: 2,
+                      prefixIcon: Icon(Icons.lock_outline),
+                    ),
+                    validator: validatePasswordComposition,
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: confirmController,
+                    enabled: !submitting,
+                    obscureText: true,
+                    onFieldSubmitted: (_) => _submit(),
+                    decoration: const InputDecoration(
+                      labelText: '새 비밀번호 확인',
+                      prefixIcon: Icon(Icons.lock_outline),
+                    ),
+                    validator: (value) => value != passwordController.text
+                        ? '비밀번호가 일치하지 않습니다.'
+                        : null,
+                  ),
+                ],
               ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: confirmController,
-                enabled: !submitting,
-                obscureText: true,
-                onFieldSubmitted: (_) => _submit(),
-                decoration: const InputDecoration(
-                  labelText: '새 비밀번호 확인',
-                  prefixIcon: Icon(Icons.lock_outline),
-                ),
-                validator: (value) => value != passwordController.text
-                    ? '비밀번호가 일치하지 않습니다.'
-                    : null,
+            ),
+          ),
+          actions: [
+            if (!widget.forced)
+              TextButton(
+                onPressed: submitting ? null : () => Navigator.pop(context),
+                child: const Text('취소'),
               ),
-            ],
-          ),
+            FilledButton(
+              onPressed: submitting ? null : _submit,
+              child: submitting
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('변경'),
+            ),
+          ],
         ),
-      ),
-      actions: [
-        if (!widget.forced)
-          TextButton(
-            onPressed: submitting ? null : () => Navigator.pop(context),
-            child: const Text('취소'),
-          ),
-        FilledButton(
-          onPressed: submitting ? null : _submit,
-          child: submitting
-              ? const SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const Text('변경'),
-        ),
-      ],
-    ),
-  );
+      );
 }
 
 String _roleLabel(MemberRole role) => switch (role) {
-  MemberRole.dormant => '휴회원',
-  MemberRole.member => '정회원',
-  MemberRole.leader => '스터디장',
-  MemberRole.admin => '운영진',
-};
+      MemberRole.dormant => '휴회원',
+      MemberRole.member => '정회원',
+      MemberRole.leader => '스터디장',
+      MemberRole.admin => '운영진',
+    };
 
 class MyPage extends StatefulWidget {
   const MyPage({
@@ -1062,102 +1054,103 @@ class _MyPageState extends State<MyPage> {
 
   @override
   Widget build(BuildContext context) => PageFrame(
-    key: const ValueKey('mypage'),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'MY PAGE',
-          style: TextStyle(
-            color: Color(0xFFB31B34),
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          '${widget.member.name}님, 안녕하세요',
-          style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w800),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          '학번 ${widget.member.studentId} · ${_roleLabel(widget.member.role)}',
-          style: const TextStyle(color: Color(0xFF667085)),
-        ),
-        const SizedBox(height: 16),
-        Row(
+        key: const ValueKey('mypage'),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            OutlinedButton.icon(
-              onPressed: widget.onChangePassword,
-              icon: const Icon(Icons.lock_reset),
-              label: const Text('비밀번호 변경'),
+            const Text(
+              'MY PAGE',
+              style: TextStyle(
+                color: Color(0xFFB31B34),
+                fontWeight: FontWeight.w700,
+              ),
             ),
-            const SizedBox(width: 12),
-            OutlinedButton.icon(
-              onPressed: widget.onLogout,
-              icon: const Icon(Icons.logout),
-              label: const Text('로그아웃'),
+            const SizedBox(height: 8),
+            Text(
+              '${widget.member.name}님, 안녕하세요',
+              style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '학번 ${widget.member.studentId} · ${_roleLabel(widget.member.role)}',
+              style: const TextStyle(color: Color(0xFF667085)),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                OutlinedButton.icon(
+                  onPressed: widget.onChangePassword,
+                  icon: const Icon(Icons.lock_reset),
+                  label: const Text('비밀번호 변경'),
+                ),
+                const SizedBox(width: 12),
+                OutlinedButton.icon(
+                  onPressed: widget.onLogout,
+                  icon: const Icon(Icons.logout),
+                  label: const Text('로그아웃'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            FutureBuilder<List<MyStudy>>(
+              future: myStudies,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(64),
+                      child: CircularProgressIndicator(),
+                    ),
+                  );
+                }
+                if (snapshot.hasError) return _LoadError(onRetry: _reload);
+                final data = snapshot.data ?? const <MyStudy>[];
+                // 중도 포기(withdrawn)는 어느 카드에도 넣지 않는다.
+                final ongoing = data.where((item) => item.isOngoing).toList();
+                final completed =
+                    data.where((item) => item.isCompleted).toList();
+                return LayoutBuilder(
+                  builder: (context, constraints) {
+                    final width = constraints.maxWidth >= 700
+                        ? (constraints.maxWidth - 16) / 2
+                        : constraints.maxWidth;
+                    return Wrap(
+                      spacing: 16,
+                      runSpacing: 16,
+                      children: [
+                        _MyStudyCard(
+                          width: width,
+                          icon: Icons.menu_book_outlined,
+                          label: '수강 중인 스터디',
+                          studies: ongoing,
+                          emptyMessage: '수강 중인 스터디가 없습니다.',
+                        ),
+                        _MyStudyCard(
+                          width: width,
+                          icon: Icons.check_circle_outline,
+                          label: '완료한 스터디',
+                          studies: completed,
+                          emptyMessage: '아직 수료한 스터디가 없습니다.',
+                        ),
+                        _MyPagePlaceholderCard(
+                          width: width,
+                          icon: Icons.assignment_outlined,
+                          label: '과제 제출 현황',
+                        ),
+                        _MyPagePlaceholderCard(
+                          width: width,
+                          icon: Icons.emoji_events_outlined,
+                          label: '참여 행사 · 대회',
+                        ),
+                      ],
+                    );
+                  },
+                );
+              },
             ),
           ],
         ),
-        const SizedBox(height: 24),
-        FutureBuilder<List<MyStudy>>(
-          future: myStudies,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(
-                child: Padding(
-                  padding: EdgeInsets.all(64),
-                  child: CircularProgressIndicator(),
-                ),
-              );
-            }
-            if (snapshot.hasError) return _LoadError(onRetry: _reload);
-            final data = snapshot.data ?? const <MyStudy>[];
-            // 중도 포기(withdrawn)는 어느 카드에도 넣지 않는다.
-            final ongoing = data.where((item) => item.isOngoing).toList();
-            final completed = data.where((item) => item.isCompleted).toList();
-            return LayoutBuilder(
-              builder: (context, constraints) {
-                final width = constraints.maxWidth >= 700
-                    ? (constraints.maxWidth - 16) / 2
-                    : constraints.maxWidth;
-                return Wrap(
-                  spacing: 16,
-                  runSpacing: 16,
-                  children: [
-                    _MyStudyCard(
-                      width: width,
-                      icon: Icons.menu_book_outlined,
-                      label: '수강 중인 스터디',
-                      studies: ongoing,
-                      emptyMessage: '수강 중인 스터디가 없습니다.',
-                    ),
-                    _MyStudyCard(
-                      width: width,
-                      icon: Icons.check_circle_outline,
-                      label: '완료한 스터디',
-                      studies: completed,
-                      emptyMessage: '아직 수료한 스터디가 없습니다.',
-                    ),
-                    _MyPagePlaceholderCard(
-                      width: width,
-                      icon: Icons.assignment_outlined,
-                      label: '과제 제출 현황',
-                    ),
-                    _MyPagePlaceholderCard(
-                      width: width,
-                      icon: Icons.emoji_events_outlined,
-                      label: '참여 행사 · 대회',
-                    ),
-                  ],
-                );
-              },
-            );
-          },
-        ),
-      ],
-    ),
-  );
+      );
 }
 
 class _MyPageCardFrame extends StatelessWidget {
@@ -1174,34 +1167,34 @@ class _MyPageCardFrame extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => SizedBox(
-    width: width,
-    child: Card(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: ConstrainedBox(
-          // 내용이 없을 때도 기존 카드 높이(150)를 유지한다.
-          constraints: const BoxConstraints(minHeight: 102),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, color: const Color(0xFFB31B34)),
-              const SizedBox(height: 14),
-              Text(
-                label,
-                style: const TextStyle(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 17,
-                ),
+        width: width,
+        child: Card(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: ConstrainedBox(
+              // 내용이 없을 때도 기존 카드 높이(150)를 유지한다.
+              constraints: const BoxConstraints(minHeight: 102),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(icon, color: const Color(0xFFB31B34)),
+                  const SizedBox(height: 14),
+                  Text(
+                    label,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 17,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  child,
+                ],
               ),
-              const SizedBox(height: 6),
-              child,
-            ],
+            ),
           ),
         ),
-      ),
-    ),
-  );
+      );
 }
 
 class _MyStudyCard extends StatelessWidget {
@@ -1220,37 +1213,37 @@ class _MyStudyCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => _MyPageCardFrame(
-    width: width,
-    icon: icon,
-    label: label,
-    child: studies.isEmpty
-        ? Text(
-            emptyMessage,
-            style: const TextStyle(color: Color(0xFF98A2B3)),
-          )
-        : Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                '${studies.length}개',
-                style: const TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w800,
-                  color: Color(0xFFB31B34),
-                ),
-              ),
-              const SizedBox(height: 4),
-              for (final study in studies)
-                Padding(
-                  padding: const EdgeInsets.only(top: 2),
-                  child: Text(
-                    '${study.title} · ${study.semester}',
-                    style: const TextStyle(color: Color(0xFF667085)),
+        width: width,
+        icon: icon,
+        label: label,
+        child: studies.isEmpty
+            ? Text(
+                emptyMessage,
+                style: const TextStyle(color: Color(0xFF98A2B3)),
+              )
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '${studies.length}개',
+                    style: const TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFFB31B34),
+                    ),
                   ),
-                ),
-            ],
-          ),
-  );
+                  const SizedBox(height: 4),
+                  for (final study in studies)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 2),
+                      child: Text(
+                        '${study.title} · ${study.semester}',
+                        style: const TextStyle(color: Color(0xFF667085)),
+                      ),
+                    ),
+                ],
+              ),
+      );
 }
 
 class _MyPagePlaceholderCard extends StatelessWidget {
@@ -1265,16 +1258,15 @@ class _MyPagePlaceholderCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => _MyPageCardFrame(
-    width: width,
-    icon: icon,
-    label: label,
-    child: const Text(
-      '데이터 연동 예정',
-      style: TextStyle(color: Color(0xFF98A2B3)),
-    ),
-  );
+        width: width,
+        icon: icon,
+        label: label,
+        child: const Text(
+          '데이터 연동 예정',
+          style: TextStyle(color: Color(0xFF98A2B3)),
+        ),
+      );
 }
-
 
 class BoardPage extends StatefulWidget {
   const BoardPage({super.key});
@@ -1359,82 +1351,82 @@ class _BoardPageState extends State<BoardPage> {
   }
 
   String get _emptyMessage => switch (category) {
-    PostCategory.notice => '등록된 공지사항이 없습니다.',
-    PostCategory.recruit => '진행 중인 모집공고가 없습니다.',
-    null => '등록된 게시글이 없습니다.',
-  };
+        PostCategory.notice => '등록된 공지사항이 없습니다.',
+        PostCategory.recruit => '진행 중인 모집공고가 없습니다.',
+        null => '등록된 게시글이 없습니다.',
+      };
 
   @override
   Widget build(BuildContext context) => PageFrame(
-    key: const ValueKey('board'),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'BOARD',
-          style: TextStyle(
-            color: Color(0xFFB31B34),
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        const SizedBox(height: 8),
-        const Text(
-          '공지사항과 모집공고',
-          style: TextStyle(fontSize: 32, fontWeight: FontWeight.w800),
-        ),
-        const SizedBox(height: 8),
-        const Text(
-          'KUICS의 새로운 소식과 모집 일정을 확인하세요.',
-          style: TextStyle(color: Color(0xFF667085)),
-        ),
-        const SizedBox(height: 28),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
+        key: const ValueKey('board'),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            for (final filter in filters)
-              ChoiceChip(
-                label: Text(filter.$2),
-                selected: category == filter.$1,
-                onSelected: (_) => _select(filter.$1),
+            const Text(
+              'BOARD',
+              style: TextStyle(
+                color: Color(0xFFB31B34),
+                fontWeight: FontWeight.w700,
               ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              '공지사항',
+              style: TextStyle(fontSize: 32, fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'KUICS의 새로운 소식과 모집 일정을 확인하세요.',
+              style: TextStyle(color: Color(0xFF667085)),
+            ),
+            const SizedBox(height: 28),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final filter in filters)
+                  ChoiceChip(
+                    label: Text(filter.$2),
+                    selected: category == filter.$1,
+                    onSelected: (_) => _select(filter.$1),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            if (loading)
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(64),
+                  child: CircularProgressIndicator(),
+                ),
+              )
+            else if (failed)
+              _LoadError(onRetry: _load)
+            else if (posts.isEmpty)
+              _EmptyState(message: _emptyMessage)
+            else ...[
+              for (final post in posts)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: PostCard(post: post),
+                ),
+              if (hasMore)
+                Center(
+                  child: OutlinedButton(
+                    onPressed: loadingMore ? null : _loadMore,
+                    child: Text(loadingMore ? '불러오는 중…' : '더 보기'),
+                  ),
+                ),
+            ],
           ],
         ),
-        const SizedBox(height: 20),
-        if (loading)
-          const Center(
-            child: Padding(
-              padding: EdgeInsets.all(64),
-              child: CircularProgressIndicator(),
-            ),
-          )
-        else if (failed)
-          _LoadError(onRetry: _load)
-        else if (posts.isEmpty)
-          _EmptyState(message: _emptyMessage)
-        else ...[
-          for (final post in posts)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: PostCard(post: post),
-            ),
-          if (hasMore)
-            Center(
-              child: OutlinedButton(
-                onPressed: loadingMore ? null : _loadMore,
-                child: Text(loadingMore ? '불러오는 중…' : '더 보기'),
-              ),
-            ),
-        ],
-      ],
-    ),
-  );
+      );
 }
 
 String _categoryLabel(PostCategory category) => switch (category) {
-  PostCategory.notice => '공지사항',
-  PostCategory.recruit => '모집공고',
-};
+      PostCategory.notice => '공지사항',
+      PostCategory.recruit => '모집공고',
+    };
 
 String _formatDate(DateTime value) {
   final local = value.toLocal();
@@ -1488,18 +1480,18 @@ class _PinnedBadge extends StatelessWidget {
   const _PinnedBadge();
   @override
   Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-    decoration: BoxDecoration(
-      color: const Color(0xFFB31B34),
-      borderRadius: BorderRadius.circular(4),
-    ),
-    child: const Text(
-      '고정',
-      style: TextStyle(
-        color: Colors.white,
-        fontSize: 12,
-        fontWeight: FontWeight.w700,
-      ),
-    ),
-  );
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+        decoration: BoxDecoration(
+          color: const Color(0xFFB31B34),
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: const Text(
+          '고정',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      );
 }
