@@ -127,3 +127,45 @@ class MyStudy {
     ),
   );
 }
+
+enum PostCategory { notice, recruit }
+
+class Post {
+  const Post({
+    required this.id,
+    required this.category,
+    required this.title,
+    required this.content,
+    required this.authorName,
+    required this.isPinned,
+    required this.publishedAt,
+  });
+
+  final int id;
+  final PostCategory category;
+  final String title;
+  final String content;
+  final String authorName;
+  final bool isPinned;
+  final DateTime? publishedAt;
+
+  factory Post.fromJson(Map<String, dynamic> json) => Post(
+    id: json['id'] as int,
+    category: PostCategory.values.firstWhere(
+      (value) => value.name == json['category'],
+      orElse: () => PostCategory.notice,
+    ),
+    title: json['title'] as String? ?? '',
+    content: json['content'] as String? ?? '',
+    authorName: json['author_name'] as String? ?? '',
+    isPinned: json['is_pinned'] as bool? ?? false,
+    publishedAt: DateTime.tryParse(json['published_at'] as String? ?? ''),
+  );
+}
+
+/// 게시글 한 페이지. 서버가 페이지네이션하므로 다음 장이 있는지 함께 받는다.
+class PostPage {
+  const PostPage({required this.posts, required this.hasMore});
+  final List<Post> posts;
+  final bool hasMore;
+}

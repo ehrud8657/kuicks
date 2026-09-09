@@ -71,6 +71,32 @@ class ApiClient {
         .toList();
   }
 
+  /// 공지사항·모집공고 목록. [category]가 없으면 전체를 받는다.
+  ///
+  /// 서버가 20개 단위로 페이지네이션하므로 [page]로 이어서 받는다.
+  /// (DRF가 주는 next는 절대 URL이라 프록시 뒤에서 어긋날 수 있어 쪽 번호를 쓴다.)
+  Future<PostPage> fetchPosts({PostCategory? category, int page = 1}) async {
+    final query = <String, String>{
+      if (category != null) 'category': category.name,
+      if (page > 1) 'page': '$page',
+    };
+    final uri = Uri.parse('$baseUrl/boards/').replace(
+      queryParameters: query.isEmpty ? null : query,
+    );
+    final response = await _client.get(uri);
+    if (response.statusCode != 200) {
+      throw ApiException('게시글을 불러오지 못했습니다.');
+    }
+    final body = jsonDecode(utf8.decode(response.bodyBytes));
+    final items = body is List ? body : body['results'] as List<dynamic>;
+    return PostPage(
+      posts: items
+          .map((item) => Post.fromJson(item as Map<String, dynamic>))
+          .toList(),
+      hasMore: body is Map<String, dynamic> && body['next'] != null,
+    );
+  }
+
   Future<List<MyStudy>> fetchMyStudies() async {
     final response = await _client.get(Uri.parse('$baseUrl/me/studies/'));
     if (response.statusCode != 200) {
