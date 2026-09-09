@@ -1,4 +1,6 @@
-FROM ghcr.io/cirruslabs/flutter:3.24.3 AS build
+# pubspec.lock이 flutter >=3.44.0 / dart >=3.12.0을 요구한다.
+# 이보다 낮은 이미지를 쓰면 flutter pub get 단계에서 SDK 제약 오류로 빌드가 실패한다.
+FROM ghcr.io/cirruslabs/flutter:3.44.9 AS build
 WORKDIR /app
 COPY . .
 RUN flutter pub get
