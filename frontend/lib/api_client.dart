@@ -71,6 +71,18 @@ class ApiClient {
         .toList();
   }
 
+  Future<List<MyStudy>> fetchMyStudies() async {
+    final response = await _client.get(Uri.parse('$baseUrl/me/studies/'));
+    if (response.statusCode != 200) {
+      throw ApiException('스터디 참여 내역을 불러오지 못했습니다.');
+    }
+    final body = jsonDecode(utf8.decode(response.bodyBytes));
+    final items = body is List ? body : body['results'] as List<dynamic>;
+    return items
+        .map((item) => MyStudy.fromJson(item as Map<String, dynamic>))
+        .toList();
+  }
+
   Future<Member?> fetchMe() async {
     final response = await _client.get(Uri.parse('$baseUrl/me/'));
     if (response.statusCode == 200) {

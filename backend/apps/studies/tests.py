@@ -106,6 +106,48 @@ class SemesterApiTests(TestCase):
         self.assertEqual(self._study_payload()["leader_name"], "미정")
 
 
+class MyStudyApiTests(TestCase):
+    """마이페이지의 수강 중/수료 스터디 카드가 쓰는 엔드포인트."""
+
+    def setUp(self):
+        self.semester = Semester.objects.create(name="2026-1")
+        self.member = create_member("2026320031", "내학생")
+        self.other = create_member("2026320032", "남학생")
+        self.active = Study.objects.create(semester=self.semester, title="수강중스터디")
+        self.done = Study.objects.create(semester=self.semester, title="수료스터디")
+        Participation.objects.create(
+            member=self.member, study=self.active, status=Participation.Status.ACTIVE
+        )
+        Participation.objects.create(
+            member=self.member, study=self.done, status=Participation.Status.EXCELLENT
+        )
+        Participation.objects.create(
+            member=self.other, study=self.active, status=Participation.Status.ACTIVE
+        )
+
+    def test_로그인하지_않으면_조회할_수_없다(self):
+        response = self.client.get(reverse("my-study-list"))
+        self.assertIn(response.status_code, (401, 403))
+
+    def test_본인_참여_이력만_내려온다(self):
+        self.client.force_login(self.member)
+        response = self.client.get(reverse("my-study-list"))
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual(len(payload), 2)
+        by_title = {item["title"]: item for item in payload}
+        self.assertEqual(by_title["수강중스터디"]["status"], "active")
+        self.assertEqual(by_title["수료스터디"]["status"], "excellent")
+        self.assertEqual(by_title["수료스터디"]["status_label"], "우수 수료")
+        self.assertEqual(by_title["수료스터디"]["semester"], "2026-1")
+
+    def test_다른_회원의_참여는_보이지_않는다(self):
+        self.client.force_login(self.other)
+        response = self.client.get(reverse("my-study-list"))
+        payload = response.json()
+        self.assertEqual([item["title"] for item in payload], ["수강중스터디"])
+
+
 class SyncLeaderRolesCommandTests(TestCase):
     """등급 동기화가 없던 시절에 등록된 데이터를 정리하는 일회성 명령."""
 

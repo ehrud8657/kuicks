@@ -97,3 +97,33 @@ class Semester {
         .toList(),
   );
 }
+
+/// 마이페이지에서 쓰는, 로그인 회원 본인의 스터디 참여 이력.
+class MyStudy {
+  const MyStudy({
+    required this.studyId,
+    required this.title,
+    required this.semester,
+    required this.status,
+  });
+
+  final int studyId;
+  final String title;
+  final String semester;
+  final ParticipationStatus status;
+
+  bool get isOngoing => status == ParticipationStatus.active;
+  bool get isCompleted =>
+      status == ParticipationStatus.completed ||
+      status == ParticipationStatus.excellent;
+
+  factory MyStudy.fromJson(Map<String, dynamic> json) => MyStudy(
+    studyId: json['study_id'] as int,
+    title: json['title'] as String,
+    semester: json['semester'] as String? ?? '',
+    status: ParticipationStatus.values.firstWhere(
+      (value) => value.name == json['status'],
+      orElse: () => ParticipationStatus.active,
+    ),
+  );
+}

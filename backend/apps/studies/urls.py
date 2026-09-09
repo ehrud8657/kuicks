@@ -1,7 +1,14 @@
 from django.urls import path
-from .views import ParticipationUpdateView, SemesterListView, SemesterStudyListView, StudyDetailView
+from .views import (
+    MyStudyListView,
+    ParticipationUpdateView,
+    SemesterListView,
+    SemesterStudyListView,
+    StudyDetailView,
+)
 
 urlpatterns = [
+    path("me/studies/", MyStudyListView.as_view(), name="my-study-list"),
     path("semesters/", SemesterListView.as_view(), name="semester-list"),
     path("semesters/<int:semester_id>/studies/", SemesterStudyListView.as_view(), name="semester-study-list"),
     path("studies/<int:pk>/", StudyDetailView.as_view(), name="study-detail"),

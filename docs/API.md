@@ -15,6 +15,7 @@
 | POST | `/auth/logout/` | 회원 | 로그아웃 |
 | POST | `/auth/change-password/` | 회원 | 비밀번호 변경 |
 | GET | `/me/` | 회원 | 로그인 회원 정보 |
+| GET | `/me/studies/` | 회원 | 본인의 스터디 참여 이력 (마이페이지) |
 
 ## 스터디 응답
 
@@ -43,6 +44,17 @@
 
 - `leader_name`: 스터디장이 지정되지 않은 스터디는 `"미정"`으로 내려옵니다.
 - `status`: `active`(수강 중) · `completed`(수료) · `excellent`(우수 수료) · `withdrawn`(중도 포기)
+
+`/me/studies/`는 로그인 회원 본인의 참여 이력만 반환합니다.
+
+```json
+[
+  {"id": 7, "study_id": 3, "title": "웹해킹 입문", "semester": "2026-1", "status": "excellent", "status_label": "우수 수료"}
+]
+```
+
+마이페이지는 `active`를 '수강 중인 스터디', `completed`/`excellent`를 '완료한 스터디'로 묶어 보여주며
+`withdrawn`은 표시하지 않습니다.
 
 스터디장은 `Study.leader` 지정만으로 결정되며, 지정 시 해당 회원의 등급이 자동으로 스터디장으로 올라갑니다.
 담당 스터디가 하나도 남지 않으면 정회원으로 되돌아갑니다. (운영진은 등급이 유지됩니다.)

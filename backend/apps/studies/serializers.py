@@ -18,6 +18,19 @@ class ParticipationSerializer(serializers.ModelSerializer):
         fields = ("id", "member_name", "student_id_tail", "status")
 
 
+class MyStudySerializer(serializers.ModelSerializer):
+    """마이페이지에서 쓰는, 로그인 회원 본인의 스터디 참여 이력."""
+
+    study_id = serializers.IntegerField(source="study.id", read_only=True)
+    title = serializers.CharField(source="study.title", read_only=True)
+    semester = serializers.CharField(source="study.semester.name", read_only=True)
+    status_label = serializers.CharField(source="get_status_display", read_only=True)
+
+    class Meta:
+        model = Participation
+        fields = ("id", "study_id", "title", "semester", "status", "status_label")
+
+
 class StudySerializer(serializers.ModelSerializer):
     leader_name = serializers.SerializerMethodField()
     participations = ParticipationSerializer(many=True, read_only=True)
