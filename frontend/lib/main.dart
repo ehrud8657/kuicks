@@ -116,8 +116,12 @@ class _SiteShellState extends State<SiteShell> {
           child: const Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.shield_outlined, color: Color(0xFFB31B34)),
-              SizedBox(width: 9),
+              Image(
+                image: AssetImage('assets/logo.png'),
+                height: 36,
+                filterQuality: FilterQuality.medium,
+              ),
+              SizedBox(width: 10),
               Text(
                 'KUICS',
                 style: TextStyle(
@@ -187,6 +191,12 @@ class _SiteShellState extends State<SiteShell> {
                 child: ListView(
                   children: [
                     const ListTile(
+                      leading: Image(
+                        image: AssetImage('assets/logo.png'),
+                        width: 32,
+                        height: 32,
+                        filterQuality: FilterQuality.medium,
+                      ),
                       title: Text(
                         'KUICS',
                         style: TextStyle(fontWeight: FontWeight.bold),
