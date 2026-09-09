@@ -49,7 +49,7 @@ flutter run -d chrome --web-port 3000 --dart-define=API_BASE_URL=http://localhos
 flutter build web --dart-define=API_BASE_URL=https://새도메인.example/api
 ```
 
-### Docker로 전체 스택 실행 (같은 도메인 배포 구성)
+### Docker로 전체 스택 실행 — 개발용
 
 `docker-compose.yml`은 실제 배포와 동일하게 **프론트(nginx)와 백엔드를 같은 도메인**으로 묶는 구성입니다. nginx가 `/`는 Flutter web 빌드 결과물을, `/api`·`/admin`·`/static`·`/media`는 backend로 라우팅하므로 브라우저 입장에선 항상 하나의 origin만 봅니다 — CORS/CSRF/쿠키 설정이 단순해지는 이유입니다. 프론트는 `API_BASE_URL=/api`(상대 경로)로 빌드되어 이 구조를 그대로 전제합니다.
 
@@ -67,6 +67,72 @@ docker compose exec backend python manage.py createsuperuser
 ```
 
 실제 배포 도메인이 정해지면 `.env`의 `CORS_ALLOWED_ORIGINS`만 그 주소로 바꾸면 됩니다. 프론트/백엔드를 서로 다른 서브도메인으로 나눠야 하는 경우에만 `CROSS_SITE_COOKIES=true`를 추가로 켭니다 (자세한 내용은 [DEVELOPMENT_GUIDE.md](./DEVELOPMENT_GUIDE.md) 참고).
+
+이 구성은 **개발용**입니다. `./backend`를 컨테이너에 그대로 붙여두기 때문에 코드를 고치면 바로 반영되고, Django 개발 서버와 `DEBUG=true`를 씁니다. 상시 켜두는 서버에는 아래 운영용 구성을 쓰세요.
+
+### Docker로 상시 운영 — 운영용
+
+`docker-compose.prod.yml`은 항상 켜두는 서버를 위한 구성입니다. 개발용과 이렇게 다릅니다.
+
+| | 개발용 (`docker-compose.yml`) | 운영용 (`docker-compose.prod.yml`) |
+|---|---|---|
+| 웹 서버 | `manage.py runserver` | `gunicorn` (워커 3개) |
+| 소스 | 호스트 폴더를 마운트 (고치면 즉시 반영) | 이미지에 포함 (호스트와 무관하게 동일 동작) |
+| `DEBUG` | `true` | `false` |
+| 재시작 | 없음 | `unless-stopped` (재부팅·크래시 시 자동 복구) |
+| 비밀값 | 기본값 사용 | `.env`에서 주입, 없으면 실행 거부 |
+| migrate | 수동 | 컨테이너 시작 시 자동 |
+| 포트 | `80`, `8000` 노출 | `80`만 노출 |
+
+먼저 환경변수를 채웁니다. `DJANGO_SECRET_KEY`와 `POSTGRES_PASSWORD`는 비워두면 컨테이너가 뜨지 않습니다.
+
+```powershell
+Copy-Item .env.prod.example .env
+notepad .env
+```
+
+`DJANGO_SECRET_KEY`는 아래로 만들어 붙여넣습니다.
+
+```powershell
+docker compose -f docker-compose.prod.yml run --rm backend python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
+```
+
+접속할 도메인이나 IP가 있으면 `DJANGO_ALLOWED_HOSTS`와 `CORS_ALLOWED_ORIGINS`에 함께 적습니다. 이 값이 틀리면 사이트는 열려도 로그인이 CSRF 오류로 막힙니다.
+
+```powershell
+docker compose -f docker-compose.prod.yml up -d --build
+```
+
+첫 실행 후 운영진 계정을 만듭니다. migrate는 컨테이너가 뜰 때 이미 실행됩니다.
+
+```powershell
+docker compose -f docker-compose.prod.yml exec backend python manage.py createsuperuser
+```
+
+스터디를 이미 등록해둔 DB를 옮겨온 경우에는 회원 등급을 한 번 맞춰줍니다.
+
+```powershell
+docker compose -f docker-compose.prod.yml exec backend python manage.py sync_leader_roles --dry-run
+docker compose -f docker-compose.prod.yml exec backend python manage.py sync_leader_roles
+```
+
+#### 코드를 고친 뒤 서버에 반영하기
+
+```powershell
+git pull
+docker compose -f docker-compose.prod.yml up -d --build
+```
+
+바뀐 이미지만 다시 빌드하고 컨테이너를 교체합니다. 회원·게시글 데이터는 `postgres_data` 볼륨에 있어서 그대로 남습니다.
+
+> `docker compose ... down -v`의 `-v`는 **볼륨까지 삭제**합니다. DB가 통째로 날아가므로 습관적으로 붙이지 마세요.
+
+#### 상태 확인
+
+```powershell
+docker compose -f docker-compose.prod.yml ps
+docker compose -f docker-compose.prod.yml logs -f backend
+```
 
 ## 회원 CSV 일괄 생성
 
