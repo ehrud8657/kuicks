@@ -139,9 +139,9 @@ class _AttendanceMatrixCardState extends State<AttendanceMatrixCard> {
   late Future<AttendanceMatrix> matrix =
       ApiClient.instance.fetchAttendanceMatrix(widget.studyId);
 
-  void _reload() => setState(
-        () => matrix = ApiClient.instance.fetchAttendanceMatrix(widget.studyId),
-      );
+  void _reload() => setState(() {
+        matrix = ApiClient.instance.fetchAttendanceMatrix(widget.studyId);
+      });
 
   @override
   Widget build(BuildContext context) => Card(

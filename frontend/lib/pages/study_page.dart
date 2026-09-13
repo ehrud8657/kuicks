@@ -58,8 +58,9 @@ class _StudyPageState extends State<StudyPage> {
                 }
                 if (snapshot.hasError) {
                   return LoadError(
-                    onRetry: () => setState(
-                        () => semesters = ApiClient.instance.fetchSemesters()),
+                    onRetry: () => setState(() {
+                      semesters = ApiClient.instance.fetchSemesters();
+                    }),
                   );
                 }
                 final data = snapshot.data ?? const [];

@@ -27,8 +27,9 @@ class _ManagePageState extends State<ManagePage> {
     studies = ApiClient.instance.fetchManagedStudies();
   }
 
-  void _reload() =>
-      setState(() => studies = ApiClient.instance.fetchManagedStudies());
+  void _reload() => setState(() {
+        studies = ApiClient.instance.fetchManagedStudies();
+      });
 
   Future<void> _open(ManagedStudy study) async {
     await Navigator.of(context).push(

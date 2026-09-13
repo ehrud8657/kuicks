@@ -55,9 +55,9 @@ class _SubmissionsPageState extends State<SubmissionsPage> {
     sheet = ApiClient.instance.fetchSubmissions(widget.assignmentId);
   }
 
-  void _reload() => setState(
-        () => sheet = ApiClient.instance.fetchSubmissions(widget.assignmentId),
-      );
+  void _reload() => setState(() {
+        sheet = ApiClient.instance.fetchSubmissions(widget.assignmentId);
+      });
 
   Future<void> _toggleReview(Submission submission) async {
     setState(() => busy.add(submission.id));

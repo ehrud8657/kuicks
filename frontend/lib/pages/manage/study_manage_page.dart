@@ -32,9 +32,9 @@ class _StudyManagePageState extends State<StudyManagePage> {
     detail = ApiClient.instance.fetchManagedStudy(widget.studyId);
   }
 
-  void _reload() => setState(
-        () => detail = ApiClient.instance.fetchManagedStudy(widget.studyId),
-      );
+  void _reload() => setState(() {
+        detail = ApiClient.instance.fetchManagedStudy(widget.studyId);
+      });
 
   @override
   Widget build(BuildContext context) => DefaultTabController(

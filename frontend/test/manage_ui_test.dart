@@ -266,6 +266,10 @@ void main() {
       backend.lastJson('PATCH', '/api/manage/submissions/42/'),
       {'review_status': 'checked'},
     );
+    // 저장 뒤 다시 불러오는 과정에서 오류가 나면 실패 안내가 뜬다.
+    expect(find.text('확인 상태를 바꾸지 못했습니다.'), findsNothing);
+    expect(backend.sent('GET', '/api/manage/assignments/31/submissions/'),
+        hasLength(2));
   });
 
   testWidgets('휴대폰 폭(360)에서도 관리 화면들이 넘치지 않는다', (tester) async {
