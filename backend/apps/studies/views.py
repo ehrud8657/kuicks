@@ -1,3 +1,5 @@
+from collections import defaultdict
+
 from django.http import FileResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
@@ -61,6 +63,33 @@ class MyStudyListView(generics.ListAPIView):
             .select_related("study", "study__semester")
             .order_by("-study__semester__name", "study__title")
         )
+
+    def list(self, request, *args, **kwargs):
+        participations = list(self.get_queryset())
+        # 회원 한 명의 참여 스터디는 몇 개뿐이라, 과제·제출을 한 번씩만 읽어 파이썬에서 센다.
+        assignments = defaultdict(list)
+        for assignment_id, study_id, due_at in Assignment.objects.filter(
+            study_id__in={participation.study_id for participation in participations}
+        ).values_list("pk", "study_id", "due_at"):
+            assignments[study_id].append((assignment_id, due_at))
+        submitted = set(
+            AssignmentSubmission.objects.filter(participation__in=participations).values_list(
+                "participation_id", "assignment_id"
+            )
+        )
+        now = timezone.now()
+        stats = {}
+        for participation in participations:
+            items = assignments[participation.study_id]
+            pending = 0
+            if participation.status == Participation.Status.ACTIVE:
+                pending = sum(
+                    1 for assignment_id, due_at in items
+                    if due_at > now and (participation.pk, assignment_id) not in submitted
+                )
+            stats[participation.pk] = {"assignment_count": len(items), "pending_assignment_count": pending}
+        context = {**self.get_serializer_context(), "assignment_stats": stats}
+        return Response(self.get_serializer(participations, many=True, context=context).data)
 
 
 class MyStudyDetailView(APIView):

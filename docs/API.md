@@ -192,9 +192,13 @@ PUT 요청 본문 (응답은 GET과 같음):
 
 ```json
 [
-  {"id": 7, "study_id": 3, "title": "웹해킹 입문", "semester": "2026-1", "status": "excellent", "status_label": "우수 수료"}
+  {"id": 7, "study_id": 3, "title": "웹해킹 입문", "semester": "2026-1", "status": "active", "status_label": "수강 중",
+   "assignment_count": 3, "pending_assignment_count": 1}
 ]
 ```
+
+- `assignment_count`: 스터디에 등록된 과제 수
+- `pending_assignment_count`: 기한이 남았는데 아직 내지 않은 과제 수. 수강 중(`active`)이 아니면 0
 
 마이페이지는 `active`를 '수강 중인 스터디', `completed`/`excellent`를 '완료한 스터디'로 묶어 보여주며
 `withdrawn`은 표시하지 않습니다.

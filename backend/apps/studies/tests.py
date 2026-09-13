@@ -1,11 +1,13 @@
+from datetime import timedelta
 from io import StringIO
 
 from django.core.management import call_command
 from django.test import TestCase
 from django.urls import reverse
+from django.utils import timezone
 
 from apps.accounts.models import Member
-from .models import Participation, Semester, Study
+from .models import Assignment, AssignmentSubmission, Participation, Semester, Study
 
 
 def create_member(student_id, name, role=Member.Role.MEMBER):
@@ -149,6 +151,26 @@ class MyStudyApiTests(TestCase):
         response = self.client.get(reverse("my-study-list"))
         payload = response.json()
         self.assertEqual([item["title"] for item in payload], ["수강중스터디"])
+
+    def test_제출할_과제_수를_함께_준다(self):
+        now = timezone.now()
+        Assignment.objects.create(study=self.active, title="아직 안 낸 과제", due_at=now + timedelta(days=1))
+        submitted = Assignment.objects.create(study=self.active, title="낸 과제", due_at=now + timedelta(days=1))
+        Assignment.objects.create(study=self.active, title="마감된 과제", due_at=now - timedelta(days=1))
+        Assignment.objects.create(study=self.done, title="수료한 스터디 과제", due_at=now + timedelta(days=1))
+        AssignmentSubmission.objects.create(
+            assignment=submitted,
+            participation=Participation.objects.get(member=self.member, study=self.active),
+            file="submissions/test.zip",
+            original_name="낸 과제.zip",
+            size=1,
+        )
+        self.client.force_login(self.member)
+        by_title = {item["title"]: item for item in self.client.get(reverse("my-study-list")).json()}
+        active = by_title["수강중스터디"]
+        self.assertEqual((active["assignment_count"], active["pending_assignment_count"]), (3, 1))
+        # 수강 중이 아닌(우수 수료) 스터디는 낼 과제가 없는 것으로 본다.
+        self.assertEqual(by_title["수료스터디"]["pending_assignment_count"], 0)
 
 
 class SyncLeaderRolesCommandTests(TestCase):

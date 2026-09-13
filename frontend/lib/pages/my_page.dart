@@ -5,6 +5,7 @@ import '../models.dart';
 import '../theme.dart';
 import '../widgets/common.dart';
 import '../widgets/manager_panel.dart';
+import 'my_study_page.dart';
 
 class MyPage extends StatefulWidget {
   const MyPage({
@@ -34,8 +35,20 @@ class _MyPageState extends State<MyPage> {
     myStudies = ApiClient.instance.fetchMyStudies();
   }
 
-  void _reload() =>
-      setState(() => myStudies = ApiClient.instance.fetchMyStudies());
+  // setState 콜백이 Future를 돌려주면 디버그 모드에서 예외가 나므로 블록 본문으로 쓴다.
+  void _reload() => setState(() {
+        myStudies = ApiClient.instance.fetchMyStudies();
+      });
+
+  Future<void> _open(MyStudy study) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => MyStudyPage(studyId: study.studyId, title: study.title),
+      ),
+    );
+    // 과제를 내고 돌아오면 남은 과제 수를 다시 센다.
+    if (mounted) _reload();
+  }
 
   @override
   Widget build(BuildContext context) => PageFrame(
@@ -61,14 +74,15 @@ class _MyPageState extends State<MyPage> {
               style: const TextStyle(color: AppColors.textMuted),
             ),
             const SizedBox(height: 16),
-            Row(
+            Wrap(
+              spacing: 12,
+              runSpacing: 8,
               children: [
                 OutlinedButton.icon(
                   onPressed: widget.onChangePassword,
                   icon: const Icon(Icons.lock_reset),
                   label: const Text('비밀번호 변경'),
                 ),
-                const SizedBox(width: 12),
                 OutlinedButton.icon(
                   onPressed: widget.onLogout,
                   icon: const Icon(Icons.logout),
@@ -85,14 +99,14 @@ class _MyPageState extends State<MyPage> {
               future: myStudies,
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(
-                    child: Padding(
-                      padding: EdgeInsets.all(64),
-                      child: CircularProgressIndicator(),
-                    ),
+                  return const LoadingView();
+                }
+                if (snapshot.hasError) {
+                  return LoadError(
+                    onRetry: _reload,
+                    message: errorMessageOf(snapshot.error),
                   );
                 }
-                if (snapshot.hasError) return LoadError(onRetry: _reload);
                 final data = snapshot.data ?? const <MyStudy>[];
                 // 중도 포기(withdrawn)는 어느 카드에도 넣지 않는다.
                 final ongoing = data.where((item) => item.isOngoing).toList();
@@ -101,7 +115,7 @@ class _MyPageState extends State<MyPage> {
                 return LayoutBuilder(
                   builder: (context, constraints) {
                     final width = constraints.maxWidth >= 700
-                        ? (constraints.maxWidth - 16) / 2
+                        ? ((constraints.maxWidth - 16) / 2).floorToDouble()
                         : constraints.maxWidth;
                     return Wrap(
                       spacing: 16,
@@ -113,6 +127,7 @@ class _MyPageState extends State<MyPage> {
                           label: '수강 중인 스터디',
                           studies: ongoing,
                           emptyMessage: '수강 중인 스터디가 없습니다.',
+                          onOpen: _open,
                         ),
                         _MyStudyCard(
                           width: width,
@@ -120,11 +135,12 @@ class _MyPageState extends State<MyPage> {
                           label: '완료한 스터디',
                           studies: completed,
                           emptyMessage: '아직 수료한 스터디가 없습니다.',
+                          onOpen: _open,
                         ),
-                        _MyPagePlaceholderCard(
+                        _AssignmentSummaryCard(
                           width: width,
-                          icon: Icons.assignment_outlined,
-                          label: '과제 제출 현황',
+                          studies: ongoing,
+                          onOpen: _open,
                         ),
                         _MyPagePlaceholderCard(
                           width: width,
@@ -186,6 +202,39 @@ class _MyPageCardFrame extends StatelessWidget {
       );
 }
 
+/// 누르면 스터디 상세로 들어가는 한 줄.
+class _StudyRow extends StatelessWidget {
+  const _StudyRow({required this.label, required this.onTap, this.trailing});
+  final String label;
+  final VoidCallback onTap;
+  final Widget? trailing;
+
+  @override
+  Widget build(BuildContext context) => InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 6),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  label,
+                  style: const TextStyle(color: AppColors.textBody),
+                ),
+              ),
+              if (trailing != null) ...[const SizedBox(width: 8), trailing!],
+              const Icon(
+                Icons.chevron_right,
+                size: 20,
+                color: AppColors.textSubtle,
+              ),
+            ],
+          ),
+        ),
+      );
+}
+
 class _MyStudyCard extends StatelessWidget {
   const _MyStudyCard({
     required this.width,
@@ -193,12 +242,14 @@ class _MyStudyCard extends StatelessWidget {
     required this.label,
     required this.studies,
     required this.emptyMessage,
+    required this.onOpen,
   });
   final double width;
   final IconData icon;
   final String label;
   final List<MyStudy> studies;
   final String emptyMessage;
+  final ValueChanged<MyStudy> onOpen;
 
   @override
   Widget build(BuildContext context) => _MyPageCardFrame(
@@ -223,16 +274,78 @@ class _MyStudyCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   for (final study in studies)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 2),
-                      child: Text(
-                        '${study.title} · ${study.semester}',
-                        style: const TextStyle(color: AppColors.textMuted),
-                      ),
+                    _StudyRow(
+                      label: '${study.title} · ${study.semester}',
+                      onTap: () => onOpen(study),
+                      trailing: study.pendingAssignmentCount > 0
+                          ? StatusBadge(
+                              label: '과제 ${study.pendingAssignmentCount}',
+                              tone: BadgeTone.danger,
+                            )
+                          : null,
                     ),
                 ],
               ),
       );
+}
+
+/// 수강 중인 스터디에서 아직 내지 않은 과제를 모아 보여준다.
+class _AssignmentSummaryCard extends StatelessWidget {
+  const _AssignmentSummaryCard({
+    required this.width,
+    required this.studies,
+    required this.onOpen,
+  });
+  final double width;
+  final List<MyStudy> studies;
+  final ValueChanged<MyStudy> onOpen;
+
+  @override
+  Widget build(BuildContext context) {
+    final pending =
+        studies.where((study) => study.pendingAssignmentCount > 0).toList();
+    final total = pending.fold<int>(
+        0, (sum, study) => sum + study.pendingAssignmentCount);
+    const muted = TextStyle(color: AppColors.textSubtle);
+    return _MyPageCardFrame(
+      width: width,
+      icon: Icons.assignment_outlined,
+      label: '과제 제출 현황',
+      child: studies.isEmpty
+          ? const Text('수강 중인 스터디가 없어 제출할 과제가 없습니다.', style: muted)
+          : total == 0
+              ? const Text(
+                  '지금 제출할 과제가 없습니다. 스터디를 눌러 지난 과제와 피드백을 볼 수 있습니다.',
+                  style: muted,
+                )
+              : Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '제출할 과제 $total개',
+                      style: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.crimson,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    for (final study in pending)
+                      _StudyRow(
+                        label: study.title,
+                        onTap: () => onOpen(study),
+                        trailing: Text(
+                          '${study.pendingAssignmentCount}개',
+                          style: const TextStyle(
+                            color: AppColors.crimson,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+    );
+  }
 }
 
 class _MyPagePlaceholderCard extends StatelessWidget {

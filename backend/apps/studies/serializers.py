@@ -32,10 +32,31 @@ class MyStudySerializer(serializers.ModelSerializer):
     title = serializers.CharField(source="study.title", read_only=True)
     semester = serializers.CharField(source="study.semester.name", read_only=True)
     status_label = serializers.CharField(source="get_status_display", read_only=True)
+    assignment_count = serializers.SerializerMethodField()
+    pending_assignment_count = serializers.SerializerMethodField()
+
+    def _stats(self, participation):
+        return self.context.get("assignment_stats", {}).get(participation.pk, {})
+
+    def get_assignment_count(self, participation):
+        return self._stats(participation).get("assignment_count", 0)
+
+    def get_pending_assignment_count(self, participation):
+        """기한이 남았는데 아직 내지 않은 과제 수. 수강 중이 아니면 0."""
+        return self._stats(participation).get("pending_assignment_count", 0)
 
     class Meta:
         model = Participation
-        fields = ("id", "study_id", "title", "semester", "status", "status_label")
+        fields = (
+            "id",
+            "study_id",
+            "title",
+            "semester",
+            "status",
+            "status_label",
+            "assignment_count",
+            "pending_assignment_count",
+        )
 
 
 class StudySerializer(serializers.ModelSerializer):

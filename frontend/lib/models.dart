@@ -136,12 +136,18 @@ class MyStudy {
     required this.title,
     required this.semester,
     required this.status,
+    this.assignmentCount = 0,
+    this.pendingAssignmentCount = 0,
   });
 
   final int studyId;
   final String title;
   final String semester;
   final ParticipationStatus status;
+  final int assignmentCount;
+
+  /// 기한이 남았는데 아직 내지 않은 과제 수.
+  final int pendingAssignmentCount;
 
   bool get isOngoing => status == ParticipationStatus.active;
   bool get isCompleted =>
@@ -152,10 +158,9 @@ class MyStudy {
         studyId: json['study_id'] as int,
         title: json['title'] as String,
         semester: json['semester'] as String? ?? '',
-        status: ParticipationStatus.values.firstWhere(
-          (value) => value.name == json['status'],
-          orElse: () => ParticipationStatus.active,
-        ),
+        status: ParticipationStatus.parse(json['status']),
+        assignmentCount: json['assignment_count'] as int? ?? 0,
+        pendingAssignmentCount: json['pending_assignment_count'] as int? ?? 0,
       );
 }
 
