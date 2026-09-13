@@ -93,13 +93,21 @@ else:
     # 기본값(Lax)으로 충분하다. 서로 다른 서브도메인으로 나눠 배포할 경우에만
     # CROSS_SITE_COOKIES=true로 켜서 SameSite=None + HTTPS 쿠키를 사용한다.
     CROSS_SITE_COOKIES = os.getenv("CROSS_SITE_COOKIES", "false").lower() == "true"
-    SESSION_COOKIE_SAMESITE = "None" if CROSS_SITE_COOKIES else "Lax"
-    CSRF_COOKIE_SAMESITE = "None" if CROSS_SITE_COOKIES else "Lax"
-    SESSION_COOKIE_SECURE = True
-    CSRF_COOKIE_SECURE = True
-    # nginx/Render 등 리버스 프록시가 TLS를 종료하는 일반적인 배포 구조를 가정.
-    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
-    SECURE_SSL_REDIRECT = True
+    # TLS를 아직 붙이지 않은 사내/동아리 서버는 HTTPS_ENABLED=false로 끈다.
+    # 켜둔 채로 HTTP만 서빙하면 모든 요청이 https로 301 리다이렉트되어 API가 죽고,
+    # Secure 쿠키가 전송되지 않아 로그인도 불가능해진다.
+    # 도메인과 인증서를 붙이면 반드시 다시 true로 돌려야 한다.
+    HTTPS_ENABLED = os.getenv("HTTPS_ENABLED", "true").lower() == "true"
+    # SameSite=None은 Secure 쿠키를 전제로 하므로 HTTP에서는 쓸 수 없다.
+    _cross_site = CROSS_SITE_COOKIES and HTTPS_ENABLED
+    SESSION_COOKIE_SAMESITE = "None" if _cross_site else "Lax"
+    CSRF_COOKIE_SAMESITE = "None" if _cross_site else "Lax"
+    SESSION_COOKIE_SECURE = HTTPS_ENABLED
+    CSRF_COOKIE_SECURE = HTTPS_ENABLED
+    if HTTPS_ENABLED:
+        # nginx/Render 등 리버스 프록시가 TLS를 종료하는 일반적인 배포 구조를 가정.
+        SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+        SECURE_SSL_REDIRECT = True
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": ["apps.accounts.authentication.LocalDevSessionAuthentication"],
