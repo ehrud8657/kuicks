@@ -1,5 +1,7 @@
 # 스터디장 관리 기능 개발 계획 (2026-09-13)
 
+> **진행 결과(2026-09-14)**: 1~7 분기점 완료. 개발 내용은 [개발 보고서](../reports/2026-09-14-study-leader-management-report.html), 결정이 필요한 사항은 [확인이 필요한 사항](../reports/2026-09-14-questions.html)을 참고하세요. 계획과 달라진 점: 출석 현황표 API(`GET /manage/studies/{id}/attendance/`)와 `/me/studies/`의 과제 수 필드를 추가했고, ApiClient 주입은 InheritedWidget 대신 `ApiClient.instance` 교체 방식으로 했습니다.
+
 작성 배경: 공동작업자(김태호, `dev_tweho` 브랜치) 투입. 전임자는 휴식 중이며 당분간 단독 개발.
 이 문서는 개발 착수 전 기획 단계에서 작성한 계획이며, 개발 중 결정이 바뀌면 이 문서와 `docs/API.md`를 함께 갱신한다.
 
