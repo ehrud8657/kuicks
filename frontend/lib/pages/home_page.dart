@@ -35,6 +35,9 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   late Future<_HomeNow> now;
 
+  static bool _isNarrow(BuildContext context) =>
+      MediaQuery.sizeOf(context).width < 600;
+
   @override
   void initState() {
     super.initState();
@@ -76,7 +79,10 @@ class _HomePageState extends State<HomePage> {
           children: [
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 72),
+              // 휴대폰 폭에서는 여백과 글자를 줄여 문구가 음절 중간에서 끊기지 않게 한다.
+              padding: _isNarrow(context)
+                  ? const EdgeInsets.symmetric(horizontal: 24, vertical: 44)
+                  : const EdgeInsets.symmetric(horizontal: 40, vertical: 72),
               decoration: BoxDecoration(
                 color: AppColors.navy,
                 borderRadius: BorderRadius.circular(24),
@@ -93,11 +99,11 @@ class _HomePageState extends State<HomePage> {
                     ),
                   ),
                   const SizedBox(height: 18),
-                  const Text(
+                  Text(
                     '보안을 배우고,\n함께 성장합니다.',
                     style: TextStyle(
                       color: Colors.white,
-                      fontSize: 42,
+                      fontSize: _isNarrow(context) ? 30 : 42,
                       fontWeight: FontWeight.w800,
                       height: 1.2,
                     ),
@@ -116,12 +122,6 @@ class _HomePageState extends State<HomePage> {
                 ],
               ),
             ),
-            const SizedBox(height: 44),
-            const Text(
-              'KUICS NOW',
-              style: TextStyle(fontWeight: FontWeight.w800, fontSize: 24),
-            ),
-            const SizedBox(height: 18),
             if (widget.member case final member?
                 when member.role.canManageStudies) ...[
               const SizedBox(height: 24),
@@ -131,6 +131,12 @@ class _HomePageState extends State<HomePage> {
                 onManage: widget.onManage,
               ),
             ],
+            const SizedBox(height: 44),
+            const Text(
+              'KUICS NOW',
+              style: TextStyle(fontWeight: FontWeight.w800, fontSize: 24),
+            ),
+            const SizedBox(height: 18),
             FutureBuilder<_HomeNow>(
               future: now,
               builder: (context, snapshot) {

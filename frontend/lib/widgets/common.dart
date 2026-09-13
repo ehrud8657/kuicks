@@ -13,16 +13,16 @@ class PageFrame extends StatelessWidget {
         child: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 1180),
-            child: Padding(padding: const EdgeInsets.all(24), child: child),
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              // 내용이 적어도 폭을 꽉 채워, 페이지 전체가 가운데 좁은 기둥으로 몰리지 않게 한다.
+              child: SizedBox(width: double.infinity, child: child),
+            ),
           ),
         ),
       );
 }
 
-class LoadError extends StatelessWidget {
-  const LoadError({super.key, required this.onRetry, this.message});
-  final VoidCallback onRetry;
-  @override
 /// 페이지 상단 제목 묶음. 예: STUDY / 함께 배우는 KUICS 스터디 / 설명
 class PageHeader extends StatelessWidget {
   const PageHeader({
@@ -72,13 +72,17 @@ class LoadingView extends StatelessWidget {
       );
 }
 
-  Widget build(BuildContext context) => Card(
-        child: Padding(
-          padding: const EdgeInsets.all(32),
+class LoadError extends StatelessWidget {
+  const LoadError({super.key, required this.onRetry, this.message});
+  final VoidCallback onRetry;
 
   /// 서버가 준 오류 문장. 없으면 연결 오류로 안내한다.
   final String? message;
 
+  @override
+  Widget build(BuildContext context) => Card(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
           child: Column(
             children: [
               const Icon(Icons.cloud_off_outlined, size: 36),
