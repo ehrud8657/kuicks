@@ -88,6 +88,13 @@ class _BoardPageState extends State<BoardPage> {
     _load();
   }
 
+  /// 선택한 분류에 맞춘 페이지 제목. 전에는 모집공고를 골라도 '공지사항'으로 고정돼 있었다.
+  String get _title => switch (category) {
+        PostCategory.notice => '공지사항',
+        PostCategory.recruit => '모집공고',
+        null => '공지사항 · 모집공고',
+      };
+
   String get _emptyMessage => switch (category) {
         PostCategory.notice => '등록된 공지사항이 없습니다.',
         PostCategory.recruit => '진행 중인 모집공고가 없습니다.',
@@ -108,9 +115,9 @@ class _BoardPageState extends State<BoardPage> {
               ),
             ),
             const SizedBox(height: 8),
-            const Text(
-              '공지사항',
-              style: TextStyle(fontSize: 32, fontWeight: FontWeight.w800),
+            Text(
+              _title,
+              style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w800),
             ),
             const SizedBox(height: 8),
             const Text(
