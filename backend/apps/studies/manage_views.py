@@ -20,6 +20,7 @@ from .manage_serializers import (
     ManageStudyListSerializer,
     ManageSubmissionSerializer,
     StudySessionSerializer,
+    roster_count,
     with_assignment_counts,
 )
 from .models import Assignment, AssignmentSubmission, Attendance, Participation, Study, StudySession
@@ -62,6 +63,38 @@ class ManageStudyDetailView(generics.RetrieveAPIView):
     queryset = Study.objects.select_related("semester", "leader")
     serializer_class = ManageStudyDetailSerializer
     permission_classes = (IsStudyManager,)
+
+
+class ManageStudyAttendanceMatrixView(APIView):
+    """참여자 × 회차 출석 현황표. statuses는 sessions 순서와 같은 길이의 목록이다."""
+
+    permission_classes = (IsStudyManager,)
+
+    def get(self, request, pk):
+        study = get_object_or_404(Study, pk=pk)
+        self.check_object_permissions(request, study)
+        sessions = list(study.sessions.annotate(recorded_count=Count("attendances")))
+        recorded = {
+            (participation_id, session_id): status
+            for participation_id, session_id, status in Attendance.objects.filter(session__study=study).values_list(
+                "participation_id", "session_id", "status"
+            )
+        }
+        rows = []
+        for participation in _roster(study):
+            statuses = [recorded.get((participation.pk, session.pk)) for session in sessions]
+            if participation.status == WITHDRAWN and not any(statuses):
+                continue
+            rows.append(
+                {
+                    "participation_id": participation.pk,
+                    "member_name": participation.member.name,
+                    "student_id": participation.member.student_id,
+                    "participation_status": participation.status,
+                    "statuses": statuses,
+                }
+            )
+        return Response({"sessions": StudySessionSerializer(sessions, many=True).data, "rows": rows})
 
 
 class StudyChildMixin:
@@ -214,7 +247,8 @@ class ManageAssignmentSubmissionsView(APIView):
                     "submission": ManageSubmissionSerializer(submission).data if submission else None,
                 }
             )
-        return Response({"assignment": AssignmentSerializer(assignment).data, "rows": rows})
+        context = {"roster_count": roster_count(assignment.study)}
+        return Response({"assignment": AssignmentSerializer(assignment, context=context).data, "rows": rows})
 
 
 class ManageSubmissionReviewView(generics.UpdateAPIView):

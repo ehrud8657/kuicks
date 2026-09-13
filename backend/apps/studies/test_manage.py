@@ -225,6 +225,21 @@ class SessionAttendanceTests(StudyManageTestBase):
         rows = self.client.get(reverse("manage-session-attendance", args=[session.pk])).json()["records"]
         self.assertEqual([row["participation_id"] for row in rows], [self.p1.pk])
 
+    def test_출석_현황표는_회차_순서대로_상태를_준다(self):
+        first = self.create_session(number=1)
+        second = self.create_session(number=2)
+        Attendance.objects.create(session=second, participation=self.p1, status="late")
+        Participation.objects.create(member=self.outsider, study=self.study, status=Participation.Status.WITHDRAWN)
+        self.client.force_login(self.leader)
+        body = self.client.get(reverse("manage-study-attendance", args=[self.study.pk])).json()
+        self.assertEqual([session["id"] for session in body["sessions"]], [first.pk, second.pk])
+        rows = {row["participation_id"]: row["statuses"] for row in body["rows"]}
+        self.assertEqual(rows, {self.p1.pk: [None, "late"], self.p2.pk: [None, None]})
+
+    def test_다른_스터디장은_출석_현황표를_볼_수_없다(self):
+        self.client.force_login(self.other_leader)
+        self.assertEqual(self.client.get(reverse("manage-study-attendance", args=[self.study.pk])).status_code, 403)
+
     def test_스터디_상세에_참여자별_출석_요약이_들어간다(self):
         first = self.create_session(number=1)
         second = self.create_session(number=2)
@@ -347,6 +362,15 @@ class SubmissionTests(StudyManageTestBase):
         self.assertTrue(rows[self.p1.pk]["submission"]["is_late"])
         self.assertIsNone(rows[self.p2.pk]["submission"])
         self.assertEqual((body["assignment"]["submitted_count"], body["assignment"]["late_count"]), (1, 1))
+        self.assertEqual(body["assignment"]["missing_count"], 1)
+
+    def test_중도_포기자는_미제출자로_세지_않는다(self):
+        assignment = self.create_assignment()
+        Participation.objects.filter(pk=self.p2.pk).update(status=Participation.Status.WITHDRAWN)
+        self.submit(assignment)
+        self.client.force_login(self.leader)
+        detail = self.client.get(reverse("manage-study-detail", args=[self.study.pk])).json()
+        self.assertEqual(detail["assignments"][0]["missing_count"], 0)
 
     def test_스터디장이_확인하고_피드백을_남긴다(self):
         assignment = self.create_assignment()

@@ -4,6 +4,7 @@ import '../api_client.dart';
 import '../models.dart';
 import '../theme.dart';
 import '../widgets/common.dart';
+import '../widgets/manager_panel.dart';
 
 /// KUICS NOW 카드에 채울 실제 데이터.
 class _HomeNow {
@@ -14,9 +15,19 @@ class _HomeNow {
 }
 
 class HomePage extends StatefulWidget {
-  const HomePage({super.key, required this.onStudy, required this.onBoard});
+  const HomePage({
+    super.key,
+    this.member,
+    required this.onStudy,
+    required this.onBoard,
+    required this.onManage,
+  });
+
+  /// 로그인한 회원. 스터디장·운영진이면 관리 바로가기를 보여준다.
+  final Member? member;
   final VoidCallback onStudy;
   final VoidCallback onBoard;
+  final VoidCallback onManage;
   @override
   State<HomePage> createState() => _HomePageState();
 }
@@ -111,6 +122,15 @@ class _HomePageState extends State<HomePage> {
               style: TextStyle(fontWeight: FontWeight.w800, fontSize: 24),
             ),
             const SizedBox(height: 18),
+            if (widget.member case final member?
+                when member.role.canManageStudies) ...[
+              const SizedBox(height: 24),
+              ManagerPanel(
+                key: ValueKey(member.studentId),
+                member: member,
+                onManage: widget.onManage,
+              ),
+            ],
             FutureBuilder<_HomeNow>(
               future: now,
               builder: (context, snapshot) {

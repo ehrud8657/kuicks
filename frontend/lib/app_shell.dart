@@ -6,13 +6,15 @@ import 'pages/about_page.dart';
 import 'pages/board_page.dart';
 import 'pages/contact_page.dart';
 import 'pages/home_page.dart';
+import 'pages/manage/manage_page.dart';
 import 'pages/my_page.dart';
 import 'pages/placeholder_page.dart';
 import 'pages/study_page.dart';
 import 'theme.dart';
 import 'widgets/auth_dialogs.dart';
+import 'widgets/common.dart';
 
-enum SitePage { home, about, study, activity, board, contact, myPage }
+enum SitePage { home, about, study, activity, board, contact, myPage, manage }
 
 class SiteShell extends StatefulWidget {
   const SiteShell({super.key});
@@ -26,6 +28,9 @@ class _SiteShellState extends State<SiteShell> {
   bool restoringSession = true;
 
   bool get loggedIn => currentMember != null;
+
+  /// 스터디장·운영진이면 스터디 관리 메뉴를 보여준다. 실제 권한은 서버가 다시 검사한다.
+  bool get canManage => currentMember?.role.canManageStudies ?? false;
 
   static const labels = {
     SitePage.home: 'Home',
@@ -83,7 +88,9 @@ class _SiteShellState extends State<SiteShell> {
 
   @override
   Widget build(BuildContext context) {
-    final wide = MediaQuery.sizeOf(context).width >= 820;
+    final member = currentMember;
+    // 스터디 관리 버튼과 등급 배지가 붙으면 상단 메뉴가 넓어지므로 전환 폭을 늘린다.
+    final wide = MediaQuery.sizeOf(context).width >= (canManage ? 1040 : 820);
     final nav = labels.entries
         .map(
           (entry) => TextButton(
@@ -112,11 +119,17 @@ class _SiteShellState extends State<SiteShell> {
                 filterQuality: FilterQuality.medium,
               ),
               SizedBox(width: 10),
-              Text(
-                'KUICS',
-                style: TextStyle(
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 1.5,
+              // 메뉴가 늘어 제목 자리가 좁아지면 넘치지 않고 글자를 자른다.
+              Flexible(
+                child: Text(
+                  'KUICS',
+                  maxLines: 1,
+                  softWrap: false,
+                  overflow: TextOverflow.clip,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1.5,
+                  ),
                 ),
               ),
             ],
@@ -125,8 +138,15 @@ class _SiteShellState extends State<SiteShell> {
         actions: wide
             ? [
                 ...nav,
+                if (canManage) ...[
+                  const SizedBox(width: 8),
+                  _ManageNavButton(
+                    selected: page == SitePage.manage,
+                    onPressed: () => navigate(SitePage.manage),
+                  ),
+                ],
                 const SizedBox(width: 10),
-                if (loggedIn)
+                if (member != null)
                   PopupMenuButton<String>(
                     tooltip: '마이페이지 메뉴',
                     onSelected: (value) => value == 'logout'
@@ -135,35 +155,11 @@ class _SiteShellState extends State<SiteShell> {
                     itemBuilder: (context) => [
                       PopupMenuItem(
                         value: 'mypage',
-                        child: Text('마이페이지 (${currentMember!.name})'),
+                        child: Text('마이페이지 (${member.name})'),
                       ),
                       const PopupMenuItem(value: 'logout', child: Text('로그아웃')),
                     ],
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 10,
-                      ),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: AppColors.crimson),
-                      ),
-                      child: const Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.person_outline,
-                            size: 18,
-                            color: AppColors.crimson,
-                          ),
-                          SizedBox(width: 6),
-                          Text(
-                            'My Page',
-                            style: TextStyle(color: AppColors.crimson),
-                          ),
-                        ],
-                      ),
-                    ),
+                    child: _MyPageButton(member: member),
                   )
                 else
                   OutlinedButton(
@@ -199,8 +195,20 @@ class _SiteShellState extends State<SiteShell> {
                         onTap: () => navigate(entry.key),
                       ),
                     ),
+                    if (member != null && canManage) ...[
+                      const Divider(),
+                      ListTile(
+                        selected: page == SitePage.manage,
+                        leading: const Icon(Icons.dashboard_customize_outlined),
+                        title: const Text('스터디 관리'),
+                        subtitle: Text('${member.role.label} 메뉴'),
+                        onTap: () => navigate(SitePage.manage),
+                      ),
+                    ],
+                    const Divider(),
                     ListTile(
-                      leading: const Icon(Icons.login),
+                      leading:
+                          Icon(loggedIn ? Icons.person_outline : Icons.login),
                       title: Text(loggedIn ? 'My Page' : 'Login'),
                       onTap: () => loggedIn
                           ? navigate(SitePage.myPage)
@@ -223,20 +231,26 @@ class _SiteShellState extends State<SiteShell> {
         duration: const Duration(milliseconds: 220),
         child: switch (page) {
           SitePage.home => HomePage(
+              member: member,
               onStudy: () => navigate(SitePage.study),
               onBoard: () => navigate(SitePage.board),
+              onManage: () => navigate(SitePage.manage),
             ),
           SitePage.study => const StudyPage(),
           SitePage.board => const BoardPage(),
           SitePage.about => const AboutPage(),
           SitePage.contact => const ContactPage(),
-          SitePage.myPage => currentMember == null
+          SitePage.myPage => member == null
               ? const PlaceholderPage(page: SitePage.myPage)
               : MyPage(
-                  member: currentMember!,
+                  member: member,
                   onLogout: _logout,
                   onChangePassword: () => _promptChangePassword(forced: false),
+                  onManage: canManage ? () => navigate(SitePage.manage) : null,
                 ),
+          SitePage.manage => member != null && canManage
+              ? ManagePage(member: member)
+              : const PlaceholderPage(page: SitePage.manage),
           _ => PlaceholderPage(page: page),
         },
       ),
@@ -293,4 +307,53 @@ class _SiteShellState extends State<SiteShell> {
         break;
     }
   }
+}
+
+/// 스터디장·운영진에게만 보이는 상단 메뉴 버튼. 일반 메뉴와 구분되게 채워진 모양으로 둔다.
+class _ManageNavButton extends StatelessWidget {
+  const _ManageNavButton({required this.selected, required this.onPressed});
+  final bool selected;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) => FilledButton.icon(
+        onPressed: onPressed,
+        style: FilledButton.styleFrom(
+          backgroundColor: selected ? AppColors.crimson : AppColors.crimsonSoft,
+          foregroundColor: selected ? Colors.white : AppColors.crimson,
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+        ),
+        icon: const Icon(Icons.dashboard_customize_outlined, size: 18),
+        label: const Text('스터디 관리'),
+      );
+}
+
+class _MyPageButton extends StatelessWidget {
+  const _MyPageButton({required this.member});
+  final Member member;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: AppColors.crimson),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.person_outline,
+              size: 18,
+              color: AppColors.crimson,
+            ),
+            const SizedBox(width: 6),
+            const Text('My Page', style: TextStyle(color: AppColors.crimson)),
+            if (member.role.canManageStudies) ...[
+              const SizedBox(width: 8),
+              StatusBadge(label: member.role.label, tone: BadgeTone.danger),
+            ],
+          ],
+        ),
+      );
 }

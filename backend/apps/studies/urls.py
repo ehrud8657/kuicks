@@ -25,6 +25,11 @@ urlpatterns = [
     path("manage/studies/", manage_views.ManageStudyListView.as_view(), name="manage-study-list"),
     path("manage/studies/<int:pk>/", manage_views.ManageStudyDetailView.as_view(), name="manage-study-detail"),
     path(
+        "manage/studies/<int:pk>/attendance/",
+        manage_views.ManageStudyAttendanceMatrixView.as_view(),
+        name="manage-study-attendance",
+    ),
+    path(
         "manage/studies/<int:study_id>/sessions/",
         manage_views.ManageSessionCreateView.as_view(),
         name="manage-session-create",

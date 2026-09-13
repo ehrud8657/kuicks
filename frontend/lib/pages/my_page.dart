@@ -4,6 +4,7 @@ import '../api_client.dart';
 import '../models.dart';
 import '../theme.dart';
 import '../widgets/common.dart';
+import '../widgets/manager_panel.dart';
 
 class MyPage extends StatefulWidget {
   const MyPage({
@@ -11,10 +12,14 @@ class MyPage extends StatefulWidget {
     required this.member,
     required this.onLogout,
     required this.onChangePassword,
+    this.onManage,
   });
   final Member member;
   final VoidCallback onLogout;
   final VoidCallback onChangePassword;
+
+  /// 스터디장·운영진일 때만 주어진다.
+  final VoidCallback? onManage;
 
   @override
   State<MyPage> createState() => _MyPageState();
@@ -71,6 +76,10 @@ class _MyPageState extends State<MyPage> {
                 ),
               ],
             ),
+            if (widget.onManage case final onManage?) ...[
+              const SizedBox(height: 24),
+              ManagerPanel(member: widget.member, onManage: onManage),
+            ],
             const SizedBox(height: 24),
             FutureBuilder<List<MyStudy>>(
               future: myStudies,

@@ -5,6 +5,12 @@ from .models import Assignment, AssignmentSubmission, Attendance, Participation,
 from .serializers import leader_name
 
 PENDING = AssignmentSubmission.ReviewStatus.PENDING
+# 미제출자·참여자 수를 셀 때 대상이 되는 참여 상태 (중도 포기 제외)
+ROSTER_STATUSES = [status for status in Participation.Status.values if status != Participation.Status.WITHDRAWN]
+
+
+def roster_count(study):
+    return study.participations.filter(status__in=ROSTER_STATUSES).count()
 
 
 def with_assignment_counts(queryset):
@@ -13,6 +19,10 @@ def with_assignment_counts(queryset):
         submitted_count=Count("submissions", distinct=True),
         late_count=Count("submissions", filter=Q(submissions__submitted_at__gt=F("due_at")), distinct=True),
         unchecked_count=Count("submissions", filter=Q(submissions__review_status=PENDING), distinct=True),
+        # 미제출자 계산용: 중도 포기자가 낸 제출물은 빼고 센다.
+        roster_submitted_count=Count(
+            "submissions", filter=Q(submissions__participation__status__in=ROSTER_STATUSES), distinct=True
+        ),
     )
 
 
@@ -91,6 +101,14 @@ class AssignmentSerializer(serializers.ModelSerializer):
     submitted_count = serializers.IntegerField(read_only=True, default=0)
     late_count = serializers.IntegerField(read_only=True, default=0)
     unchecked_count = serializers.IntegerField(read_only=True, default=0)
+    missing_count = serializers.SerializerMethodField()
+
+    def get_missing_count(self, assignment):
+        """중도 포기자를 제외한 참여자 중 아직 제출하지 않은 사람 수."""
+        roster = self.context.get("roster_count")
+        if roster is None:
+            roster = roster_count(assignment.study)
+        return max(roster - getattr(assignment, "roster_submitted_count", 0), 0)
 
     def validate_title(self, value):
         value = value.strip()
@@ -100,7 +118,16 @@ class AssignmentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Assignment
-        fields = ("id", "title", "description", "due_at", "submitted_count", "late_count", "unchecked_count")
+        fields = (
+            "id",
+            "title",
+            "description",
+            "due_at",
+            "submitted_count",
+            "late_count",
+            "unchecked_count",
+            "missing_count",
+        )
 
 
 class ManageStudyDetailSerializer(serializers.ModelSerializer):
@@ -124,7 +151,9 @@ class ManageStudyDetailSerializer(serializers.ModelSerializer):
         return StudySessionSerializer(rows, many=True).data
 
     def get_assignments(self, study):
-        return AssignmentSerializer(with_assignment_counts(study.assignments.all()), many=True).data
+        return AssignmentSerializer(
+            with_assignment_counts(study.assignments.all()), many=True, context={"roster_count": roster_count(study)}
+        ).data
 
     class Meta:
         model = Study

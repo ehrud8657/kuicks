@@ -2,6 +2,8 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+
+import 'format.dart';
 // browser_client는 웹에서만 컴파일되므로 조건부 import로 분리한다.
 // (직접 import하면 VM에서 도는 flutter test가 컴파일 단계에서 실패한다.)
 import 'http_client_default.dart'
@@ -22,6 +24,13 @@ class ApiException implements Exception {
   final Map<String, dynamic>? fields;
 
   bool get isPasswordChangeRequired => code == 'password_change_required';
+
+  /// 필드별 첫 번째 오류 메시지.
+  Map<String, String> get fieldMessages => {
+        for (final entry in (fields ?? const <String, dynamic>{}).entries)
+          if (entry.value is List && (entry.value as List).isNotEmpty)
+            entry.key: '${(entry.value as List).first}',
+      };
 
   @override
   String toString() => message;
@@ -45,6 +54,10 @@ class ApiClient {
 
   /// 브라우저에서 새 창으로 열 주소. 상대 경로(`/api`)로 빌드된 경우 현재 사이트 기준으로 푼다.
   static Uri absoluteUrl(String path) => Uri.base.resolve('$baseUrl$path');
+
+  /// 제출 파일 내려받기 주소. 세션 쿠키로 권한을 확인하므로 브라우저 이동으로 연다.
+  static Uri submissionDownloadUrl(int submissionId) =>
+      absoluteUrl('/submissions/$submissionId/download/');
 
   Uri _uri(String path, [Map<String, String>? query]) {
     final uri = Uri.parse('$baseUrl$path');
@@ -79,7 +92,7 @@ class ApiClient {
       // 응답이 JSON이 아니면(프록시 오류 페이지 등) 기본 메시지로 대체
     }
     if (response.statusCode == 413) {
-      message = '파일이 너무 큽니다.';
+      message = '파일이 너무 커서 서버가 받지 않았습니다.';
     }
     final error = ApiException(
       message,
@@ -112,6 +125,15 @@ class ApiClient {
     return body['csrfToken'] as String;
   }
 
+  Future<dynamic> _finish(
+      http.StreamedResponse streamed, String fallback) async {
+    final response = await http.Response.fromStream(streamed);
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw _error(response, fallback);
+    }
+    return _decode(response);
+  }
+
   /// JSON 본문으로 상태를 바꾸는 요청(POST/PUT/PATCH/DELETE)을 보낸다.
   Future<dynamic> _send(
     String method,
@@ -124,17 +146,14 @@ class ApiClient {
       ..headers['X-CSRFToken'] = token
       ..headers['Content-Type'] = 'application/json';
     if (body != null) request.body = jsonEncode(body);
-    final response = await http.Response.fromStream(
-      await _client.send(request),
-    );
-    if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw _error(response, fallback);
-    }
-    return _decode(response);
+    return _finish(await _client.send(request), fallback);
   }
 
   static List<dynamic> _items(dynamic body) =>
       body is List ? body : (body as Map<String, dynamic>)['results'] as List;
+
+  static Map<String, dynamic> _map(dynamic body) =>
+      body as Map<String, dynamic>;
 
   Future<List<Semester>> fetchSemesters() async {
     final body = await _get('/semesters/', fallback: '학기 정보를 불러오지 못했습니다.');
@@ -193,7 +212,7 @@ class ApiClient {
       body: {'student_id': studentId, 'password': password},
       fallback: '학번 또는 비밀번호를 확인해주세요.',
     );
-    return Member.fromJson(body as Map<String, dynamic>);
+    return Member.fromJson(_map(body));
   }
 
   Future<void> logout() =>
@@ -205,4 +224,208 @@ class ApiClient {
         body: {'new_password': newPassword},
         fallback: '비밀번호 변경에 실패했습니다.',
       );
+
+  // ── 스터디 관리 (스터디장·운영진) ─────────────────────────────
+
+  Future<List<ManagedStudy>> fetchManagedStudies() async {
+    final body = await _get(
+      '/manage/studies/',
+      fallback: '관리할 스터디 목록을 불러오지 못했습니다.',
+    );
+    return _items(body)
+        .map((item) => ManagedStudy.fromJson(item as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<ManagedStudyDetail> fetchManagedStudy(int studyId) async =>
+      ManagedStudyDetail.fromJson(
+        _map(
+          await _get(
+            '/manage/studies/$studyId/',
+            fallback: '스터디 정보를 불러오지 못했습니다.',
+          ),
+        ),
+      );
+
+  Future<AttendanceMatrix> fetchAttendanceMatrix(int studyId) async =>
+      AttendanceMatrix.fromJson(
+        _map(
+          await _get(
+            '/manage/studies/$studyId/attendance/',
+            fallback: '출석 현황을 불러오지 못했습니다.',
+          ),
+        ),
+      );
+
+  Future<void> updateParticipationStatus({
+    required int studyId,
+    required int participationId,
+    required ParticipationStatus status,
+  }) =>
+      _send(
+        'PATCH',
+        '/studies/$studyId/participations/$participationId/',
+        body: {'status': status.name},
+        fallback: '참여 상태를 바꾸지 못했습니다.',
+      );
+
+  /// 회차를 추가하거나([sessionId]가 없을 때) 수정한다.
+  Future<StudySessionInfo> saveSession({
+    required int studyId,
+    int? sessionId,
+    required int number,
+    required String title,
+    required DateTime heldOn,
+  }) async {
+    final body = {
+      'number': number,
+      'title': title,
+      'held_on': toApiDate(heldOn),
+    };
+    const fallback = '회차를 저장하지 못했습니다.';
+    final result = sessionId == null
+        ? await _send(
+            'POST',
+            '/manage/studies/$studyId/sessions/',
+            body: body,
+            fallback: fallback,
+          )
+        : await _send(
+            'PATCH',
+            '/manage/sessions/$sessionId/',
+            body: body,
+            fallback: fallback,
+          );
+    return StudySessionInfo.fromJson(_map(result));
+  }
+
+  Future<void> deleteSession(int sessionId) => _send(
+        'DELETE',
+        '/manage/sessions/$sessionId/',
+        fallback: '회차를 삭제하지 못했습니다.',
+      );
+
+  Future<AttendanceSheet> fetchAttendance(int sessionId) async =>
+      AttendanceSheet.fromJson(
+        _map(
+          await _get(
+            '/manage/sessions/$sessionId/attendance/',
+            fallback: '출석부를 불러오지 못했습니다.',
+          ),
+        ),
+      );
+
+  Future<AttendanceSheet> saveAttendance(
+    int sessionId,
+    List<AttendanceRecord> records,
+  ) async =>
+      AttendanceSheet.fromJson(
+        _map(
+          await _send(
+            'PUT',
+            '/manage/sessions/$sessionId/attendance/',
+            body: {
+              'records': records.map((record) => record.toJson()).toList()
+            },
+            fallback: '출석을 저장하지 못했습니다.',
+          ),
+        ),
+      );
+
+  /// 과제를 등록하거나([assignmentId]가 없을 때) 수정한다.
+  Future<AssignmentInfo> saveAssignment({
+    required int studyId,
+    int? assignmentId,
+    required String title,
+    required String description,
+    required DateTime dueAt,
+  }) async {
+    final body = {
+      'title': title,
+      'description': description,
+      'due_at': dueAt.toUtc().toIso8601String(),
+    };
+    const fallback = '과제를 저장하지 못했습니다.';
+    final result = assignmentId == null
+        ? await _send(
+            'POST',
+            '/manage/studies/$studyId/assignments/',
+            body: body,
+            fallback: fallback,
+          )
+        : await _send(
+            'PATCH',
+            '/manage/assignments/$assignmentId/',
+            body: body,
+            fallback: fallback,
+          );
+    return AssignmentInfo.fromJson(_map(result));
+  }
+
+  Future<void> deleteAssignment(int assignmentId) => _send(
+        'DELETE',
+        '/manage/assignments/$assignmentId/',
+        fallback: '과제를 삭제하지 못했습니다.',
+      );
+
+  Future<SubmissionSheet> fetchSubmissions(int assignmentId) async =>
+      SubmissionSheet.fromJson(
+        _map(
+          await _get(
+            '/manage/assignments/$assignmentId/submissions/',
+            fallback: '제출 현황을 불러오지 못했습니다.',
+          ),
+        ),
+      );
+
+  Future<Submission> reviewSubmission(
+    int submissionId, {
+    ReviewStatus? reviewStatus,
+    String? feedback,
+  }) async =>
+      Submission.fromJson(
+        _map(
+          await _send(
+            'PATCH',
+            '/manage/submissions/$submissionId/',
+            body: {
+              if (reviewStatus != null) 'review_status': reviewStatus.name,
+              if (feedback != null) 'feedback': feedback,
+            },
+            fallback: '제출물 확인 상태를 저장하지 못했습니다.',
+          ),
+        ),
+      );
+
+  // ── 참여자: 스터디 상세·과제 제출 ─────────────────────────────
+
+  Future<MyStudyDetail> fetchMyStudyDetail(int studyId) async =>
+      MyStudyDetail.fromJson(
+        _map(
+          await _get(
+            '/me/studies/$studyId/',
+            fallback: '스터디 정보를 불러오지 못했습니다.',
+          ),
+        ),
+      );
+
+  /// zip 파일로 과제를 제출한다. 이미 냈으면 서버가 파일을 교체한다.
+  Future<Submission> submitAssignment(
+    int assignmentId, {
+    required List<int> bytes,
+    required String filename,
+  }) async {
+    final token = await _fetchCsrfToken();
+    final request = http.MultipartRequest(
+      'POST',
+      _uri('/assignments/$assignmentId/submissions/'),
+    )
+      ..headers['X-CSRFToken'] = token
+      ..files.add(
+        http.MultipartFile.fromBytes('file', bytes, filename: filename),
+      );
+    return Submission.fromJson(
+      _map(await _finish(await _client.send(request), '과제를 제출하지 못했습니다.')),
+    );
+  }
 }
