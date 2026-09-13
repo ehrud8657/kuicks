@@ -31,11 +31,13 @@ class ApiClient {
     if (response.statusCode != 200) {
       throw ApiException('서버에 연결할 수 없습니다.');
     }
-    final body = jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
+    final body =
+        jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
     return body['csrfToken'] as String;
   }
 
-  Future<http.Response> _unsafePost(String path, Map<String, dynamic> body) async {
+  Future<http.Response> _unsafePost(
+      String path, Map<String, dynamic> body) async {
     final token = await _fetchCsrfToken();
     return _client.post(
       Uri.parse('$baseUrl$path'),
@@ -112,7 +114,8 @@ class ApiClient {
   Future<Member?> fetchMe() async {
     final response = await _client.get(Uri.parse('$baseUrl/me/'));
     if (response.statusCode == 200) {
-      return Member.fromJson(jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>);
+      return Member.fromJson(
+          jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>);
     }
     if (response.statusCode == 401 || response.statusCode == 403) {
       return null;
@@ -126,7 +129,8 @@ class ApiClient {
       'password': password,
     });
     if (response.statusCode == 200) {
-      return Member.fromJson(jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>);
+      return Member.fromJson(
+          jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>);
     }
     throw ApiException(_errorMessage(response, '학번 또는 비밀번호를 확인해주세요.'));
   }
