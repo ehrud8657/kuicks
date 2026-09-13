@@ -39,7 +39,7 @@ class _BoardPageState extends State<BoardPage> {
       failed = false;
     });
     try {
-      final result = await ApiClient().fetchPosts(category: category);
+      final result = await ApiClient.instance.fetchPosts(category: category);
       if (!mounted) return;
       setState(() {
         posts
@@ -62,7 +62,7 @@ class _BoardPageState extends State<BoardPage> {
     final messenger = ScaffoldMessenger.of(context);
     setState(() => loadingMore = true);
     try {
-      final result = await ApiClient().fetchPosts(
+      final result = await ApiClient.instance.fetchPosts(
         category: category,
         page: page + 1,
       );

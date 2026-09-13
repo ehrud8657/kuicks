@@ -36,15 +36,32 @@ class _SiteShellState extends State<SiteShell> {
     SitePage.contact: 'Contact',
   };
 
+  bool _passwordDialogOpen = false;
+
   @override
   void initState() {
     super.initState();
+    ApiClient.passwordChangeRequired.addListener(_onPasswordChangeRequired);
     _restoreSession();
+  }
+
+  @override
+  void dispose() {
+    ApiClient.passwordChangeRequired.removeListener(_onPasswordChangeRequired);
+    super.dispose();
+  }
+
+  /// 어떤 화면의 API 호출이든 서버가 password_change_required로 막으면 강제 변경 창을 띄운다.
+  void _onPasswordChangeRequired() {
+    final member = currentMember;
+    if (member == null || !mounted) return;
+    setState(() => currentMember = member.copyWith(mustChangePassword: true));
+    _promptChangePassword(forced: true);
   }
 
   Future<void> _restoreSession() async {
     try {
-      final member = await ApiClient().fetchMe();
+      final member = await ApiClient.instance.fetchMe();
       if (!mounted) return;
       setState(() {
         currentMember = member;
@@ -240,7 +257,7 @@ class _SiteShellState extends State<SiteShell> {
 
   Future<void> _logout() async {
     try {
-      await ApiClient().logout();
+      await ApiClient.instance.logout();
     } catch (_) {
       // 세션이 이미 끊겨있어도 로컬 상태는 정리한다.
     }
@@ -252,20 +269,28 @@ class _SiteShellState extends State<SiteShell> {
   }
 
   Future<void> _promptChangePassword({required bool forced}) async {
-    final changed = await showDialog<bool>(
+    // 세션 복원과 API 오류가 동시에 요청해도 창은 하나만 띄운다.
+    if (_passwordDialogOpen) return;
+    _passwordDialogOpen = true;
+    final result = await showDialog<PasswordDialogResult>(
       barrierDismissible: !forced,
       context: context,
       builder: (context) => ChangePasswordDialog(forced: forced),
     );
-    if (changed == true && mounted && currentMember != null) {
-      setState(
-        () => currentMember = Member(
-          studentId: currentMember!.studentId,
-          name: currentMember!.name,
-          role: currentMember!.role,
-          mustChangePassword: false,
-        ),
-      );
+    _passwordDialogOpen = false;
+    if (!mounted) return;
+    switch (result) {
+      case PasswordDialogResult.changed:
+        final member = currentMember;
+        if (member != null) {
+          setState(
+            () => currentMember = member.copyWith(mustChangePassword: false),
+          );
+        }
+      case PasswordDialogResult.logout:
+        await _logout();
+      case null:
+        break;
     }
   }
 }

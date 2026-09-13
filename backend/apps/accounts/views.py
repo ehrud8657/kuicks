@@ -36,6 +36,13 @@ class ChangePasswordView(APIView):
     permission_classes = [permissions.IsAuthenticated]
     def post(self, request):
         password = request.data.get("new_password", "")
+        # 초기 비밀번호(kuics!학번)도 조합 규칙을 만족하므로, 같은 값으로 "변경"해 강제를 우회하지 못하게 한다.
+        if password and request.user.check_password(password):
+            message = "현재 비밀번호와 다른 비밀번호를 입력해주세요."
+            return Response(
+                {"code": "invalid_password", "message": message, "fields": {"new_password": [message]}},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         try:
             validate_password(password, request.user)
         except DjangoValidationError as exc:

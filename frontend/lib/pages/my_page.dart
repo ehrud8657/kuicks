@@ -5,13 +5,6 @@ import '../models.dart';
 import '../theme.dart';
 import '../widgets/common.dart';
 
-String _roleLabel(MemberRole role) => switch (role) {
-      MemberRole.dormant => '휴회원',
-      MemberRole.member => '정회원',
-      MemberRole.leader => '스터디장',
-      MemberRole.admin => '운영진',
-    };
-
 class MyPage extends StatefulWidget {
   const MyPage({
     super.key,
@@ -33,10 +26,11 @@ class _MyPageState extends State<MyPage> {
   @override
   void initState() {
     super.initState();
-    myStudies = ApiClient().fetchMyStudies();
+    myStudies = ApiClient.instance.fetchMyStudies();
   }
 
-  void _reload() => setState(() => myStudies = ApiClient().fetchMyStudies());
+  void _reload() =>
+      setState(() => myStudies = ApiClient.instance.fetchMyStudies());
 
   @override
   Widget build(BuildContext context) => PageFrame(
@@ -58,7 +52,7 @@ class _MyPageState extends State<MyPage> {
             ),
             const SizedBox(height: 8),
             Text(
-              '학번 ${widget.member.studentId} · ${_roleLabel(widget.member.role)}',
+              '학번 ${widget.member.studentId} · ${widget.member.role.label}',
               style: const TextStyle(color: AppColors.textMuted),
             ),
             const SizedBox(height: 16),

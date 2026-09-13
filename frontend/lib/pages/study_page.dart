@@ -18,7 +18,7 @@ class _StudyPageState extends State<StudyPage> {
   @override
   void initState() {
     super.initState();
-    semesters = ApiClient().fetchSemesters();
+    semesters = ApiClient.instance.fetchSemesters();
   }
 
   @override
@@ -59,7 +59,7 @@ class _StudyPageState extends State<StudyPage> {
                 if (snapshot.hasError) {
                   return LoadError(
                     onRetry: () => setState(
-                        () => semesters = ApiClient().fetchSemesters()),
+                        () => semesters = ApiClient.instance.fetchSemesters()),
                   );
                 }
                 final data = snapshot.data ?? const [];

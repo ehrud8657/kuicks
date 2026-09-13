@@ -31,7 +31,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<_HomeNow> _load() async {
-    final client = ApiClient();
+    final client = ApiClient.instance;
     // 두 요청을 병렬로 보내 첫 화면 지연을 줄인다.
     final results = await Future.wait<Object>([
       client.fetchPosts(category: PostCategory.notice),

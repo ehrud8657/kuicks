@@ -1,4 +1,15 @@
-enum MemberRole { dormant, member, leader, admin }
+enum MemberRole {
+  dormant('휴회원'),
+  member('정회원'),
+  leader('스터디장'),
+  admin('운영진');
+
+  const MemberRole(this.label);
+  final String label;
+
+  /// 스터디 관리 화면에 들어갈 수 있는 등급. 실제 권한은 서버가 다시 검사한다.
+  bool get canManageStudies => this == leader || this == admin;
+}
 
 class Member {
   const Member({
@@ -12,6 +23,13 @@ class Member {
   final String name;
   final MemberRole role;
   final bool mustChangePassword;
+
+  Member copyWith({bool? mustChangePassword}) => Member(
+        studentId: studentId,
+        name: name,
+        role: role,
+        mustChangePassword: mustChangePassword ?? this.mustChangePassword,
+      );
 
   factory Member.fromJson(Map<String, dynamic> json) => Member(
         studentId: json['student_id'] as String,

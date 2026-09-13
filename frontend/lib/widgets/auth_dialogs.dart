@@ -31,7 +31,7 @@ class _LoginDialogState extends State<LoginDialog> {
       errorMessage = null;
     });
     try {
-      final member = await ApiClient().login(
+      final member = await ApiClient.instance.login(
         studentIdController.text.trim(),
         passwordController.text,
       );
@@ -117,6 +117,9 @@ class _LoginDialogState extends State<LoginDialog> {
       );
 }
 
+/// 비밀번호 변경 창을 닫은 이유. 그냥 닫으면 null.
+enum PasswordDialogResult { changed, logout }
+
 const passwordRuleHint = '영문, 숫자, 특수문자를 모두 포함한 10자 이상으로 입력해주세요.';
 
 String? validatePasswordComposition(String? value) {
@@ -156,8 +159,8 @@ class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
       errorMessage = null;
     });
     try {
-      await ApiClient().changePassword(passwordController.text);
-      if (mounted) Navigator.pop(context, true);
+      await ApiClient.instance.changePassword(passwordController.text);
+      if (mounted) Navigator.pop(context, PasswordDialogResult.changed);
     } on ApiException catch (e) {
       setState(() {
         submitting = false;
@@ -225,11 +228,16 @@ class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
             ),
           ),
           actions: [
-            if (!widget.forced)
-              TextButton(
-                onPressed: submitting ? null : () => Navigator.pop(context),
-                child: const Text('취소'),
-              ),
+            // 강제 변경 중에는 창을 닫을 수 없으므로, 다른 계정으로 바꿀 수 있게 로그아웃을 둔다.
+            TextButton(
+              onPressed: submitting
+                  ? null
+                  : () => Navigator.pop(
+                        context,
+                        widget.forced ? PasswordDialogResult.logout : null,
+                      ),
+              child: Text(widget.forced ? '로그아웃' : '취소'),
+            ),
             FilledButton(
               onPressed: submitting ? null : _submit,
               child: submitting

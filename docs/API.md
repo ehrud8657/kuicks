@@ -65,9 +65,30 @@
 {"student_id": "2026123456", "password": "temporary-password"}
 ```
 
-권한 오류 등은 다음 구조를 기준으로 통일할 예정입니다.
+## 오류 응답
+
+모든 API 오류는 다음 형식으로 응답합니다 (`config/exceptions.py`).
 
 ```json
 {"code": "permission_denied", "message": "수정 권한이 없습니다.", "fields": null}
 ```
+
+- `code`: 프론트가 분기할 때 쓰는 식별자. `not_authenticated`, `permission_denied`, `not_found`, `invalid`(입력값 오류), `invalid_credentials`, `invalid_password`, `password_change_required` 등
+- `message`: 사용자에게 그대로 보여줄 수 있는 문장
+- `fields`: 입력값 오류일 때만 `{"필드명": ["메시지"]}`, 그 외에는 `null`
+
+## 초기 비밀번호 변경 강제
+
+`must_change_password=true`인 회원(CSV·Admin으로 만든 직후, 초기 비밀번호 `kuics!학번`)은 비밀번호를 바꾸기 전까지 서버에서 다음과 같이 제한됩니다 (`apps/accounts/middleware.py`).
+
+| 경로 | 동작 |
+|---|---|
+| `/api/auth/csrf/`, `/api/auth/login/`, `/api/auth/logout/`, `/api/auth/change-password/`, `/api/me/` | 허용 |
+| 공개 API (`/api/semesters/`, `/api/boards/` 등) | 비로그인 사용자와 동일하게 허용 |
+| 로그인이 필요한 나머지 API | `403 {"code": "password_change_required"}` |
+| `/admin/` (로그아웃 제외) | 403 안내 페이지 |
+
+- 새 비밀번호가 현재 비밀번호와 같으면 `400 invalid_password`로 거절합니다. (초기 비밀번호도 조합 규칙을 만족하기 때문)
+- `createsuperuser`로 만든 계정은 본인이 비밀번호를 정했으므로 `must_change_password=false`로 생성됩니다.
+- 프론트는 어떤 API에서든 `password_change_required`를 받으면 강제 변경 창을 띄웁니다.
 

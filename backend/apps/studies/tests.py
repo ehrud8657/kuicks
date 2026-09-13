@@ -9,7 +9,10 @@ from .models import Participation, Semester, Study
 
 
 def create_member(student_id, name, role=Member.Role.MEMBER):
-    return Member.objects.create_user(student_id=student_id, password="kuics!test", name=name, role=role)
+    # 초기 비밀번호 상태면 서버가 로그인 API를 막으므로, 변경을 마친 회원으로 만든다.
+    return Member.objects.create_user(
+        student_id=student_id, password="kuics!test", name=name, role=role, must_change_password=False
+    )
 
 
 class StudyLeaderTests(TestCase):

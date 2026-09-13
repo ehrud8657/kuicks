@@ -18,6 +18,9 @@ class MemberManager(BaseUserManager):
         extra_fields.setdefault("is_staff", True)
         extra_fields.setdefault("is_superuser", True)
         extra_fields.setdefault("role", Member.Role.ADMIN)
+        # createsuperuser는 본인이 비밀번호를 직접 정하므로 변경을 강제하지 않는다.
+        # (강제하면 서버 측 차단 때문에 첫 운영진 계정이 Admin에 들어가지 못한다.)
+        extra_fields.setdefault("must_change_password", False)
         return self.create_user(student_id, password, **extra_fields)
 
 
