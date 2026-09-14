@@ -46,7 +46,14 @@ class _ManagerPanelState extends State<ManagerPanel> {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.crimson.withValues(alpha: .35)),
+            border: Border.all(color: AppColors.crimson.withValues(alpha: .22)),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x1F071B33),
+                blurRadius: 8,
+                offset: Offset(0, 2),
+              ),
+            ],
           ),
           child: LayoutBuilder(
             builder: (context, constraints) {

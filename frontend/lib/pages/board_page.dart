@@ -123,22 +123,10 @@ class _BoardPageState extends State<BoardPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'BOARD',
-              style: TextStyle(
-                color: AppColors.crimson,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              _title,
-              style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w800),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'KUICS의 새로운 소식과 모집 일정을 확인하세요.',
-              style: TextStyle(color: AppColors.textMuted),
+            PageHeader(
+              eyebrow: 'BOARD',
+              title: _title,
+              subtitle: 'KUICS의 새로운 소식과 모집 일정을 확인하세요.',
             ),
             const SizedBox(height: 28),
             Wrap(
@@ -227,7 +215,10 @@ class PostCard extends StatelessWidget {
             ),
           ],
         ),
-        subtitle: Text(meta),
+        subtitle: Text(
+          meta,
+          style: const TextStyle(color: AppColors.textMuted),
+        ),
         children: [
           const Divider(),
           Align(
@@ -247,7 +238,7 @@ class _PinnedBadge extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
         decoration: BoxDecoration(
           color: AppColors.crimson,
-          borderRadius: BorderRadius.circular(4),
+          borderRadius: BorderRadius.circular(999),
         ),
         child: const Text(
           '고정',

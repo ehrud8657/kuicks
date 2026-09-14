@@ -47,22 +47,11 @@ class _MyPageState extends State<MyPage> with RefreshOnReturn {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'MY PAGE',
-              style: TextStyle(
-                color: AppColors.crimson,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              '${widget.member.name}님, 안녕하세요',
-              style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w800),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              '학번 ${widget.member.studentId} · ${widget.member.role.label}',
-              style: const TextStyle(color: AppColors.textMuted),
+            PageHeader(
+              eyebrow: 'MY PAGE',
+              title: '${widget.member.name}님, 안녕하세요',
+              subtitle:
+                  '학번 ${widget.member.studentId} · ${widget.member.role.label}',
             ),
             const SizedBox(height: 16),
             Wrap(
@@ -178,7 +167,7 @@ class _MyPageCardFrame extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(icon, color: AppColors.crimson),
+                  IconBadge(icon: icon),
                   const SizedBox(height: 14),
                   Text(
                     label,

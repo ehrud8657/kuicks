@@ -44,7 +44,7 @@ class SiteShell extends StatelessWidget {
     final member = auth.member;
     // 스터디 관리 버튼과 등급 배지가 붙으면 상단 메뉴가 넓어지므로 전환 폭을 늘린다.
     final wide =
-        MediaQuery.sizeOf(context).width >= (auth.canManage ? 1040 : 820);
+        MediaQuery.sizeOf(context).width >= (auth.canManage ? 1100 : 880);
     return Title(
       title: _pageTitle,
       color: AppColors.crimson,
@@ -83,14 +83,10 @@ class SiteShell extends StatelessWidget {
           actions: wide
               ? [
                   for (final (label, route) in _menu)
-                    TextButton(
+                    _NavItem(
+                      label: label,
+                      active: _isActive(route),
                       onPressed: () => context.go(route),
-                      style: TextButton.styleFrom(
-                        foregroundColor: _isActive(route)
-                            ? AppColors.crimson
-                            : AppColors.textBody,
-                      ),
-                      child: Text(label),
                     ),
                   if (auth.canManage) ...[
                     const SizedBox(width: 8),
@@ -124,6 +120,12 @@ class SiteShell extends StatelessWidget {
                   else
                     OutlinedButton(
                       onPressed: auth.showLogin,
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 11,
+                        ),
+                      ),
                       child: const Text('Login'),
                     ),
                   const SizedBox(width: 40),
@@ -210,6 +212,44 @@ class _SiteDrawer extends StatelessWidget {
   }
 }
 
+/// 상단 메뉴 한 칸. 마우스를 올리면 옅은 알약, 현재 메뉴는 연크림슨 알약에 굵은 크림슨 글자.
+class _NavItem extends StatelessWidget {
+  const _NavItem({
+    required this.label,
+    required this.active,
+    required this.onPressed,
+  });
+  final String label;
+  final bool active;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 2),
+        child: TextButton(
+          onPressed: onPressed,
+          style: TextButton.styleFrom(
+            foregroundColor: active ? AppColors.crimson : AppColors.textBody,
+            backgroundColor: active ? AppColors.crimsonSoft : null,
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            minimumSize: const Size(0, 38),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+            textStyle: TextStyle(
+              // 버튼 글자 모양을 직접 정하면 테마 글꼴이 빠지므로 한글 글꼴을 다시 지정한다.
+              fontFamily: 'Pretendard',
+              fontSize: 14.5,
+              fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+            ),
+          ).copyWith(
+            overlayColor: WidgetStatePropertyAll(AppColors.navy.withAlpha(12)),
+          ),
+          child: Text(label),
+        ),
+      );
+}
+
 /// 스터디장·운영진에게만 보이는 상단 메뉴 버튼. 일반 메뉴와 구분되게 채워진 모양으로 둔다.
 class _ManageNavButton extends StatelessWidget {
   const _ManageNavButton({required this.selected, required this.onPressed});
@@ -237,8 +277,8 @@ class _MyPageButton extends StatelessWidget {
   Widget build(BuildContext context) => Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: AppColors.crimson),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.crimson.withAlpha(150)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,

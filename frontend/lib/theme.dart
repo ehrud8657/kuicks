@@ -35,6 +35,11 @@ class AppColors {
   static const neutralSoft = Color(0xFFF0F2F5);
 }
 
+/// 버튼 공통 모서리. 창(모달) 버튼과 같은 12.
+const _buttonShape = RoundedRectangleBorder(
+  borderRadius: BorderRadius.all(Radius.circular(12)),
+);
+
 /// 앱 테마. 테스트에서도 같은 모양으로 그리도록 여기에 모아 둔다.
 ThemeData buildAppTheme(TextTheme base) => ThemeData(
       useMaterial3: true,
@@ -52,12 +57,190 @@ ThemeData buildAppTheme(TextTheme base) => ThemeData(
       ),
       cardTheme: const CardThemeData(
         color: Colors.white,
-        elevation: 0,
+        surfaceTintColor: Colors.transparent,
+        // 테두리만 있던 카드에 아주 옅은 그림자를 더해 바닥에서 살짝 띄운다.
+        elevation: 2,
+        shadowColor: Color(0x1F071B33),
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.all(Radius.circular(16)),
-          side: BorderSide(color: AppColors.border),
+          side: BorderSide(color: AppColors.borderLight),
         ),
+      ),
+      appBarTheme: const AppBarTheme(
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
+        scrolledUnderElevation: 0,
+        shape: Border(bottom: BorderSide(color: AppColors.borderLight)),
+      ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: ButtonStyle(
+          shape: const WidgetStatePropertyAll(_buttonShape),
+          padding: const WidgetStatePropertyAll(
+            EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+          ),
+          textStyle: const WidgetStatePropertyAll(
+            TextStyle(
+              fontFamily: 'Pretendard',
+              fontSize: 14.5,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          // 마우스를 올리면 크림슨 그림자로 살짝 떠오른다.
+          elevation: WidgetStateProperty.resolveWith(
+            (states) => !states.contains(WidgetState.disabled) &&
+                    states.contains(WidgetState.hovered)
+                ? 3
+                : 0,
+          ),
+          shadowColor: WidgetStatePropertyAll(AppColors.crimson.withAlpha(110)),
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: ButtonStyle(
+          shape: const WidgetStatePropertyAll(_buttonShape),
+          padding: const WidgetStatePropertyAll(
+            EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+          ),
+          textStyle: const WidgetStatePropertyAll(
+            TextStyle(
+              fontFamily: 'Pretendard',
+              fontSize: 14.5,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          foregroundColor: WidgetStateProperty.resolveWith(
+            (states) => states.contains(WidgetState.disabled)
+                ? AppColors.textSubtle
+                : AppColors.crimson,
+          ),
+          backgroundColor: WidgetStateProperty.resolveWith(
+            (states) => states.contains(WidgetState.hovered)
+                ? AppColors.crimsonSoft
+                : Colors.white,
+          ),
+          side: WidgetStateProperty.resolveWith(
+            (states) => BorderSide(
+              color: states.contains(WidgetState.disabled)
+                  ? AppColors.borderLight
+                  : states.contains(WidgetState.hovered)
+                      ? AppColors.crimson.withAlpha(90)
+                      : AppColors.border,
+            ),
+          ),
+          overlayColor: WidgetStatePropertyAll(AppColors.crimson.withAlpha(14)),
+        ),
+      ),
+      textButtonTheme: TextButtonThemeData(
+        style: ButtonStyle(
+          shape: const WidgetStatePropertyAll(
+            RoundedRectangleBorder(
+              borderRadius: BorderRadius.all(Radius.circular(10)),
+            ),
+          ),
+          textStyle: const WidgetStatePropertyAll(
+            TextStyle(
+              fontFamily: 'Pretendard',
+              fontSize: 14.5,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          overlayColor: WidgetStatePropertyAll(AppColors.crimson.withAlpha(14)),
+        ),
+      ),
+      // 학기·게시판 분류 칩: 체크 표시 없는 알약, 고르면 크림슨으로 채운다.
+      chipTheme: ChipThemeData(
+        showCheckmark: false,
+        shape: const StadiumBorder(),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        pressElevation: 0,
+        color: WidgetStateColor.resolveWith(
+          (states) => states.contains(WidgetState.selected)
+              ? AppColors.crimson
+              : states.contains(WidgetState.hovered)
+                  ? AppColors.crimsonSoft
+                  : Colors.white,
+        ),
+        side: WidgetStateBorderSide.resolveWith(
+          (states) => BorderSide(
+            color: states.contains(WidgetState.selected)
+                ? AppColors.crimson
+                : AppColors.border,
+          ),
+        ),
+        // 상태별 글자 모양(WidgetStateTextStyle)을 쓰면 칩이 그 객체를 그대로 글자 모양으로 써서
+        // 테마 글꼴이 빠지고 한글 대체 글꼴을 받아온다. 일반 글자 모양 + 선택 시 secondaryLabelStyle로 둔다.
+        labelStyle: const TextStyle(
+          fontFamily: 'Pretendard',
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+          color: AppColors.textBody,
+        ),
+        secondaryLabelStyle: const TextStyle(
+          fontFamily: 'Pretendard',
+          fontSize: 14,
+          fontWeight: FontWeight.w700,
+          color: Colors.white,
+        ),
+      ),
+      expansionTileTheme: const ExpansionTileThemeData(
+        iconColor: AppColors.crimson,
+        collapsedIconColor: AppColors.textMuted,
+        textColor: AppColors.crimson,
+        collapsedTextColor: AppColors.navy,
+        shape: Border(),
+        collapsedShape: Border(),
+      ),
+      inputDecorationTheme: const InputDecorationThemeData(
+        filled: true,
+        fillColor: AppColors.surfaceMuted,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.all(Radius.circular(12)),
+          borderSide: BorderSide(color: AppColors.border),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.all(Radius.circular(12)),
+          borderSide: BorderSide(color: AppColors.border),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.all(Radius.circular(12)),
+          borderSide: BorderSide(color: AppColors.crimson, width: 1.4),
+        ),
+      ),
+      snackBarTheme: const SnackBarThemeData(
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: AppColors.navy,
+        elevation: 6,
+        actionTextColor: AppColors.heroAccent,
+        contentTextStyle: TextStyle(
+          fontFamily: 'Pretendard',
+          color: Colors.white,
+          fontSize: 14,
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(12)),
+        ),
+      ),
+      progressIndicatorTheme: const ProgressIndicatorThemeData(
+        color: AppColors.crimson,
+        linearTrackColor: AppColors.crimsonSoft,
+      ),
+      // 출석 상태 선택(출석·지각·결석·공결): 짙은 기본 테두리 대신 옅은 테두리와 둥근 모서리.
+      segmentedButtonTheme: const SegmentedButtonThemeData(
+        style: ButtonStyle(
+          side: WidgetStatePropertyAll(BorderSide(color: AppColors.border)),
+          shape: WidgetStatePropertyAll(
+            RoundedRectangleBorder(
+              borderRadius: BorderRadius.all(Radius.circular(10)),
+            ),
+          ),
+        ),
+      ),
+      tabBarTheme: TabBarThemeData(
+        dividerColor: AppColors.borderLight,
+        overlayColor: WidgetStatePropertyAll(AppColors.crimson.withAlpha(12)),
       ),
       // 창(모달)·메뉴·날짜/시각 선택창은 흰 바탕에 그림자를 두고, 크림슨은 강조에만 쓴다.
       dialogTheme: DialogThemeData(

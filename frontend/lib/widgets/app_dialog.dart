@@ -319,11 +319,15 @@ class DialogPrimaryButton extends StatelessWidget {
           foregroundColor: Colors.white,
           disabledBackgroundColor: AppColors.crimson.withAlpha(150),
           disabledForegroundColor: Colors.white,
+          // 자체 그림자를 쓰므로 테마의 올림 효과는 끈다.
+          elevation: 0,
           minimumSize: Size(expand ? double.infinity : 84, height),
           padding: const EdgeInsets.symmetric(horizontal: 22),
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           textStyle: TextStyle(
+            // 버튼 글자 모양을 직접 정하면 테마 글꼴이 빠지므로 한글 글꼴을 다시 지정한다.
+            fontFamily: 'Pretendard',
             fontSize: expand ? 16 : 15,
             fontWeight: FontWeight.w700,
           ),
@@ -363,7 +367,11 @@ class DialogCancelButton extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 18),
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+          textStyle: const TextStyle(
+            fontFamily: 'Pretendard',
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
+          ),
         ),
         child: Text(label),
       );
