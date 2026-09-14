@@ -33,7 +33,7 @@ class PlaceholderPage extends StatelessWidget {
             const SizedBox(height: 28),
             SizedBox(
               width: double.infinity,
-              child: Card(
+              child: SoftCard(
                 child: Padding(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 24, vertical: 48),

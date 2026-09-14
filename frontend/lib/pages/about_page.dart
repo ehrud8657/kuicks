@@ -95,7 +95,7 @@ class _StaffGroupCard extends StatelessWidget {
   final _StaffGroup group;
 
   @override
-  Widget build(BuildContext context) => Card(
+  Widget build(BuildContext context) => SoftCard(
         child: Padding(
           padding: const EdgeInsets.all(24),
           child: Column(

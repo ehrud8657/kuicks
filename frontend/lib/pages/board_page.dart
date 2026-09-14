@@ -196,8 +196,8 @@ class PostCard extends StatelessWidget {
       if (post.authorName.isNotEmpty) post.authorName,
       if (published != null) _formatDate(published),
     ].join(' · ');
-    return Card(
-      clipBehavior: Clip.antiAlias,
+    return SoftCard(
+      accent: true,
       child: ExpansionTile(
         tilePadding: const EdgeInsets.symmetric(horizontal: 22, vertical: 8),
         childrenPadding: const EdgeInsets.fromLTRB(22, 0, 22, 22),

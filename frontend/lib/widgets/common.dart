@@ -10,14 +10,16 @@ class PageFrame extends StatelessWidget {
   const PageFrame({super.key, required this.child});
   final Widget child;
   @override
-  Widget build(BuildContext context) => SingleChildScrollView(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 1180),
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              // 내용이 적어도 폭을 꽉 채워, 페이지 전체가 가운데 좁은 기둥으로 몰리지 않게 한다.
-              child: SizedBox(width: double.infinity, child: child),
+  Widget build(BuildContext context) => AppBackdrop(
+        child: SingleChildScrollView(
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 1180),
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                // 내용이 적어도 폭을 꽉 채워, 페이지 전체가 가운데 좁은 기둥으로 몰리지 않게 한다.
+                child: SizedBox(width: double.infinity, child: child),
+              ),
             ),
           ),
         ),
@@ -123,7 +125,7 @@ class LoadError extends StatelessWidget {
   @override
   Widget build(BuildContext context) => SizedBox(
         width: double.infinity,
-        child: Card(
+        child: SoftCard(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
             child: Column(
@@ -161,7 +163,7 @@ class EmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) => SizedBox(
         width: double.infinity,
-        child: Card(
+        child: SoftCard(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
             child: Column(
@@ -275,14 +277,16 @@ class CenteredListView extends StatelessWidget {
   final double maxWidth;
 
   @override
-  Widget build(BuildContext context) => LayoutBuilder(
-        builder: (context, constraints) {
-          final side = math.max(16.0, (constraints.maxWidth - maxWidth) / 2);
-          return ListView(
-            padding: EdgeInsets.fromLTRB(side, 20, side, 32),
-            children: children,
-          );
-        },
+  Widget build(BuildContext context) => AppBackdrop(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final side = math.max(16.0, (constraints.maxWidth - maxWidth) / 2);
+            return ListView(
+              padding: EdgeInsets.fromLTRB(side, 20, side, 32),
+              children: children,
+            );
+          },
+        ),
       );
 }
 
@@ -405,5 +409,101 @@ class ButtonSpinner extends StatelessWidget {
         width: 18,
         height: 18,
         child: CircularProgressIndicator(strokeWidth: 2, color: color),
+      );
+}
+
+/// 화면 바탕. 위는 옅은 크림슨, 아래는 옅은 남색 기운이 도는 그라데이션에 큰 빛 두 개를 번지게 한다.
+/// 스크롤해도 제자리에 있고 누르기를 막지 않는다. 라우트 전환 중 겹쳐 비치지 않도록 화면 틀 안에서 칠한다.
+class AppBackdrop extends StatelessWidget {
+  const AppBackdrop({super.key, required this.child});
+  final Widget child;
+
+  static Widget _glow(double size, Color color) => IgnorePointer(
+        child: Container(
+          width: size,
+          height: size,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: RadialGradient(colors: [color, color.withAlpha(0)]),
+          ),
+        ),
+      );
+
+  @override
+  Widget build(BuildContext context) => DecoratedBox(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFFFBF2F4), Color(0xFFF7F6F9), Color(0xFFF0F3F8)],
+            stops: [0, 0.45, 1],
+          ),
+        ),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            Positioned(
+              top: -260,
+              right: -200,
+              child: _glow(620, AppColors.crimson.withAlpha(24)),
+            ),
+            Positioned(
+              bottom: -300,
+              left: -240,
+              child: _glow(660, AppColors.info.withAlpha(18)),
+            ),
+            child,
+          ],
+        ),
+      );
+}
+
+/// 흰색에서 아주 옅은 크림슨으로 흐르는 카드. [accent]면 왼쪽에 크림슨 구분 막대를 둔다.
+/// 안쪽은 그대로 Card라서 잉크 효과와 테스트의 Card 탐색이 유지된다.
+class SoftCard extends StatelessWidget {
+  const SoftCard({super.key, required this.child, this.accent = false});
+  final Widget child;
+  final bool accent;
+
+  @override
+  Widget build(BuildContext context) => Card(
+        clipBehavior: Clip.antiAlias,
+        child: Ink(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Colors.white, Color(0xFFFFF7F8)],
+            ),
+          ),
+          child: accent
+              ? Stack(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(left: 4),
+                      child: child,
+                    ),
+                    const Positioned(
+                      left: 0,
+                      top: 0,
+                      bottom: 0,
+                      width: 4,
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              AppColors.crimson,
+                              AppColors.crimsonDeepBottom,
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                )
+              : child,
+        ),
       );
 }
