@@ -93,6 +93,9 @@ class _AttendancePageState extends State<AttendancePage> {
   Future<void> _save() async {
     final current = sheet;
     if (current == null) return;
+    // 웹에서는 메모 칸에 초점이 남아 있으면 저장 후 서버 값(앞뒤 공백 제거)으로 바꿔도
+    // 화면에 이전 입력이 그대로 보이므로, 저장 전에 초점을 푼다.
+    FocusScope.of(context).unfocus();
     setState(() => saving = true);
     try {
       final result = await ApiClient.instance.saveAttendance(
