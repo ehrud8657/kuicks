@@ -7,6 +7,14 @@ class AppColors {
   static const navy = Color(0xFF071B33);
   static const crimson = Color(0xFFB31B34);
   static const crimsonSoft = Color(0xFFFBEAEC);
+
+  // 창(모달) 머리처럼 넓은 면에 칠하는 크림슨. 원색보다 채도·명도를 낮춰 눈이 덜 부시게 한다.
+  static const crimsonDeepTop = Color(0xFF9E3346);
+  static const crimsonDeep = Color(0xFF872536);
+  static const crimsonDeepBottom = Color(0xFF611A29);
+
+  /// 연크림슨 바탕 위 글자·아이콘용 차분한 크림슨.
+  static const crimsonMuted = Color(0xFF93303F);
   static const background = Color(0xFFF6F7F9);
   static const border = Color(0xFFE3E7EC);
   static const borderLight = Color(0xFFEAECF0);
@@ -88,7 +96,7 @@ ThemeData buildAppTheme(TextTheme base) => ThemeData(
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.all(Radius.circular(20)),
         ),
-        headerBackgroundColor: AppColors.crimson,
+        headerBackgroundColor: AppColors.crimsonDeep,
         headerForegroundColor: Colors.white,
         dividerColor: AppColors.borderLight,
         todayBorder: const BorderSide(color: AppColors.crimson),

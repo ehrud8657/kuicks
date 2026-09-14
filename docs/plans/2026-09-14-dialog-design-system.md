@@ -85,3 +85,24 @@
 | 날짜 · 시각 선택창 | ![](../reports/images/modal_date_picker.png) ![](../reports/images/modal_time_picker.png) |
 | 마이페이지 · 회차 · 참여 상태 메뉴 | ![](../reports/images/modal_menu_mypage.png) ![](../reports/images/modal_menu_session.png) ![](../reports/images/modal_menu_status.png) |
 | 360px 과제 등록 · 삭제 확인 | ![](../reports/images/modal_phone_assignment.png) ![](../reports/images/modal_phone_confirm.png) |
+
+## 색 조정 (2026-09-14, "너무 쨍하다"는 의견)
+
+모든 창에 공통으로 적용한다. 브랜드 크림슨(`#B31B34`)과 버튼 색은 유지하고, 넓게 칠해지는 면과 효과만 한 단계 낮춘다.
+
+| 항목 | 전 | 후 |
+|---|---|---|
+| 머리 그라데이션 | `#D02A46 → #B31B34 → #7A0F22` | `#9E3346 → #872536 → #611A29` (채도·명도 낮춤) |
+| 머리 빛 원 투명도 | 22 / 14 | 13 / 8 |
+| 머리 설명 글자 | 흰색 84% | 흰색 78% |
+| 주 버튼 그림자 | 크림슨 27%, 흐림 18, 아래 8 | 크림슨 13%, 흐림 14, 아래 5 |
+| 안내·오류 상자 글자·아이콘 | `#B31B34` | `#93303F` |
+| 안내·오류 상자 테두리 | 18% / 오류 43% | 13% / 오류 27% |
+| 입력칸 초점 테두리 | 1.6 | 1.4 |
+| 날짜 선택창 머리 | `#B31B34` | `#872536` |
+
+| 전 | 후 |
+|---|---|
+| ![](../reports/images/modal_confirm_delete_before_tone.png) | ![](../reports/images/modal_confirm_delete.png) |
+
+확인: 위젯 테스트 59개, 실제 브라우저 창·메뉴·선택창 16개와 로그인 창 13개 모두 통과. 캡처는 이 문서와 로그인 창 계획 문서의 이미지가 모두 조정 후 모습으로 바뀌었다.

@@ -128,14 +128,18 @@ class _DialogHeader extends StatelessWidget {
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [Color(0xFFD02A46), AppColors.crimson, Color(0xFF7A0F22)],
-              stops: [0, 0.45, 1],
+              colors: [
+                AppColors.crimsonDeepTop,
+                AppColors.crimsonDeep,
+                AppColors.crimsonDeepBottom,
+              ],
+              stops: [0, 0.5, 1],
             ),
           ),
           child: Stack(
             children: [
-              Positioned(right: -46, top: -70, child: _glow(170, 22)),
-              Positioned(right: 70, bottom: -60, child: _glow(110, 14)),
+              Positioned(right: -46, top: -70, child: _glow(170, 13)),
+              Positioned(right: 70, bottom: -60, child: _glow(110, 8)),
               Padding(
                 padding: EdgeInsets.fromLTRB(24, 20, closable ? 10 : 24, 20),
                 child: Row(
@@ -199,7 +203,7 @@ class _DialogHeader extends StatelessWidget {
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
                                 style: TextStyle(
-                                  color: Colors.white.withAlpha(215),
+                                  color: Colors.white.withAlpha(200),
                                   fontSize: 13,
                                 ),
                               ),
@@ -250,19 +254,19 @@ class DialogCallout extends StatelessWidget {
           color: AppColors.crimsonSoft,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: AppColors.crimson.withAlpha(strong ? 110 : 45),
+            color: AppColors.crimsonMuted.withAlpha(strong ? 70 : 32),
           ),
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon, size: 18, color: AppColors.crimson),
+            Icon(icon, size: 18, color: AppColors.crimsonMuted),
             const SizedBox(width: 8),
             Expanded(
               child: Text(
                 message,
                 style: const TextStyle(
-                  color: AppColors.crimson,
+                  color: AppColors.crimsonMuted,
                   fontSize: 13.5,
                   fontWeight: FontWeight.w600,
                   height: 1.35,
@@ -302,9 +306,9 @@ class DialogPrimaryButton extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: AppColors.crimson.withAlpha(active ? 70 : 0),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
+            color: AppColors.crimson.withAlpha(active ? 34 : 0),
+            blurRadius: 14,
+            offset: const Offset(0, 5),
           ),
         ],
       ),
@@ -419,7 +423,7 @@ InputDecoration dialogFieldDecoration(
     border: outline(AppColors.border),
     enabledBorder: outline(AppColors.border),
     disabledBorder: outline(AppColors.borderLight),
-    focusedBorder: outline(AppColors.crimson, 1.6),
+    focusedBorder: outline(AppColors.crimson, 1.4),
     errorBorder: outline(error),
     focusedErrorBorder: outline(error, 1.6),
   );
