@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>자동 점검 결과 · KUICS 스터디장 관리</title>
+<style>
+  :root {
+    --bg: #f6f7f9; --card: #fff; --text: #101828; --muted: #667085; --line: #e4e7ec;
+    --accent: #b31b34; --accent-soft: #fbeaec; --ok: #067647; --ok-soft: #e7f6ec;
+    --warn: #b54708; --warn-soft: #fef4e6; --info: #175cd3; --info-soft: #eaf2fd; --code: #f2f4f7;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0c111d; --card: #161b26; --text: #f5f5f6; --muted: #94969c; --line: #2a303c;
+      --accent: #f0566e; --accent-soft: #3a1720; --ok: #47cd89; --ok-soft: #0f2a1c;
+      --warn: #fdb022; --warn-soft: #2e2311; --info: #84adff; --info-soft: #15223f; --code: #1f242f;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font: 15px/1.7 "Pretendard", "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif;
+    word-break: keep-all; overflow-wrap: anywhere; }
+  .wrap { max-width: 1040px; margin: 0 auto; padding: 36px 16px 96px; }
+  a { color: var(--accent); }
+  .eyebrow { color: var(--accent); font-weight: 800; letter-spacing: .04em; font-size: 13px; }
+  h1 { font-size: 28px; line-height: 1.3; margin: 6px 0 8px; }
+  h2 { font-size: 20px; margin: 44px 0 12px; padding-top: 8px; border-top: 1px solid var(--line); }
+  h3 { font-size: 16px; margin: 20px 0 6px; }
+  .meta { color: var(--muted); font-size: 14px; }
+  code { font-family: Consolas, "D2Coding", monospace; font-size: 13px; background: var(--code); padding: 1px 5px; border-radius: 5px; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-top: 20px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; }
+  .metric { font-size: 26px; font-weight: 800; line-height: 1.2; }
+  .metric-label { color: var(--muted); font-size: 13px; }
+  .table-wrap { overflow-x: auto; background: var(--card); border: 1px solid var(--line); border-radius: 14px; margin: 10px 0; }
+  table { width: 100%; border-collapse: collapse; min-width: 640px; font-size: 14px; }
+  th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-size: 13px; background: var(--code); }
+  tr:last-child td { border-bottom: 0; }
+  td:first-child { white-space: nowrap; font-family: Consolas, monospace; font-size: 13px; }
+  .b { display: inline-block; padding: 0 8px; border-radius: 99px; font-size: 12px; font-weight: 700; white-space: nowrap; }
+  .pass { color: var(--ok); background: var(--ok-soft); }
+  .manual { color: var(--info); background: var(--info-soft); }
+  .fixed { color: var(--accent); background: var(--accent-soft); }
+  .note { background: var(--warn-soft); border-left: 4px solid var(--warn); border-radius: 12px; padding: 12px 16px; margin: 12px 0; }
+  .shots { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; }
+  figure { margin: 0; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 8px; }
+  figure img { display: block; width: 100%; max-height: 460px; object-fit: cover; object-position: top; border-radius: 8px; background: #fff; }
+  figcaption { font-size: 13px; color: var(--muted); margin-top: 6px; }
+  ul { padding-left: 22px; }
+  li { margin: 3px 0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="eyebrow">KUICS HOMEPAGE · AUTOMATED REVIEW</div>
+<h1>자동 점검 결과</h1>
+<p class="meta">2026-09-14 · 브랜치 <code>dev_tweho</code> · 대상: <a href="2026-09-14-review-checklist.html">수동 검토 체크리스트</a>의 C~L 구역 (A·B는 태호님이 직접 확인 완료).
+남은 항목: <a href="2026-09-14-manual-checklist.html"><strong>직접 확인할 항목 체크리스트</strong></a></p>
+
+<div class="cards">
+  <div class="card"><div class="metric">147</div><div class="metric-label">점검 대상 항목 (C~L)</div></div>
+  <div class="card"><div class="metric">132</div><div class="metric-label">자동 점검으로 통과 확인 → 체크리스트에서 제외</div></div>
+  <div class="card"><div class="metric">5 + 9</div><div class="metric-label">직접 확인으로 남김 (자동 불가 5 · 배포 전용 9)</div></div>
+  <div class="card"><div class="metric">1</div><div class="metric-label">발견해 고친 버그 (<code>1ae09ee</code>)</div></div>
+  <div class="card"><div class="metric">4</div><div class="metric-label">결정이 필요한 관찰</div></div>
+</div>
+
+<h2>어떻게 점검했나</h2>
+<ul>
+  <li><strong>환경</strong>: 로컬 Django(Python 3.13, SQLite) + Flutter 3.44.8 <strong>릴리스 웹 빌드</strong>를 실제 크롬(헤드리스)에서 실행. <code>seed_demo</code> 가상 데이터를 쓰고, 구역마다 DB·업로드 파일을 처음 상태로 되돌린 뒤 시작.</li>
+  <li><strong>화면 조작</strong>: 브라우저 자동화(Playwright)로 Flutter 접근성 트리를 켜고 버튼·탭·입력칸을 실제로 누르고 입력. 휴대폰은 390·360px 폭과 터치 이벤트로 흉내.</li>
+  <li><strong>오류 상황</strong>: 특정 API 요청만 네트워크에서 끊어 서버 장애를 재현하고, 복구 후 “다시 시도”를 확인.</li>
+  <li><strong>서버·권한</strong>: 계정별로 API를 직접 호출해 응답 코드·본문·내려받은 파일 내용, Admin 페이지 HTML을 확인.</li>
+  <li><strong>눈으로 판정</strong>: 색·줄바꿈·겹침·말줄임은 캡처를 직접 보고 판정. 화면 12개 × 폭 4가지(360/768/1040/1280)에서 가로 넘침을 계산으로 검사하고, 모든 새 화면의 문구를 모아 오타를 검토.</li>
+  <li>점검 스크립트는 로컬 임시 폴더에만 두고 저장소에는 넣지 않았습니다(PC 경로에 묶여 있음). 필요하면 정리해서 넣겠습니다.</li>
+</ul>
+
+<h2 id="bug">발견해서 고친 버그</h2>
+<div class="table-wrap"><table>
+  <tr><th>항목</th><th>증상</th><th>원인 · 수정</th><th>확인</th></tr>
+  <tr><td>E-21</td><td>출석 메모를 앞뒤 공백과 함께 저장하면, 서버에는 공백을 지운 값이 저장되지만 <strong>웹 화면 입력칸에는 공백이 남은 채</strong> 보임 (화면을 다시 열면 정상)</td><td>메모 칸에 초점이 남아 있으면 웹에서 새 값이 화면에 반영되지 않음. 위젯 테스트에서는 재현되지 않는 웹 전용 문제. 저장 전에 초점을 풀도록 수정 — <code>1ae09ee</code></td><td><span class="b fixed">수정 후 통과</span> 실제 크롬 재점검 + 프론트 테스트 37개 · analyze · format 통과</td></tr>
+</table></div>
+
+<h2>구역별 결과</h2>
+<p class="meta"><span class="b pass">통과</span> 자동 점검으로 확인해 체크리스트에서 제외 · <span class="b manual">직접</span> 직접 확인할 항목 체크리스트로 옮김</p>
+
+<h3>C. 페이지 이동</h3>
+<div class="table-wrap"><table>
+  <tr><th>항목</th><th>결과</th><th>근거</th></tr>
+  <tr><td>C-01~C-03</td><td><span class="b pass">통과</span></td><td>상단 버튼·홈 패널·마이페이지 패널로 관리 화면 진입, 선택 시 진한 빨강 채움(캡처), 카드 → 탭 화면 → 뒤로 시 목록 다시 불러옴</td></tr>
+  <tr><td>C-04</td><td><span class="b pass">통과</span></td><td>탭 누르기와 <strong>터치</strong> 스와이프로 이동, 이전 탭 내용 남지 않음. 참고: PC에서 마우스로 끌어서는 넘어가지 않음(Flutter 기본 동작)</td></tr>
+  <tr><td>C-05~C-09</td><td><span class="b pass">통과</span></td><td>출석 체크·제출 현황·참여자 스터디 상세 진입과 ←, 변경 없으면 확인 창 없음, ⋮ 메뉴는 카드로 들어가지 않음, 완료한 스터디·과제 제출 현황 줄에서도 상세 진입</td></tr>
+  <tr><td>C-10</td><td><span class="b manual">직접</span></td><td>브라우저 자체 뒤로가기는 자동으로 판정 불가 → M-05</td></tr>
+  <tr><td>C-11~C-14</td><td><span class="b pass">통과</span></td><td>새로고침 시 홈·로그인 유지(알려진 한계), 로그아웃 시 홈으로, 휴대폰 서랍 이동·닫힘·선택 강조(캡처), About·Study·Activity·Board·Contact 내용과 콘솔 오류 없음</td></tr>
+</table></div>
+
+<h3>D. 스터디 관리 목록 · 참여자 탭</h3>
+<div class="table-wrap"><table>
+  <tr><th>항목</th><th>결과</th><th>근거</th></tr>
+  <tr><td>D-01~D-13</td><td><span class="b pass">통과</span></td><td>카드 문구·수치(중도 포기 제외 3명, 미확인 2), 운영진은 전체, 학기 칩 필터, 폭 1280/800/390에서 3/2/1열·넘침 없음, 목록 불러오기 실패→다시 시도 복구, 참여자 이름순·학번 전체·출석률 67/67/0/0%와 막대 색(캡처), 상태 변경 체크 표시·알림, 중도 포기 확인 창 취소/변경, 빈 스터디 안내, Admin에서 추가한 참여자 즉시 반영</td></tr>
+</table></div>
+
+<h3>E. 출석</h3>
+<div class="table-wrap"><table>
+  <tr><th>항목</th><th>결과</th><th>근거</th></tr>
+  <tr><td>E-01~E-13</td><td><span class="b pass">통과</span></td><td>현황표 값·범례·툴팁 라벨, 회차 순서·배지·날짜 형식, 회차 추가 기본값 4·한국어 달력·날짜 선택 반영, 숫자만 입력·1 이상·중복 번호 오류, 한글 주제 저장, 100자 제한, 수정·삭제(기록 4건 안내, 출석률 재계산 33%), 회차 13개일 때 표만 가로 스크롤(캡처), 빈 스터디 안내</td></tr>
+  <tr><td>E-14~E-15, E-17~E-20</td><td><span class="b pass">통과</span></td><td>첫 화면 요약·중도 포기자 제외·저장 버튼 비활성, 같은 버튼 다시 누르면 해제, 200자 제한, 변경/되돌림에 따른 저장 상태 표시, “미기록 모두 출석”이 기존 선택 유지</td></tr>
+  <tr><td>E-16</td><td><span class="b manual">직접</span></td><td>한글 문장 입력값은 정확히 저장·표시됨. 입력기 조합(자모 분리·커서 튐)은 자동 불가 → M-01</td></tr>
+  <tr><td>E-21</td><td><span class="b fixed">수정 후 통과</span></td><td><a href="#bug">버그 참고</a>. 수정 후 서버·화면 모두 “앞뒤 공백 메모”</td></tr>
+  <tr><td>E-22~E-26</td><td><span class="b pass">통과</span></td><td>저장 후 회차 배지·현황표 반영, 저장 안 하고 나가기 확인 창(취소 시 유지, 나가기 시 버림), 기록 있는 중도 포기자 표시, 넓은 폭 한 줄·좁은 폭 세 줄 배치, 끝까지 내리면 마지막 카드가 저장 막대에 가리지 않음(캡처), 저장 실패 시 “출석을 저장하지 못했습니다.”와 입력 유지 → 재시도 성공</td></tr>
+</table></div>
+
+<h3>F. 과제 등록 · 수정 · 삭제</h3>
+<div class="table-wrap"><table>
+  <tr><th>항목</th><th>결과</th><th>근거</th></tr>
+  <tr><td>F-01~F-03, F-05~F-09</td><td><span class="b pass">통과</span></td><td>탭 순서·배지 수치, 기본 기한(7일 뒤 오후 11:59)과 폭별 날짜·시각 배치, 제목 비움·공백만 거절(요청 0건), 150자 제한, 지난 날짜 경고, 한글 제목·여러 줄 설명·링크 등록, 수정 창 값 유지와 서버 기한 <code>23:59:00+09:00</code></td></tr>
+  <tr><td>F-04</td><td><span class="b manual">직접</span></td><td>시계 선택창이 한국어(오전/오후, 취소/확인)로 뜨는 것까지 확인. 다이얼·입력 모드로 시각 바꾸기는 → M-02</td></tr>
+  <tr><td>F-10~F-15</td><td><span class="b pass">통과</span></td><td>“1시간 남음”·“20분 남음”·“D-99+” 표시(기한은 API로 바꿔 표시만 확인), 기한 3일 전 수정 시 지각 1→2와 다음 주로 옮기면 지각 사라지고 위로 이동, 삭제 확인 창·제출 파일 2개 → 0개 삭제, 빈 스터디 안내, 390px에서 긴 설명 입력 시 저장·취소 버튼 보임</td></tr>
+</table></div>
+
+<h3>G. 제출 현황 · 확인 · 피드백</h3>
+<div class="table-wrap"><table>
+  <tr><th>항목</th><th>결과</th><th>근거</th></tr>
+  <tr><td>G-01~G-15</td><td><span class="b pass">통과</span></td><td>요약 카드와 링크 밑줄(캡처), 칩 숫자와 필터 결과 일치, 파일 박스를 누르면 원본 이름 <code>홍길동_SQLi.zip</code>으로 내려받아지고 내용 일치, 확인/해제 시 요청 1건·확인자 표시·실패 알림 없음, 피드백 창 구성, 한글 여러 줄 피드백 저장(서버 값 일치), 확인 표시 해제 후 저장, 기존 피드백 채워짐·지우면 박스 사라짐, 취소 시 요청 없음, 필터 결과 없음 안내, 중도 포기자 행 표시, 뒤로 가면 과제·목록 수치 갱신</td></tr>
+</table></div>
+
+<h3>H. 마이페이지 · 스터디 상세 · zip 제출</h3>
+<div class="table-wrap"><table>
+  <tr><th>항목</th><th>결과</th><th>근거</th></tr>
+  <tr><td>H-01~H-08</td><td><span class="b pass">통과</span></td><td>네 카드 문구, 박철수 제출할 과제 1개, 390px 한 열·버튼 넘침 없음, 상세 요약·안내·과제 순서·박스/버튼 상태, 기한 지난 미제출 표시, 출석 목록에 스터디장 메모 노출 안 됨</td></tr>
+  <tr><td>H-09, H-10</td><td><span class="b manual">직접</span></td><td>설명 속 링크 글자 위치를 자동으로 맞추지 못함 → M-03 · 운영체제 파일 선택창의 취소 버튼 → M-04 (선택창 필터 <code>.zip</code>과 빈 선택 시 아무 일 없음은 확인)</td></tr>
+  <tr><td>H-11~H-17</td><td><span class="b pass">통과</span></td><td>확인 창 “파일명 (131B)”, 느린 업로드를 흉내 내 “올리는 중…”·다른 버튼 잠금 확인, 한글·공백 파일명 multipart 전송, txt·빈 파일·가짜 zip·60MB 사전 차단(요청 0건), 깨진 zip 서버 거절, 기한 지난 재제출 안내 2가지·지각 표시·피드백 유지, 서버의 기존 파일 교체</td></tr>
+  <tr><td>H-18~H-26</td><td><span class="b pass">통과</span></td><td>확인 완료·피드백 표시, 내 파일 받기 내용 일치, 제출 실패 알림 후 버튼 복구, 제출 후 “제출할 과제 없음”, 수료 시 버튼 사라짐·안내·완료한 스터디 이동, 40MB 업로드 서버 크기 일치·카드 반영(로컬은 빨라 진행 표시는 L-05에서), 스터디장↔참여자 제출·피드백·출석 연결</td></tr>
+</table></div>
+
+<h3>I. 권한 · J. 기존 화면 · K. 오류·레이아웃·문구</h3>
+<div class="table-wrap"><table>
+  <tr><th>항목</th><th>결과</th><th>근거</th></tr>
+  <tr><td>I-01~I-10</td><td><span class="b pass">통과</span></td><td>계정별 API 직접 호출: 비담당 403 문구, 정회원 403, 비로그인 403, 운영진 전체 200, 제출 파일 다운로드 권한 6계정, 비참여 404, 공개 API 학번 전체 미노출, 참여자 응답에 메모 없음. I-10은 백엔드 자동 테스트 80개 통과로 갈음</td></tr>
+  <tr><td>J-01~J-05</td><td><span class="b pass">통과</span></td><td>게시판 제목·빈 안내 3종, 1440px에서 내용 왼쪽 정렬(x=154), 홈 제목이 1280에서 두 줄 큰 글자·390/360에서 두 줄 작은 글자(캡처), 스터디 페이지 불러오기 실패→다시 시도, KUICS NOW 공지·스터디 카드 이동</td></tr>
+  <tr><td>J-06~J-11</td><td><span class="b pass">통과</span></td><td>Admin 메뉴에 새 모델 4개·예전 모델 없음, 스터디 수정 화면 인라인 3종, 제출물 목록·상세(추가 버튼 없음, 다운로드 링크, 크기 표시, 파일 칸 수정 불가), 출석 추가 화면 자동완성 검색, 과제 작성자 읽기 전용, 운영진 지정/해제와 스터디장 등급 동기화</td></tr>
+  <tr><td>K-01~K-04</td><td><span class="b pass">통과</span></td><td>오류 화면 7곳(홈 패널·스터디 관리·현황표·출석 체크·제출 현황·마이페이지·스터디 상세) 모두 오류 표시 후 복구, 저장 버튼 더블클릭 시 요청 1건씩(회차·출석·과제·피드백), 다른 탭 로그아웃 후 조작 시 화면 유지·오류 알림, 긴 제목·파일명 말줄임과 가로 넘침 없음(관찰 Q-01 참고)</td></tr>
+  <tr><td>K-05</td><td><span class="b manual">직접</span></td><td>한글 입력기 조합 → M-01</td></tr>
+  <tr><td>K-06~K-08</td><td><span class="b pass">통과</span></td><td>화면 12개 × 폭 4가지 가로 넘침 없음(대표 캡처 확인), 새 화면 문구 전체 검토(오타 없음), 날짜 표기 26개 모두 <code>2026.09.14</code> · <code>(월)</code> · <code>23:59</code> 형식</td></tr>
+</table></div>
+
+<h3>L. 배포</h3>
+<div class="table-wrap"><table>
+  <tr><th>항목</th><th>결과</th><th>근거</th></tr>
+  <tr><td>L-01~L-09</td><td><span class="b manual">직접</span></td><td>실제 Render·Vercel과 운영 DB에서만 확인 가능. 운영 데이터를 건드리지 않기 위해 자동 점검하지 않음</td></tr>
+</table></div>
+
+<h2 id="observations">결정이 필요한 관찰</h2>
+<p>직접 확인할 항목 체크리스트의 3번 구역(Q-01~Q-04)에서 ✔/✖로 알려주세요.</p>
+<div class="shots">
+  <figure><a href="images/auto_long_title_submissions_390.png"><img src="images/auto_long_title_submissions_390.png" alt="긴 과제 제목이 제출 현황 요약에서 여러 줄로 표시"></a><figcaption>Q-01 제출 현황 요약: 150자 과제 제목이 말줄임 없이 10줄</figcaption></figure>
+  <figure><a href="images/auto_long_title_member_390.png"><img src="images/auto_long_title_member_390.png" alt="참여자 스터디 상세에서 긴 스터디·과제 제목"></a><figcaption>Q-01 참여자 스터디 상세: 긴 스터디·과제 제목 (파일명은 한 줄 말줄임 정상)</figcaption></figure>
+  <figure><a href="images/auto_font_tofu_participants.png"><img src="images/auto_font_tofu_participants.png" alt="안내 문구 일부 글자가 네모로 표시"></a><figcaption>Q-03 첫 표시 때 안내 문구의 ‘눌’·‘꿀’이 네모(□) — 잠시 뒤 정상</figcaption></figure>
+  <figure><a href="images/auto_bug_memo_spaces_before_fix.png"><img src="images/auto_bug_memo_spaces_before_fix.png" alt="수정 전 메모 칸 앞 공백"></a><figcaption>고친 버그 E-21 (수정 전): 홍길동 메모 앞 공백이 남아 글자가 오른쪽으로 밀림</figcaption></figure>
+  <figure><a href="images/auto_attendance_bottom_390.png"><img src="images/auto_attendance_bottom_390.png" alt="출석 체크 화면 끝까지 내린 모습"></a><figcaption>E-25 통과: 390×700에서 끝까지 내리면 마지막 카드가 저장 막대 위에 보임</figcaption></figure>
+</div>
+
+<div class="note"><strong>자동 점검으로 판단하지 않은 것</strong> — 실제 휴대폰(터치·키보드·파일 앱), 느린 네트워크에서의 업로드 진행 표시, 한글 입력기 조합, 운영 서버 설정. 이 부분은 <a href="2026-09-14-manual-checklist.html">직접 확인할 항목 체크리스트</a>에 남겼습니다.</div>
+
+</div>
+</body>
+</html>
