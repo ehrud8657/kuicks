@@ -3,14 +3,14 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 /// 거대한 운석이 쏟아져 화면을 뒤덮고, 충돌로 화면이 크게 흔들린 뒤
-/// 픽셀 공룡들이 빙글빙글 우주로 날아가는 짧은 연출(약 7.2초).
+/// 픽셀 공룡들이 빙글빙글 우주로 날아가고, 가운데에 제작 표기가 떠오르는 짧은 연출(약 9초).
 /// 화면 어디든 누르면 바로 끝난다.
 class MeteorShower extends StatefulWidget {
   const MeteorShower({super.key, required this.onDone});
 
   final VoidCallback onDone;
 
-  static const duration = Duration(milliseconds: 7200);
+  static const duration = Duration(milliseconds: 9000);
 
   static OverlayEntry? _entry;
 
@@ -73,20 +73,76 @@ class _MeteorShowerState extends State<MeteorShower>
               if (scene?.size != size) scene = _Scene(size, math.Random());
               return AnimatedBuilder(
                 animation: controller,
-                builder: (context, _) => CustomPaint(
-                  size: size,
-                  painter: _ShowerPainter(
-                    scene!,
-                    controller.value *
-                        MeteorShower.duration.inMilliseconds /
-                        1000,
-                  ),
-                ),
+                builder: (context, _) {
+                  final t = controller.value *
+                      MeteorShower.duration.inMilliseconds /
+                      1000;
+                  return Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      CustomPaint(
+                          size: size, painter: _ShowerPainter(scene!, t)),
+                      _Credit(t: t, narrow: size.width < 600),
+                    ],
+                  );
+                },
               );
             },
           ),
         ),
       );
+}
+
+/// 공룡들이 날아가며 마무리될 때 화면 가운데에 떠오르는 제작 표기.
+class _Credit extends StatelessWidget {
+  const _Credit({required this.t, required this.narrow});
+
+  final double t;
+  final bool narrow;
+
+  static const text = 'Development & Design Support — 2026320053 김태호';
+
+  /// 떠오르기 시작하는 시각(초). 마지막 공룡이 날아오른 직후다.
+  static const showAt = 4.4;
+
+  @override
+  Widget build(BuildContext context) {
+    final total = MeteorShower.duration.inMilliseconds / 1000;
+    final appear = ((t - showAt) / 0.8).clamp(0.0, 1.0);
+    final opacity = math.min(
+      Curves.easeOut.transform(appear),
+      ((total - t) / 0.6).clamp(0.0, 1.0),
+    );
+    if (opacity <= 0) return const SizedBox.shrink();
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: Opacity(
+          opacity: opacity,
+          child: Transform.translate(
+            offset: Offset(0, 14 * (1 - Curves.easeOut.transform(appear))),
+            // 좁은 화면에서는 줄표 앞에서 줄을 바꾼다.
+            child: Text(
+              narrow ? text.replaceFirst(' — ', '\n— ') : text,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontFamily: 'Pretendard',
+                color: Colors.white,
+                fontSize: narrow ? 17 : 24,
+                fontWeight: FontWeight.w700,
+                height: 1.5,
+                letterSpacing: 0.3,
+                decoration: TextDecoration.none,
+                shadows: const [
+                  Shadow(color: Color(0xCC000000), blurRadius: 12),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 /// 픽셀 공룡 그림. X 몸, B 배, O 눈.

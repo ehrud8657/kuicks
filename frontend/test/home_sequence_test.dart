@@ -126,6 +126,10 @@ void main() {
 
       await tester.pump(const Duration(seconds: 3));
       expect(tester.takeException(), isNull);
+      // 제작 표기는 공룡들이 날아간 뒤에야 떠오른다.
+      expect(find.textContaining('2026320053 김태호'), findsNothing);
+      await tester.pump(const Duration(seconds: 3));
+      expect(find.textContaining('2026320053 김태호'), findsOneWidget);
       await tester.pump(MeteorShower.duration);
       await tester.pumpAndSettle();
       expect(find.byType(MeteorShower), findsNothing);
