@@ -156,55 +156,117 @@ class _SiteDrawer extends StatelessWidget {
     }
 
     return Drawer(
+      width: 300,
+      backgroundColor: Colors.white,
+      surfaceTintColor: Colors.transparent,
+      shape: const RoundedRectangleBorder(),
       child: SafeArea(
-        child: ListView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const ListTile(
-              leading: Image(
-                image: AssetImage('assets/logo.png'),
-                width: 32,
-                height: 32,
-                filterQuality: FilterQuality.medium,
-              ),
-              title: Text(
-                'KUICS',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-            ),
-            for (final (label, route) in menu)
-              ListTile(
-                selected: isActive(route),
-                title: Text(label),
-                onTap: () => close(() => context.go(route)),
-              ),
-            if (member != null && auth.canManage) ...[
-              const Divider(),
-              ListTile(
-                selected: isActive(AppRoutes.manage),
-                leading: const Icon(Icons.dashboard_customize_outlined),
-                title: const Text('스터디 관리'),
-                subtitle: Text('${member.role.label} 메뉴'),
-                onTap: () => close(() => context.go(AppRoutes.manage)),
-              ),
-            ],
-            const Divider(),
-            ListTile(
-              selected: member != null && isActive(AppRoutes.me),
-              leading:
-                  Icon(member != null ? Icons.person_outline : Icons.login),
-              title: Text(member != null ? 'My Page' : 'Login'),
-              onTap: () => close(
-                () => member != null
-                    ? context.go(AppRoutes.me)
-                    : auth.showLoginThenHome(),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 14, 8, 14),
+              child: Row(
+                children: [
+                  const Image(
+                    image: AssetImage('assets/logo.png'),
+                    height: 32,
+                    filterQuality: FilterQuality.medium,
+                  ),
+                  const SizedBox(width: 10),
+                  const Expanded(
+                    child: Text(
+                      'KUICS',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 18,
+                        letterSpacing: 1.5,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    tooltip: '메뉴 닫기',
+                    onPressed: () => Scaffold.of(context).closeDrawer(),
+                    color: AppColors.textMuted,
+                    icon: const Icon(Icons.close),
+                  ),
+                ],
               ),
             ),
+            const Divider(height: 1),
             if (member != null)
-              ListTile(
-                leading: const Icon(Icons.logout),
-                title: const Text('로그아웃'),
-                onTap: () => close(auth.logout),
+              Container(
+                margin: const EdgeInsets.fromLTRB(16, 16, 16, 6),
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceMuted,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: AppColors.borderLight),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      member.name,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${member.role.label} · ${member.studentId}',
+                      style: const TextStyle(
+                        color: AppColors.textMuted,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
               ),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                children: [
+                  for (final (label, route) in menu)
+                    _DrawerItem(
+                      label: label,
+                      active: isActive(route),
+                      onTap: () => close(() => context.go(route)),
+                    ),
+                  if (member != null) ...[
+                    const Divider(indent: 20, endIndent: 20, height: 17),
+                    if (auth.canManage)
+                      _DrawerItem(
+                        label: '스터디 관리',
+                        icon: Icons.dashboard_customize_outlined,
+                        active: isActive(AppRoutes.manage),
+                        onTap: () => close(() => context.go(AppRoutes.manage)),
+                      ),
+                    _DrawerItem(
+                      label: 'My Page',
+                      icon: Icons.person_outline,
+                      active: isActive(AppRoutes.me),
+                      onTap: () => close(() => context.go(AppRoutes.me)),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            const Divider(height: 1),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: member != null
+                  ? OutlinedButton.icon(
+                      onPressed: () => close(auth.logout),
+                      icon: const Icon(Icons.logout, size: 18),
+                      label: const Text('로그아웃'),
+                    )
+                  : FilledButton(
+                      onPressed: () => close(auth.showLoginThenHome),
+                      child: const Text('Login'),
+                    ),
+            ),
           ],
         ),
       ),
@@ -212,7 +274,46 @@ class _SiteDrawer extends StatelessWidget {
   }
 }
 
-/// 상단 메뉴 한 칸. 마우스를 올리면 옅은 알약, 현재 메뉴는 연크림슨 알약에 굵은 크림슨 글자.
+/// 서랍 메뉴 한 줄. 현재 메뉴는 왼쪽 크림슨 막대 + 크림슨 굵은 글자.
+class _DrawerItem extends StatelessWidget {
+  const _DrawerItem({
+    required this.label,
+    required this.active,
+    required this.onTap,
+    this.icon,
+  });
+  final String label;
+  final bool active;
+  final VoidCallback onTap;
+  final IconData? icon;
+
+  @override
+  Widget build(BuildContext context) => ListTile(
+        selected: active,
+        onTap: onTap,
+        minTileHeight: 48,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 20),
+        selectedColor: AppColors.crimson,
+        iconColor: AppColors.textMuted,
+        textColor: AppColors.textBody,
+        shape: Border(
+          left: BorderSide(
+            color: active ? AppColors.crimson : Colors.transparent,
+            width: 3,
+          ),
+        ),
+        leading: icon == null ? null : Icon(icon, size: 20),
+        title: Text(
+          label,
+          style: TextStyle(
+            fontSize: 15,
+            fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+          ),
+        ),
+      );
+}
+
+/// 상단 메뉴 한 칸. 현재 메뉴는 굵은 남색 글자 + 아래 크림슨 밑줄, 올리면 글자색만 짙어진다.
 class _NavItem extends StatelessWidget {
   const _NavItem({
     required this.label,
@@ -224,28 +325,33 @@ class _NavItem extends StatelessWidget {
   final VoidCallback onPressed;
 
   @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 2),
-        child: TextButton(
-          onPressed: onPressed,
-          style: TextButton.styleFrom(
-            foregroundColor: active ? AppColors.crimson : AppColors.textBody,
-            backgroundColor: active ? AppColors.crimsonSoft : null,
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            minimumSize: const Size(0, 38),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
-            textStyle: TextStyle(
-              // 버튼 글자 모양을 직접 정하면 테마 글꼴이 빠지므로 한글 글꼴을 다시 지정한다.
-              fontFamily: 'Pretendard',
-              fontSize: 14.5,
-              fontWeight: active ? FontWeight.w700 : FontWeight.w500,
-            ),
-          ).copyWith(
-            overlayColor: WidgetStatePropertyAll(AppColors.navy.withAlpha(12)),
+  Widget build(BuildContext context) => TextButton(
+        onPressed: onPressed,
+        style: TextButton.styleFrom(
+          foregroundColor: active ? AppColors.navy : AppColors.textMuted,
+          padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+          minimumSize: const Size(0, 40),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+          textStyle: TextStyle(
+            // 버튼 글자 모양을 직접 정하면 테마 글꼴이 빠지므로 한글 글꼴을 다시 지정한다.
+            fontFamily: 'Pretendard',
+            fontSize: 14.5,
+            fontWeight: active ? FontWeight.w700 : FontWeight.w500,
           ),
-          child: Text(label),
+        ).copyWith(
+          overlayColor: WidgetStatePropertyAll(AppColors.navy.withAlpha(8)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(label),
+            const SizedBox(height: 4),
+            Container(
+              width: 18,
+              height: 2,
+              color: active ? AppColors.crimson : Colors.transparent,
+            ),
+          ],
         ),
       );
 }
@@ -260,7 +366,8 @@ class _ManageNavButton extends StatelessWidget {
   Widget build(BuildContext context) => FilledButton.icon(
         onPressed: onPressed,
         style: FilledButton.styleFrom(
-          backgroundColor: selected ? AppColors.crimson : AppColors.crimsonSoft,
+          backgroundColor:
+              selected ? AppColors.crimson : AppColors.surfaceMuted,
           foregroundColor: selected ? Colors.white : AppColors.crimson,
           padding: const EdgeInsets.symmetric(horizontal: 14),
         ),
@@ -277,8 +384,8 @@ class _MyPageButton extends StatelessWidget {
   Widget build(BuildContext context) => Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.crimson.withAlpha(150)),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: AppColors.border),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,

@@ -39,7 +39,7 @@ class PlaceholderPage extends StatelessWidget {
                       const EdgeInsets.symmetric(horizontal: 24, vertical: 48),
                   child: Column(
                     children: [
-                      IconBadge(icon: icon, size: 60),
+                      Icon(icon, size: 34, color: AppColors.textSubtle),
                       const SizedBox(height: 18),
                       Text(
                         message,

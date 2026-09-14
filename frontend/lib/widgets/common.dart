@@ -16,7 +16,10 @@ class PageFrame extends StatelessWidget {
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 1180),
               child: Padding(
-                padding: const EdgeInsets.all(24),
+                // 휴대폰 폭에서는 좌우 여백을 줄여 글자 폭을 확보한다.
+                padding: MediaQuery.sizeOf(context).width < 600
+                    ? const EdgeInsets.fromLTRB(20, 20, 20, 32)
+                    : const EdgeInsets.all(24),
                 // 내용이 적어도 폭을 꽉 채워, 페이지 전체가 가운데 좁은 기둥으로 몰리지 않게 한다.
                 child: SizedBox(width: double.infinity, child: child),
               ),
@@ -26,7 +29,7 @@ class PageFrame extends StatelessWidget {
       );
 }
 
-/// 페이지 상단 제목 묶음. 예: STUDY / 함께 배우는 KUICS 스터디 / 설명
+/// 페이지 상단 제목 묶음. 예: ― STUDY / 함께 배우는 KUICS 스터디 / 설명
 class PageHeader extends StatelessWidget {
   const PageHeader({
     super.key,
@@ -40,67 +43,70 @@ class PageHeader extends StatelessWidget {
   final String? subtitle;
 
   @override
-  Widget build(BuildContext context) => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // 머리말은 연크림슨 알약 배지로 둔다.
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: AppColors.crimsonSoft,
-              borderRadius: BorderRadius.circular(999),
-            ),
-            child: Text(
+  Widget build(BuildContext context) {
+    final narrow = MediaQuery.sizeOf(context).width < 600;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // 알약 배지 대신 짧은 크림슨 선 + 자간을 넓힌 작은 글자.
+        Row(
+          children: [
+            Container(width: 16, height: 2, color: AppColors.crimson),
+            const SizedBox(width: 8),
+            Text(
               eyebrow,
               style: const TextStyle(
                 color: AppColors.crimson,
                 fontSize: 12,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 1.1,
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 32,
-              fontWeight: FontWeight.w800,
-              height: 1.25,
-              letterSpacing: -0.4,
-            ),
-          ),
-          if (subtitle != null) ...[
-            const SizedBox(height: 8),
-            Text(
-              subtitle!,
-              style: const TextStyle(
-                color: AppColors.textMuted,
-                fontSize: 15,
-                height: 1.5,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 1.6,
               ),
             ),
           ],
+        ),
+        const SizedBox(height: 10),
+        Text(
+          title,
+          style: TextStyle(
+            fontSize: narrow ? 26 : 32,
+            fontWeight: FontWeight.w800,
+            height: 1.25,
+            letterSpacing: -0.3,
+          ),
+        ),
+        if (subtitle != null) ...[
+          const SizedBox(height: 8),
+          KeepAllText(
+            subtitle!,
+            style: const TextStyle(
+              color: AppColors.textMuted,
+              fontSize: 15,
+              height: 1.5,
+            ),
+          ),
         ],
-      );
+      ],
+    );
+  }
 }
 
-/// 연크림슨 둥근 사각형 안의 크림슨 아이콘. 카드 머리 아이콘을 이 모양으로 통일한다.
+/// 카드 머리 선 아이콘. 파스텔 배경 없이 크기와 색만 맞춘다.
 class IconBadge extends StatelessWidget {
-  const IconBadge({super.key, required this.icon, this.size = 44});
+  const IconBadge({
+    super.key,
+    required this.icon,
+    this.size = 44,
+    this.color = AppColors.crimson,
+  });
   final IconData icon;
+
+  /// 예전 배지 크기 기준. 아이콘은 그 절반 크기로 그린다.
   final double size;
+  final Color color;
 
   @override
-  Widget build(BuildContext context) => Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(
-          color: AppColors.crimsonSoft,
-          borderRadius: BorderRadius.circular(size * 0.3),
-        ),
-        child: Icon(icon, color: AppColors.crimson, size: size * 0.52),
-      );
+  Widget build(BuildContext context) =>
+      Icon(icon, size: size * 0.5, color: color);
 }
 
 class LoadingView extends StatelessWidget {
@@ -130,7 +136,10 @@ class LoadError extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
             child: Column(
               children: [
-                const IconBadge(icon: Icons.cloud_off_outlined),
+                const IconBadge(
+                  icon: Icons.cloud_off_outlined,
+                  color: AppColors.textSubtle,
+                ),
                 const SizedBox(height: 14),
                 Text(
                   message ?? '서버에 연결할 수 없습니다.',
@@ -168,7 +177,7 @@ class EmptyState extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
             child: Column(
               children: [
-                IconBadge(icon: icon),
+                IconBadge(icon: icon, color: AppColors.textSubtle),
                 const SizedBox(height: 14),
                 Text(
                   message,
@@ -340,14 +349,11 @@ Future<bool> confirmAction(
   required String title,
   required String message,
   String confirmLabel = '확인',
-  IconData icon = Icons.help_outline,
 }) async {
   final confirmed = await showDialog<bool>(
     context: context,
     builder: (context) => AppDialog(
-      eyebrow: 'CONFIRM',
       title: title,
-      icon: icon,
       maxWidth: 420,
       onClose: () => Navigator.pop(context, false),
       actions: [
@@ -357,7 +363,7 @@ Future<bool> confirmAction(
           onPressed: () => Navigator.pop(context, true),
         ),
       ],
-      child: Text(
+      child: KeepAllText(
         message,
         style: const TextStyle(
           color: AppColors.textBody,
@@ -412,22 +418,11 @@ class ButtonSpinner extends StatelessWidget {
       );
 }
 
-/// 화면 바탕. 위는 옅은 크림슨, 아래는 옅은 남색 기운이 도는 그라데이션에 큰 빛 두 개를 번지게 한다.
-/// 스크롤해도 제자리에 있고 누르기를 막지 않는다. 라우트 전환 중 겹쳐 비치지 않도록 화면 틀 안에서 칠한다.
+/// 화면 바탕. 거의 티 나지 않는 중성 그라데이션만 깐다(번지는 빛 장식은 두지 않는다).
+/// 라우트 전환 중 겹쳐 비치지 않도록 화면 틀 안에서 칠한다.
 class AppBackdrop extends StatelessWidget {
   const AppBackdrop({super.key, required this.child});
   final Widget child;
-
-  static Widget _glow(double size, Color color) => IgnorePointer(
-        child: Container(
-          width: size,
-          height: size,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: RadialGradient(colors: [color, color.withAlpha(0)]),
-          ),
-        ),
-      );
 
   @override
   Widget build(BuildContext context) => DecoratedBox(
@@ -435,30 +430,14 @@ class AppBackdrop extends StatelessWidget {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Color(0xFFFBF2F4), Color(0xFFF7F6F9), Color(0xFFF0F3F8)],
-            stops: [0, 0.45, 1],
+            colors: [Color(0xFFF7F7F5), Color(0xFFF2F3F5)],
           ),
         ),
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            Positioned(
-              top: -260,
-              right: -200,
-              child: _glow(620, AppColors.crimson.withAlpha(24)),
-            ),
-            Positioned(
-              bottom: -300,
-              left: -240,
-              child: _glow(660, AppColors.info.withAlpha(18)),
-            ),
-            child,
-          ],
-        ),
+        child: child,
       );
 }
 
-/// 흰색에서 아주 옅은 크림슨으로 흐르는 카드. [accent]면 왼쪽에 크림슨 구분 막대를 둔다.
+/// 흰색에서 아주 옅은 회백으로 흐르는 카드. [accent]면 왼쪽에 단색 크림슨 구분 막대를 둔다.
 /// 안쪽은 그대로 Card라서 잉크 효과와 테스트의 Card 탐색이 유지된다.
 class SoftCard extends StatelessWidget {
   const SoftCard({super.key, required this.child, this.accent = false});
@@ -471,39 +450,50 @@ class SoftCard extends StatelessWidget {
         child: Ink(
           decoration: const BoxDecoration(
             gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [Colors.white, Color(0xFFFFF7F8)],
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [Colors.white, Color(0xFFFCFCFB)],
             ),
           ),
           child: accent
               ? Stack(
                   children: [
                     Padding(
-                      padding: const EdgeInsets.only(left: 4),
+                      padding: const EdgeInsets.only(left: 3),
                       child: child,
                     ),
                     const Positioned(
                       left: 0,
                       top: 0,
                       bottom: 0,
-                      width: 4,
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              AppColors.crimson,
-                              AppColors.crimsonDeepBottom,
-                            ],
-                          ),
-                        ),
-                      ),
+                      width: 3,
+                      child: ColoredBox(color: AppColors.crimson),
                     ),
                   ],
                 )
               : child,
         ),
+      );
+}
+
+/// 한글이 단어 중간에서 줄바꿈되지 않게 한다(CSS `word-break: keep-all`과 같은 효과).
+/// 붙어 있는 한글 음절 사이에 줄바꿈 금지 문자(U+2060)를 넣어, 띄어쓰기에서만 줄이 바뀐다.
+/// 띄어쓰기 없이 긴 사용자 입력(주소 등)에는 쓰지 않는다 — 좁은 화면에서 넘칠 수 있다.
+String keepAll(String text) =>
+    text.replaceAllMapped(RegExp(r'([가-힣])(?=[가-힣])'), (m) => '${m[1]}\u2060');
+
+/// [keepAll]을 적용한 글자. 고정 안내 문장(페이지 설명, 소개 문단)에 쓴다.
+class KeepAllText extends StatelessWidget {
+  const KeepAllText(this.data, {super.key, this.style, this.textAlign});
+  final String data;
+  final TextStyle? style;
+  final TextAlign? textAlign;
+
+  @override
+  Widget build(BuildContext context) => Text(
+        keepAll(data),
+        semanticsLabel: data,
+        style: style,
+        textAlign: textAlign,
       );
 }

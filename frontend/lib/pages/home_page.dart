@@ -160,34 +160,34 @@ class _InfoCard extends StatelessWidget {
         child: SoftCard(
           child: InkWell(
             onTap: onTap,
-            hoverColor: AppColors.crimsonSoft.withAlpha(110),
             child: Padding(
-              padding: const EdgeInsets.all(24),
+              padding: const EdgeInsets.fromLTRB(20, 18, 16, 20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     children: [
-                      IconBadge(icon: icon),
-                      const Spacer(),
-                      // 눌러서 이동하는 카드만 화살표로 알려준다.
+                      Icon(icon, size: 20, color: AppColors.crimson),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          title,
+                          style: const TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                      // 눌러서 이동하는 카드만 표시한다.
                       if (onTap != null)
                         const Icon(
-                          Icons.arrow_forward,
+                          Icons.chevron_right,
                           size: 20,
-                          color: AppColors.crimson,
+                          color: AppColors.textSubtle,
                         ),
                     ],
                   ),
-                  const SizedBox(height: 18),
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 10),
                   Text(
                     body,
                     style: const TextStyle(color: AppColors.textMuted),
@@ -200,63 +200,44 @@ class _InfoCard extends StatelessWidget {
       );
 }
 
-/// 첫 화면 소개 판. 남색 그라데이션 위에 크림슨 빛을 번지게 해 명암을 준다.
+/// 첫 화면 소개 판. 남색 바탕에 아주 옅은 선형 그라데이션과 왼쪽 크림슨 막대만 둔다.
 class _Hero extends StatelessWidget {
   const _Hero({required this.narrow});
   final bool narrow;
-
-  static Widget _glow(double size, Color color) => Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          gradient: RadialGradient(colors: [color, color.withAlpha(0)]),
-        ),
-      );
 
   @override
   Widget build(BuildContext context) => Container(
         width: double.infinity,
         clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(16),
           gradient: const LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [Color(0xFF0E2A4D), AppColors.navy, Color(0xFF040D1A)],
-            stops: [0, 0.55, 1],
+            colors: [Color(0xFF0B2240), AppColors.navy, Color(0xFF06162B)],
           ),
           boxShadow: [
             BoxShadow(
-              color: AppColors.navy.withAlpha(50),
-              blurRadius: 30,
-              offset: const Offset(0, 14),
+              color: AppColors.navy.withAlpha(36),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
             ),
           ],
         ),
         child: Stack(
           children: [
-            Positioned(
-              right: narrow ? -150 : -60,
-              top: narrow ? -150 : -130,
-              child: _glow(
-                narrow ? 320 : 440,
-                AppColors.crimson.withAlpha(80),
-              ),
-            ),
-            Positioned(
-              right: narrow ? 20 : 240,
-              bottom: narrow ? -170 : -210,
-              child: _glow(
-                narrow ? 240 : 340,
-                AppColors.heroAccent.withAlpha(34),
-              ),
+            const Positioned(
+              left: 0,
+              top: 0,
+              bottom: 0,
+              width: 4,
+              child: ColoredBox(color: AppColors.crimson),
             ),
             Padding(
-              // 휴대폰 폭에서는 여백과 글자를 줄여 문구가 음절 중간에서 끊기지 않게 한다.
+              // 휴대폰 폭에서는 여백과 글자를 줄인다.
               padding: narrow
-                  ? const EdgeInsets.symmetric(horizontal: 24, vertical: 44)
-                  : const EdgeInsets.symmetric(horizontal: 40, vertical: 72),
+                  ? const EdgeInsets.fromLTRB(26, 36, 22, 36)
+                  : const EdgeInsets.fromLTRB(48, 64, 40, 64),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -264,35 +245,38 @@ class _Hero extends StatelessWidget {
                     'KOREA UNIVERSITY\nINSTITUTE of COMPUTER SECURITY',
                     style: TextStyle(
                       color: AppColors.heroAccent,
+                      fontSize: 13,
                       fontWeight: FontWeight.w700,
-                      letterSpacing: 1.2,
+                      letterSpacing: 1.4,
                     ),
                   ),
-                  const SizedBox(height: 18),
+                  SizedBox(height: narrow ? 14 : 18),
                   Text(
                     '보안을 배우고,\n함께 성장합니다.',
                     style: TextStyle(
                       color: Colors.white,
-                      fontSize: narrow ? 30 : 42,
+                      fontSize: narrow ? 28 : 42,
                       fontWeight: FontWeight.w800,
                       height: 1.2,
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  const Text(
+                  SizedBox(height: narrow ? 12 : 16),
+                  KeepAllText(
                     'KUICS는 고려대학교 정보대학 소속 대한민국 최고의 보안 학술 동아리입니다.',
-                    style: TextStyle(color: AppColors.heroSubtle, fontSize: 17),
+                    style: TextStyle(
+                      color: AppColors.heroSubtle,
+                      fontSize: narrow ? 15.5 : 17,
+                      height: 1.5,
+                    ),
                   ),
-                  const SizedBox(height: 28),
+                  SizedBox(height: narrow ? 22 : 28),
                   FilledButton.icon(
                     onPressed: () => context.go(AppRoutes.study),
                     style: FilledButton.styleFrom(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 18,
+                        horizontal: 22,
+                        vertical: 16,
                       ),
-                      elevation: 4,
-                      shadowColor: Colors.black.withAlpha(120),
                     ),
                     icon: const Icon(Icons.arrow_forward),
                     label: const Text('스터디 둘러보기'),

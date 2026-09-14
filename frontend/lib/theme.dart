@@ -35,9 +35,9 @@ class AppColors {
   static const neutralSoft = Color(0xFFF0F2F5);
 }
 
-/// 버튼 공통 모서리. 창(모달) 버튼과 같은 12.
+/// 버튼 공통 모서리. 알약·크게 둥근 모양 대신 단정한 8.
 const _buttonShape = RoundedRectangleBorder(
-  borderRadius: BorderRadius.all(Radius.circular(12)),
+  borderRadius: BorderRadius.all(Radius.circular(8)),
 );
 
 /// 앱 테마. 테스트에서도 같은 모양으로 그리도록 여기에 모아 둔다.
@@ -50,7 +50,8 @@ ThemeData buildAppTheme(TextTheme base) => ThemeData(
         primary: AppColors.crimson,
       ),
       // 실제 바탕은 AppBackdrop 그라데이션이 칠한다. 로딩 중에도 튀지 않게 가운데 색으로 둔다.
-      scaffoldBackgroundColor: const Color(0xFFF6F5F8),
+      scaffoldBackgroundColor: const Color(0xFFF5F5F4),
+      dividerColor: AppColors.borderLight,
       textTheme: base.apply(
         bodyColor: AppColors.navy,
         displayColor: AppColors.navy,
@@ -59,13 +60,13 @@ ThemeData buildAppTheme(TextTheme base) => ThemeData(
       cardTheme: const CardThemeData(
         color: Colors.white,
         surfaceTintColor: Colors.transparent,
-        // 테두리만 있던 카드에 아주 옅은 그림자를 더해 바닥에서 살짝 띄운다.
-        elevation: 3,
-        shadowColor: Color(0x29071B33),
+        // 떠 있는 그림자 대신 바닥에 붙은 가까운 그림자와 선명한 테두리로 구분한다.
+        elevation: 1,
+        shadowColor: Color(0x1F071B33),
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(16)),
-          side: BorderSide(color: AppColors.borderLight),
+          borderRadius: BorderRadius.all(Radius.circular(8)),
+          side: BorderSide(color: AppColors.border),
         ),
       ),
       appBarTheme: const AppBarTheme(
@@ -74,27 +75,20 @@ ThemeData buildAppTheme(TextTheme base) => ThemeData(
         scrolledUnderElevation: 0,
         shape: Border(bottom: BorderSide(color: AppColors.borderLight)),
       ),
-      filledButtonTheme: FilledButtonThemeData(
+      filledButtonTheme: const FilledButtonThemeData(
         style: ButtonStyle(
-          shape: const WidgetStatePropertyAll(_buttonShape),
-          padding: const WidgetStatePropertyAll(
+          shape: WidgetStatePropertyAll(_buttonShape),
+          padding: WidgetStatePropertyAll(
             EdgeInsets.symmetric(horizontal: 20, vertical: 14),
           ),
-          textStyle: const WidgetStatePropertyAll(
+          textStyle: WidgetStatePropertyAll(
             TextStyle(
               fontFamily: 'Pretendard',
               fontSize: 14.5,
               fontWeight: FontWeight.w700,
             ),
           ),
-          // 마우스를 올리면 크림슨 그림자로 살짝 떠오른다.
-          elevation: WidgetStateProperty.resolveWith(
-            (states) => !states.contains(WidgetState.disabled) &&
-                    states.contains(WidgetState.hovered)
-                ? 3
-                : 0,
-          ),
-          shadowColor: WidgetStatePropertyAll(AppColors.crimson.withAlpha(110)),
+          elevation: WidgetStatePropertyAll(0),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
@@ -117,7 +111,7 @@ ThemeData buildAppTheme(TextTheme base) => ThemeData(
           ),
           backgroundColor: WidgetStateProperty.resolveWith(
             (states) => states.contains(WidgetState.hovered)
-                ? AppColors.crimsonSoft
+                ? AppColors.surfaceMuted
                 : Colors.white,
           ),
           side: WidgetStateProperty.resolveWith(
@@ -136,7 +130,7 @@ ThemeData buildAppTheme(TextTheme base) => ThemeData(
         style: ButtonStyle(
           shape: const WidgetStatePropertyAll(
             RoundedRectangleBorder(
-              borderRadius: BorderRadius.all(Radius.circular(10)),
+              borderRadius: BorderRadius.all(Radius.circular(8)),
             ),
           ),
           textStyle: const WidgetStatePropertyAll(
@@ -152,7 +146,9 @@ ThemeData buildAppTheme(TextTheme base) => ThemeData(
       // 학기·게시판 분류 칩: 체크 표시 없는 알약, 고르면 크림슨으로 채운다.
       chipTheme: ChipThemeData(
         showCheckmark: false,
-        shape: const StadiumBorder(),
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(8)),
+        ),
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
         surfaceTintColor: Colors.transparent,
         elevation: 0,
@@ -161,7 +157,7 @@ ThemeData buildAppTheme(TextTheme base) => ThemeData(
           (states) => states.contains(WidgetState.selected)
               ? AppColors.crimson
               : states.contains(WidgetState.hovered)
-                  ? AppColors.crimsonSoft
+                  ? AppColors.surfaceMuted
                   : Colors.white,
         ),
         side: WidgetStateBorderSide.resolveWith(
@@ -198,15 +194,15 @@ ThemeData buildAppTheme(TextTheme base) => ThemeData(
         filled: true,
         fillColor: AppColors.surfaceMuted,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.all(Radius.circular(12)),
+          borderRadius: BorderRadius.all(Radius.circular(8)),
           borderSide: BorderSide(color: AppColors.border),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.all(Radius.circular(12)),
+          borderRadius: BorderRadius.all(Radius.circular(8)),
           borderSide: BorderSide(color: AppColors.border),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.all(Radius.circular(12)),
+          borderRadius: BorderRadius.all(Radius.circular(8)),
           borderSide: BorderSide(color: AppColors.crimson, width: 1.4),
         ),
       ),
@@ -221,12 +217,17 @@ ThemeData buildAppTheme(TextTheme base) => ThemeData(
           fontSize: 14,
         ),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(12)),
+          borderRadius: BorderRadius.all(Radius.circular(8)),
         ),
       ),
       progressIndicatorTheme: const ProgressIndicatorThemeData(
         color: AppColors.crimson,
         linearTrackColor: AppColors.crimsonSoft,
+      ),
+      // 구분선은 기본(연분홍 기운) 대신 옅은 회색.
+      dividerTheme: const DividerThemeData(
+        color: AppColors.borderLight,
+        thickness: 1,
       ),
       // 출석 상태 선택(출석·지각·결석·공결): 짙은 기본 테두리 대신 옅은 테두리와 둥근 모서리.
       segmentedButtonTheme: const SegmentedButtonThemeData(
@@ -234,7 +235,7 @@ ThemeData buildAppTheme(TextTheme base) => ThemeData(
           side: WidgetStatePropertyAll(BorderSide(color: AppColors.border)),
           shape: WidgetStatePropertyAll(
             RoundedRectangleBorder(
-              borderRadius: BorderRadius.all(Radius.circular(10)),
+              borderRadius: BorderRadius.all(Radius.circular(8)),
             ),
           ),
         ),
@@ -250,7 +251,7 @@ ThemeData buildAppTheme(TextTheme base) => ThemeData(
         elevation: 24,
         shadowColor: AppColors.navy.withAlpha(90),
         shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(20)),
+          borderRadius: BorderRadius.all(Radius.circular(14)),
         ),
       ),
       popupMenuTheme: PopupMenuThemeData(
@@ -260,7 +261,7 @@ ThemeData buildAppTheme(TextTheme base) => ThemeData(
         shadowColor: AppColors.navy.withAlpha(70),
         position: PopupMenuPosition.under,
         shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(12)),
+          borderRadius: BorderRadius.all(Radius.circular(8)),
           side: BorderSide(color: AppColors.borderLight),
         ),
         labelTextStyle: const WidgetStatePropertyAll(
@@ -278,7 +279,7 @@ ThemeData buildAppTheme(TextTheme base) => ThemeData(
         elevation: 24,
         shadowColor: AppColors.navy.withAlpha(90),
         shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(20)),
+          borderRadius: BorderRadius.all(Radius.circular(14)),
         ),
         headerBackgroundColor: AppColors.crimsonDeep,
         headerForegroundColor: Colors.white,
@@ -289,7 +290,7 @@ ThemeData buildAppTheme(TextTheme base) => ThemeData(
         backgroundColor: Colors.white,
         elevation: 24,
         shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(20)),
+          borderRadius: BorderRadius.all(Radius.circular(14)),
         ),
         dialBackgroundColor: AppColors.surfaceMuted,
         dialHandColor: AppColors.crimson,

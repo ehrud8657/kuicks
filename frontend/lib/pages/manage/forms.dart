@@ -17,8 +17,7 @@ class _DialogError extends StatelessWidget {
   Widget build(BuildContext context) {
     final text = message;
     if (text == null) return const SizedBox.shrink();
-    return DialogCallout(
-        icon: Icons.error_outline, message: text, strong: true);
+    return DialogCallout(message: text, strong: true);
   }
 }
 
@@ -148,10 +147,7 @@ class _SessionFormDialogState extends State<SessionFormDialog> {
 
   @override
   Widget build(BuildContext context) => AppDialog(
-        eyebrow: 'STUDY SESSION',
         title: widget.session == null ? '회차 추가' : '회차 수정',
-        subtitle: '회차 번호와 진행일을 정하면 출석을 기록할 수 있어요.',
-        icon: Icons.event_note_outlined,
         maxWidth: 440,
         onClose: saving ? null : () => Navigator.pop(context),
         actions: _dialogActions(context, saving: saving, onSubmit: _submit),
@@ -324,10 +320,7 @@ class _AssignmentFormDialogState extends State<AssignmentFormDialog> {
       onTap: saving ? null : _pickTime,
     );
     return AppDialog(
-      eyebrow: 'ASSIGNMENT',
       title: widget.assignment == null ? '과제 등록' : '과제 수정',
-      subtitle: '참여자는 마감 뒤에도 지각으로 제출할 수 있어요.',
-      icon: Icons.assignment_outlined,
       maxWidth: 540,
       onClose: saving ? null : () => Navigator.pop(context),
       actions: _dialogActions(context, saving: saving, onSubmit: _submit),
@@ -383,7 +376,6 @@ class _AssignmentFormDialogState extends State<AssignmentFormDialog> {
               ),
             if (dueAt.isBefore(DateTime.now()))
               const DialogCallout(
-                icon: Icons.history,
                 message: '이미 지난 시각입니다. 저장하면 바로 마감된 과제로 표시됩니다.',
                 margin: EdgeInsets.only(top: 14),
               ),
@@ -449,10 +441,8 @@ class _FeedbackDialogState extends State<FeedbackDialog> {
 
   @override
   Widget build(BuildContext context) => AppDialog(
-        eyebrow: 'FEEDBACK',
         title: '${widget.memberName}님 피드백',
         subtitle: widget.submission.originalName,
-        icon: Icons.rate_review_outlined,
         maxWidth: 540,
         onClose: saving ? null : () => Navigator.pop(context),
         actions: _dialogActions(context, saving: saving, onSubmit: _submit),

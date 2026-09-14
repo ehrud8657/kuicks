@@ -53,11 +53,9 @@ void main() {
         title: '과제 삭제',
         message: '되돌릴 수 없습니다.',
         confirmLabel: '삭제',
-        icon: Icons.delete_outline,
       ),
     );
     expect(find.byType(AppDialog), findsOneWidget);
-    expect(find.byIcon(Icons.delete_outline), findsOneWidget);
     await tester.tap(find.widgetWithText(FilledButton, '삭제'));
     await tester.pumpAndSettle();
 
@@ -151,7 +149,7 @@ void main() {
     expect(
       tester.getSemantics(find.text('회차 삭제')),
       isSemantics(
-        label: 'CONFIRM\n회차 삭제',
+        label: '회차 삭제',
         isHeader: true,
         namesRoute: true,
       ),

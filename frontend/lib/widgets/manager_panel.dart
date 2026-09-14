@@ -46,12 +46,12 @@ class _ManagerPanelState extends State<ManagerPanel> {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.crimson.withValues(alpha: .22)),
+            border: Border.all(color: AppColors.border),
             boxShadow: const [
               BoxShadow(
-                color: Color(0x1F071B33),
-                blurRadius: 8,
-                offset: Offset(0, 2),
+                color: Color(0x14071B33),
+                blurRadius: 3,
+                offset: Offset(0, 1),
               ),
             ],
           ),
@@ -63,7 +63,7 @@ class _ManagerPanelState extends State<ManagerPanel> {
                     width: 44,
                     height: 44,
                     decoration: BoxDecoration(
-                      color: AppColors.crimsonSoft,
+                      color: AppColors.surfaceMuted,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: const Icon(
@@ -111,7 +111,12 @@ class _ManagerPanelState extends State<ManagerPanel> {
               if (constraints.maxWidth < 560) {
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [info, const SizedBox(height: 14), button],
+                  children: [
+                    info,
+                    const SizedBox(height: 14),
+                    // 휴대폰 폭에서는 버튼을 가로 가득 채운다.
+                    SizedBox(width: double.infinity, child: button),
+                  ],
                 );
               }
               return Row(

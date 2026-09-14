@@ -88,7 +88,6 @@ class _MyStudyPageState extends State<MyStudyPage> {
         if (!isLate && !resubmit) '이 파일로 제출할까요?',
       ].join('\n\n'),
       confirmLabel: '제출',
-      icon: Icons.upload_file_outlined,
     );
     if (!confirmed || !mounted) return;
 
@@ -585,13 +584,14 @@ class _SessionList extends StatelessWidget {
                       height: 36,
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
-                        color: AppColors.crimsonSoft,
-                        borderRadius: BorderRadius.circular(10),
+                        color: AppColors.surfaceMuted,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: AppColors.border),
                       ),
                       child: Text(
                         '${session.number}',
                         style: const TextStyle(
-                          color: AppColors.crimson,
+                          color: AppColors.navy,
                           fontWeight: FontWeight.w800,
                         ),
                       ),
