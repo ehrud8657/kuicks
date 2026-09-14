@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../api_client.dart';
 import '../theme.dart';
+import 'app_dialog.dart';
 
 class PageFrame extends StatelessWidget {
   const PageFrame({super.key, required this.child});
@@ -255,34 +256,69 @@ void showMessage(BuildContext context, String message) {
     ..showSnackBar(SnackBar(content: Text(message)));
 }
 
-/// 확인/취소 창. 확인을 누르면 true.
+/// 확인/취소 창. 확인을 누르면 true. 닫기(✕)나 바깥을 누르면 false.
 Future<bool> confirmAction(
   BuildContext context, {
   required String title,
   required String message,
   String confirmLabel = '확인',
+  IconData icon = Icons.help_outline,
 }) async {
   final confirmed = await showDialog<bool>(
     context: context,
-    builder: (context) => AlertDialog(
-      title: Text(title),
-      content: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 400),
-        child: Text(message),
-      ),
+    builder: (context) => AppDialog(
+      eyebrow: 'CONFIRM',
+      title: title,
+      icon: icon,
+      maxWidth: 420,
+      onClose: () => Navigator.pop(context, false),
       actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context, false),
-          child: const Text('취소'),
-        ),
-        FilledButton(
+        DialogCancelButton(onPressed: () => Navigator.pop(context, false)),
+        DialogPrimaryButton(
+          label: confirmLabel,
           onPressed: () => Navigator.pop(context, true),
-          child: Text(confirmLabel),
         ),
       ],
+      child: Text(
+        message,
+        style: const TextStyle(
+          color: AppColors.textBody,
+          fontSize: 14.5,
+          height: 1.55,
+        ),
+      ),
     ),
   );
   return confirmed ?? false;
+}
+
+/// 팝업 메뉴 항목의 아이콘 + 글자. 삭제처럼 되돌릴 수 없는 항목은 [danger]로 크림슨 표시.
+class MenuItemLabel extends StatelessWidget {
+  const MenuItemLabel(this.icon, this.label, {super.key, this.danger = false});
+
+  final IconData icon;
+  final String label;
+  final bool danger;
+
+  @override
+  Widget build(BuildContext context) => Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            icon,
+            size: 18,
+            color: danger ? AppColors.crimson : AppColors.textMuted,
+          ),
+          const SizedBox(width: 10),
+          Flexible(
+            child: Text(
+              label,
+              overflow: TextOverflow.ellipsis,
+              style: danger ? const TextStyle(color: AppColors.crimson) : null,
+            ),
+          ),
+        ],
+      );
 }
 
 /// 버튼 안에 넣는 작은 로딩 표시.

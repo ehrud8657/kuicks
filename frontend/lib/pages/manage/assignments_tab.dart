@@ -40,6 +40,7 @@ class AssignmentsTab extends StatelessWidget {
       message: '‘${assignment.title}’ 과제를 삭제할까요?\n\n'
           '제출물 ${assignment.submittedCount}건과 파일도 함께 삭제되며 되돌릴 수 없습니다.',
       confirmLabel: '삭제',
+      icon: Icons.delete_outline,
     );
     if (!confirmed || !context.mounted) return;
     try {
@@ -172,8 +173,18 @@ class _AssignmentCard extends StatelessWidget {
                       onSelected: (value) =>
                           value == 'edit' ? onEdit() : onDelete(),
                       itemBuilder: (context) => const [
-                        PopupMenuItem(value: 'edit', child: Text('수정')),
-                        PopupMenuItem(value: 'delete', child: Text('삭제')),
+                        PopupMenuItem(
+                          value: 'edit',
+                          child: MenuItemLabel(Icons.edit_outlined, '수정'),
+                        ),
+                        PopupMenuItem(
+                          value: 'delete',
+                          child: MenuItemLabel(
+                            Icons.delete_outline,
+                            '삭제',
+                            danger: true,
+                          ),
+                        ),
                       ],
                     ),
                   ],

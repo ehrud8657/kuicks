@@ -88,6 +88,7 @@ class _MyStudyPageState extends State<MyStudyPage> {
         if (!isLate && !resubmit) '이 파일로 제출할까요?',
       ].join('\n\n'),
       confirmLabel: '제출',
+      icon: Icons.upload_file_outlined,
     );
     if (!confirmed || !mounted) return;
 

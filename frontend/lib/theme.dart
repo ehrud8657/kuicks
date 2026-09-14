@@ -51,6 +51,75 @@ ThemeData buildAppTheme(TextTheme base) => ThemeData(
           side: BorderSide(color: AppColors.border),
         ),
       ),
+      // 창(모달)·메뉴·날짜/시각 선택창은 흰 바탕에 그림자를 두고, 크림슨은 강조에만 쓴다.
+      dialogTheme: DialogThemeData(
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
+        elevation: 24,
+        shadowColor: AppColors.navy.withAlpha(90),
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(20)),
+        ),
+      ),
+      popupMenuTheme: PopupMenuThemeData(
+        color: Colors.white,
+        surfaceTintColor: Colors.transparent,
+        elevation: 10,
+        shadowColor: AppColors.navy.withAlpha(70),
+        position: PopupMenuPosition.under,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(12)),
+          side: BorderSide(color: AppColors.borderLight),
+        ),
+        labelTextStyle: const WidgetStatePropertyAll(
+          TextStyle(
+            fontFamily: 'Pretendard',
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            color: AppColors.textBody,
+          ),
+        ),
+      ),
+      datePickerTheme: DatePickerThemeData(
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
+        elevation: 24,
+        shadowColor: AppColors.navy.withAlpha(90),
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(20)),
+        ),
+        headerBackgroundColor: AppColors.crimson,
+        headerForegroundColor: Colors.white,
+        dividerColor: AppColors.borderLight,
+        todayBorder: const BorderSide(color: AppColors.crimson),
+      ),
+      timePickerTheme: TimePickerThemeData(
+        backgroundColor: Colors.white,
+        elevation: 24,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(20)),
+        ),
+        dialBackgroundColor: AppColors.surfaceMuted,
+        dialHandColor: AppColors.crimson,
+        hourMinuteColor: WidgetStateColor.resolveWith(
+          (states) => states.contains(WidgetState.selected)
+              ? AppColors.crimsonSoft
+              : AppColors.surfaceMuted,
+        ),
+        hourMinuteTextColor: WidgetStateColor.resolveWith(
+          (states) => states.contains(WidgetState.selected)
+              ? AppColors.crimson
+              : AppColors.textBody,
+        ),
+        dayPeriodColor: AppColors.crimsonSoft,
+        dayPeriodTextColor: WidgetStateColor.resolveWith(
+          (states) => states.contains(WidgetState.selected)
+              ? AppColors.crimson
+              : AppColors.textMuted,
+        ),
+        dayPeriodBorderSide: const BorderSide(color: AppColors.border),
+        entryModeIconColor: AppColors.textMuted,
+      ),
     );
 
 /// 상태 배지의 색 조합.
