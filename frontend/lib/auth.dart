@@ -34,6 +34,11 @@ class AuthController extends ChangeNotifier {
   bool _passwordDialogOpen = false;
   bool _disposed = false;
 
+  /// 강제 비밀번호 변경을 마칠 때마다 1씩 늘어난다.
+  /// 변경 전에 서버가 거절한 화면들이 이 값을 보고 새로 불러온다.
+  int _passwordVersion = 0;
+  int get passwordVersion => _passwordVersion;
+
   Member? get member => _member;
 
   /// 첫 화면에서 세션을 확인하는 중이면 true.
@@ -115,7 +120,10 @@ class AuthController extends ChangeNotifier {
       case PasswordDialogResult.changed:
         final member = _member;
         if (member != null) {
-          _set(() => _member = member.copyWith(mustChangePassword: false));
+          _set(() {
+            if (member.mustChangePassword) _passwordVersion++;
+            _member = member.copyWith(mustChangePassword: false);
+          });
         }
       case PasswordDialogResult.logout:
         await logout();

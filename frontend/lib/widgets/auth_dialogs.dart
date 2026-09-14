@@ -44,11 +44,13 @@ class _LoginDialogState extends State<LoginDialog> {
       );
       if (mounted) Navigator.pop(context, member);
     } on ApiException catch (e) {
+      if (!mounted) return;
       setState(() {
         submitting = false;
         errorMessage = e.message;
       });
     } catch (_) {
+      if (!mounted) return;
       setState(() {
         submitting = false;
         errorMessage = '서버에 연결할 수 없습니다.';
@@ -68,6 +70,7 @@ class _LoginDialogState extends State<LoginDialog> {
         filterQuality: FilterQuality.medium,
       ),
       maxWidth: 400,
+      busy: submitting,
       onClose: submitting ? null : () => Navigator.pop(context),
       child: Form(
         key: formKey,
@@ -197,11 +200,13 @@ class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
       await ApiClient.instance.changePassword(passwordController.text);
       if (mounted) Navigator.pop(context, PasswordDialogResult.changed);
     } on ApiException catch (e) {
+      if (!mounted) return;
       setState(() {
         submitting = false;
         errorMessage = e.message;
       });
     } catch (_) {
+      if (!mounted) return;
       setState(() {
         submitting = false;
         errorMessage = '서버에 연결할 수 없습니다.';
@@ -217,6 +222,7 @@ class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
           maxWidth: 420,
           // 강제 변경 중에는 창을 닫을 수 없다.
           closable: !widget.forced,
+          busy: submitting,
           onClose: submitting ? null : () => Navigator.pop(context),
           actions: [
             // 강제 변경 중에는 다른 계정으로 바꿀 수 있게 로그아웃을 둔다.

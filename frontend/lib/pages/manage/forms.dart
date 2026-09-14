@@ -149,6 +149,7 @@ class _SessionFormDialogState extends State<SessionFormDialog> {
   Widget build(BuildContext context) => AppDialog(
         title: widget.session == null ? '회차 추가' : '회차 수정',
         maxWidth: 440,
+        busy: saving,
         onClose: saving ? null : () => Navigator.pop(context),
         actions: _dialogActions(context, saving: saving, onSubmit: _submit),
         child: Form(
@@ -322,6 +323,7 @@ class _AssignmentFormDialogState extends State<AssignmentFormDialog> {
     return AppDialog(
       title: widget.assignment == null ? '과제 등록' : '과제 수정',
       maxWidth: 540,
+      busy: saving,
       onClose: saving ? null : () => Navigator.pop(context),
       actions: _dialogActions(context, saving: saving, onSubmit: _submit),
       child: Form(
@@ -444,6 +446,7 @@ class _FeedbackDialogState extends State<FeedbackDialog> {
         title: '${widget.memberName}님 피드백',
         subtitle: widget.submission.originalName,
         maxWidth: 540,
+        busy: saving,
         onClose: saving ? null : () => Navigator.pop(context),
         actions: _dialogActions(context, saving: saving, onSubmit: _submit),
         child: Column(

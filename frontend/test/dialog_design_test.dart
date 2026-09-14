@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kuics_frontend/api_client.dart';
 import 'package:kuics_frontend/models.dart';
@@ -170,5 +173,56 @@ void main() {
     );
     expect(tester.takeException(), isNull);
     expect(find.widgetWithText(FilledButton, '제출'), findsOneWidget);
+  });
+
+  testWidgets('저장 중에는 바깥을 누르거나 Esc를 눌러도 닫히지 않고, 응답 뒤 결과를 돌려준다', (tester) async {
+    setScreen(tester, const Size(1280, 900));
+    final response = Completer<Object?>();
+    FakeBackend()
+      ..on('PATCH', '/api/manage/submissions/42/', (_) => response.future)
+      ..install();
+    final results = await pumpOpener(
+      tester,
+      (context) => showDialog<Submission>(
+        context: context,
+        builder: (_) => FeedbackDialog(
+          submission: Submission.fromJson(uncheckedSubmissionJson()),
+          memberName: '이영희',
+        ),
+      ),
+    );
+    await tester.tap(find.widgetWithText(FilledButton, '저장'));
+    await tester.pump();
+
+    await tester.tapAt(const Offset(10, 10));
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.byType(FeedbackDialog), findsOneWidget);
+    expect(results, isEmpty);
+
+    response.complete({
+      ...uncheckedSubmissionJson(),
+      'review_status': 'checked',
+      'feedback': '잘했어요',
+    });
+    await tester.pumpAndSettle();
+    expect(find.byType(FeedbackDialog), findsNothing);
+    expect(results.single, isA<Submission>());
+  });
+
+  testWidgets('저장 중이 아니면 바깥을 눌러 닫을 수 있다', (tester) async {
+    setScreen(tester, const Size(1280, 900));
+    final results = await pumpOpener(
+      tester,
+      (context) => showDialog<Object?>(
+        context: context,
+        builder: (_) => const SessionFormDialog(studyId: 1, nextNumber: 4),
+      ),
+    );
+    await tester.tapAt(const Offset(10, 10));
+    await tester.pumpAndSettle();
+    expect(find.byType(SessionFormDialog), findsNothing);
+    expect(results, [null]);
   });
 }

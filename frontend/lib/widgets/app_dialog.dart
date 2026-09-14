@@ -17,6 +17,7 @@ class AppDialog extends StatelessWidget {
     this.onClose,
     this.actions = const [],
     this.maxWidth = 440,
+    this.busy = false,
   });
 
   final String title;
@@ -36,8 +37,17 @@ class AppDialog extends StatelessWidget {
   final List<Widget> actions;
   final double maxWidth;
 
+  /// 저장·전송 중이면 true. 응답 전에 창이 닫혀 결과를 잃지 않도록
+  /// 창 바깥 누르기·Esc·브라우저 뒤로가기로 닫히지 않게 막는다.
+  final bool busy;
+
   @override
-  Widget build(BuildContext context) => Dialog(
+  Widget build(BuildContext context) => PopScope(
+        canPop: !busy,
+        child: _buildDialog(context),
+      );
+
+  Widget _buildDialog(BuildContext context) => Dialog(
         backgroundColor: Colors.white,
         surfaceTintColor: Colors.transparent,
         shadowColor: AppColors.navy.withAlpha(60),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:http/http.dart' as http;
 import 'package:kuics_frontend/api_client.dart';
 import 'package:kuics_frontend/main.dart';
 import 'package:kuics_frontend/pages/manage/study_manage_page.dart';
@@ -164,5 +165,87 @@ void main() {
     await tester.tap(find.byTooltip('닫기'));
     await tester.pumpAndSettle();
     expect(find.text('로그인이 필요합니다'), findsOneWidget);
+  });
+
+  group('초기 비밀번호를 바꾸면 거절당했던 화면을 다시 불러온다', () {
+    const refused = '초기 비밀번호를 변경한 뒤 이용할 수 있습니다.';
+
+    // 좁은 화면 줄바꿈용 보이지 않는 글자(U+2060)를 빼고 비교한다.
+    Finder textIncluding(String text) => find.byWidgetPredicate(
+          (widget) =>
+              widget is Text &&
+              (widget.data ?? widget.textSpan?.toPlainText() ?? '')
+                  .replaceAll('⁠', '')
+                  .contains(text),
+        );
+
+    late bool changed;
+
+    setUp(() {
+      changed = false;
+      http.Response refuseUntilChanged(Object? body) => changed
+          ? jsonResponse(body)
+          : jsonResponse(
+              {
+                'code': 'password_change_required',
+                'message': refused,
+                'fields': null,
+              },
+              status: 403,
+            );
+      backend
+        ..on(
+          'GET',
+          '/api/me/',
+          (_) => {...memberJson(), 'must_change_password': !changed},
+        )
+        ..on(
+          'GET',
+          '/api/manage/studies/',
+          (_) => refuseUntilChanged(managedStudiesJson()),
+        )
+        ..on(
+          'GET',
+          '/api/me/studies/',
+          (_) => refuseUntilChanged(<Object>[]),
+        )
+        ..on('POST', '/api/auth/change-password/', (_) {
+          changed = true;
+          return {'message': '비밀번호가 변경되었습니다.'};
+        });
+    });
+
+    Future<void> changePassword(WidgetTester tester) async {
+      expect(find.byType(ChangePasswordDialog), findsOneWidget);
+      await tester.enterText(
+        find.widgetWithText(TextFormField, '새 비밀번호'),
+        'Changed-pass-2026!',
+      );
+      await tester.enterText(
+        find.widgetWithText(TextFormField, '새 비밀번호 확인'),
+        'Changed-pass-2026!',
+      );
+      await tester.tap(find.widgetWithText(FilledButton, '변경'));
+      await tester.pumpAndSettle();
+      expect(find.byType(ChangePasswordDialog), findsNothing);
+    }
+
+    testWidgets('홈의 스터디장 메뉴', (tester) async {
+      await open(tester, '/');
+      expect(textIncluding(refused), findsOneWidget);
+
+      await changePassword(tester);
+      expect(textIncluding(refused), findsNothing);
+      expect(textIncluding('담당 스터디 1개'), findsOneWidget);
+    });
+
+    testWidgets('마이페이지', (tester) async {
+      await open(tester, '/me');
+      expect(textIncluding(refused), findsWidgets);
+
+      await changePassword(tester);
+      expect(textIncluding(refused), findsNothing);
+      expect(textIncluding('담당 스터디 1개'), findsOneWidget);
+    });
   });
 }

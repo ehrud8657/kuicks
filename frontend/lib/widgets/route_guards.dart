@@ -35,7 +35,11 @@ class RequireLogin extends StatelessWidget {
         ),
       );
     }
-    return builder(context, member);
+    // 초기 비밀번호를 바꾸면 화면을 새로 만들어, 바꾸기 전에 거절당한 요청을 다시 보낸다.
+    return KeyedSubtree(
+      key: ValueKey('${member.studentId}#${auth.passwordVersion}'),
+      child: builder(context, member),
+    );
   }
 }
 

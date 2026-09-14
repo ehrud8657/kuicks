@@ -89,7 +89,10 @@ class _HomePageState extends State<HomePage> {
                 when member.role.canManageStudies) ...[
               const SizedBox(height: 24),
               ManagerPanel(
-                key: ValueKey(member.studentId),
+                // 초기 비밀번호를 바꾸면 담당 스터디를 다시 불러온다.
+                key: ValueKey(
+                  '${member.studentId}#${AuthScope.of(context).passwordVersion}',
+                ),
                 member: member,
                 onManage: () => context.go(AppRoutes.manage),
               ),

@@ -43,7 +43,9 @@ class FakeBackend {
           );
         }
         final (status, handler) = route;
-        final body = handler(request);
+        // 응답을 늦춰야 하는 테스트는 Future를 돌려줄 수 있다.
+        var body = handler(request);
+        if (body is Future) body = await body;
         return body is http.Response
             ? body
             : jsonResponse(body, status: status);
