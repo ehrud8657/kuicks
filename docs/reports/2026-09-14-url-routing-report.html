@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>주소 라우팅 · 한글 글꼴 · Q-01~04 처리 보고서</title>
+<style>
+  :root {
+    --bg: #f6f7f9; --card: #fff; --text: #101828; --muted: #667085; --line: #e4e7ec;
+    --accent: #b31b34; --accent-soft: #fbeaec; --ok: #067647; --ok-soft: #e7f6ec;
+    --warn: #b54708; --warn-soft: #fef4e6; --info: #175cd3; --info-soft: #eaf2fd; --code: #f2f4f7;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0c111d; --card: #161b26; --text: #f5f5f6; --muted: #94969c; --line: #2a303c;
+      --accent: #f0566e; --accent-soft: #3a1720; --ok: #47cd89; --ok-soft: #0f2a1c;
+      --warn: #fdb022; --warn-soft: #2e2311; --info: #84adff; --info-soft: #15223f; --code: #1f242f;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font: 15px/1.7 "Pretendard", "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif;
+    word-break: keep-all; overflow-wrap: anywhere; }
+  .wrap { max-width: 1040px; margin: 0 auto; padding: 36px 16px 96px; }
+  a { color: var(--accent); }
+  .eyebrow { color: var(--accent); font-weight: 800; letter-spacing: .04em; font-size: 13px; }
+  h1 { font-size: 28px; line-height: 1.3; margin: 6px 0 8px; }
+  h2 { font-size: 20px; margin: 44px 0 12px; padding-top: 8px; border-top: 1px solid var(--line); }
+  .meta { color: var(--muted); font-size: 14px; }
+  code { font-family: Consolas, "D2Coding", monospace; font-size: 13px; background: var(--code); padding: 1px 5px; border-radius: 5px; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-top: 20px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; }
+  .metric { font-size: 26px; font-weight: 800; line-height: 1.2; }
+  .metric-label { color: var(--muted); font-size: 13px; }
+  .table-wrap { overflow-x: auto; background: var(--card); border: 1px solid var(--line); border-radius: 14px; margin: 10px 0; }
+  table { width: 100%; border-collapse: collapse; min-width: 640px; font-size: 14px; }
+  th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-size: 13px; background: var(--code); }
+  tr:last-child td { border-bottom: 0; }
+  td:first-child { white-space: nowrap; font-family: Consolas, monospace; font-size: 13px; }
+  .b { display: inline-block; padding: 0 8px; border-radius: 99px; font-size: 12px; font-weight: 700; white-space: nowrap; }
+  .pass { color: var(--ok); background: var(--ok-soft); }
+  .note { background: var(--warn-soft); border-left: 4px solid var(--warn); border-radius: 12px; padding: 12px 16px; margin: 12px 0; }
+  .shots { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; }
+  figure { margin: 0; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 8px; }
+  figure img { display: block; width: 100%; max-height: 460px; object-fit: cover; object-position: top; border-radius: 8px; background: #fff; }
+  figcaption { font-size: 13px; color: var(--muted); margin-top: 6px; }
+  ul { padding-left: 22px; }
+  li { margin: 3px 0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="eyebrow">KUICS HOMEPAGE · ROUTING &amp; FONT</div>
+<h1>주소 라우팅 · 한글 글꼴 · Q-01~04 처리 보고서</h1>
+<p class="meta">
+  2026-09-14 · 브랜치 <code>dev_tweho</code><br>
+  계획: <code>docs/plans/2026-09-14-url-routing-and-font.md</code><br>
+  남은 직접 확인: <a href="2026-09-14-manual-checklist.html">수동 체크리스트</a>의 M-05와 Q-01~04 (처리됨 표시)
+</p>
+
+<div class="cards">
+  <div class="card"><div class="metric">13</div><div class="metric-label">주소가 생긴 화면 (404 포함)</div></div>
+  <div class="card"><div class="metric">24 / 24</div><div class="metric-label">실제 브라우저 점검 통과</div></div>
+  <div class="card"><div class="metric">45</div><div class="metric-label">Flutter 테스트 통과 (라우팅 8개 추가)</div></div>
+  <div class="card"><div class="metric">80</div><div class="metric-label">Django 테스트 통과</div></div>
+</div>
+
+<h2 id="what">1. 무엇이 바뀌었나</h2>
+<ul>
+  <li><strong>브라우저 뒤로가기가 사이트 밖으로 나가지 않습니다.</strong> 앱 안의 이전 화면으로 돌아가고, 앞으로가기도 됩니다.</li>
+  <li><strong>새로고침하거나 주소를 공유해도 같은 화면이 열립니다.</strong> 스터디 관리 탭, 게시판 분류, 학기 선택까지 주소에 남습니다.</li>
+  <li>
+    <strong>주소로 상세 화면에 바로 들어와도 ← 버튼이 부모 화면으로 갑니다.</strong>
+    예: 출석 체크 → 출석 탭 → 스터디 관리 목록.
+  </li>
+  <li>
+    <strong>저장하지 않은 출석이 있으면 나가기 전에 확인 창이 뜹니다.</strong>
+    앱의 ←, 브라우저 뒤로가기, 상단 메뉴 이동 모두 해당합니다.
+    이전에는 브라우저 뒤로가기로 나가면 확인 없이 사라졌습니다.
+  </li>
+  <li>
+    <strong>권한에 따라 안내 화면이 나옵니다.</strong>
+    <ul>
+      <li>로그인하지 않고 <code>/me</code>로 들어오면 “로그인이 필요합니다”</li>
+      <li>정회원이 <code>/manage</code>로 들어오면 “볼 수 없는 페이지입니다”</li>
+      <li>없는 주소는 “페이지를 찾을 수 없습니다”</li>
+    </ul>
+    실제 권한 검사는 여전히 서버가 합니다.
+  </li>
+  <li>
+    <strong>한글이 잠깐 ☒로 보이던 현상이 없어졌습니다.</strong>
+    Pretendard 글꼴(SIL OFL)을 앱에 넣었고, 한글 글꼴을 외부에서 받아오는 요청이 0건입니다.
+    <ul>
+      <li>대신 첫 로딩이 약 4.7MB 늘어납니다.</li>
+      <li>엔진 파일(canvaskit)과 기본 Roboto는 원래대로 받습니다.</li>
+    </ul>
+  </li>
+</ul>
+
+<h2 id="routes">2. 경로표</h2>
+<div class="table-wrap"><table>
+  <tr><th>경로</th><th>화면</th><th>조건</th></tr>
+  <tr><td>/ · /about · /activity · /contact</td><td>홈 · 소개 · 활동 · 문의</td><td></td></tr>
+  <tr><td>/study?semester=2099-1</td><td>스터디 (학기 선택)</td><td></td></tr>
+  <tr><td>/board?category=recruit</td><td>게시판 (분류: notice · recruit)</td><td></td></tr>
+  <tr><td>/me</td><td>마이페이지</td><td>로그인</td></tr>
+  <tr><td>/me/studies/1</td><td>내 스터디 상세 · zip 과제 제출</td><td>로그인</td></tr>
+  <tr><td>/manage</td><td>스터디 관리 목록</td><td>스터디장·운영진</td></tr>
+  <tr><td>/manage/studies/1</td><td>→ /manage/studies/1/participants 로 이동</td><td></td></tr>
+  <tr><td>/manage/studies/1/participants<br>/manage/studies/1/attendance<br>/manage/studies/1/assignments</td><td>스터디 관리 탭 (탭 전환은 방문 기록에 쌓이지 않음)</td><td>스터디장·운영진</td></tr>
+  <tr><td>/manage/studies/1/attendance/3</td><td>회차 출석 체크</td><td>스터디장·운영진</td></tr>
+  <tr><td>/manage/studies/1/assignments/1</td><td>과제 제출 현황</td><td>스터디장·운영진</td></tr>
+  <tr><td>그 밖 · 끝에 / 붙은 주소</td><td>404 안내 · <code>/study/</code>는 <code>/study</code>로 정리</td><td></td></tr>
+</table></div>
+<div class="note">
+  배포 서버는 없는 경로 요청에도 <code>index.html</code>을 돌려줘야 합니다.
+  <code>nginx try_files</code>와 <code>vercel.json</code> rewrites에 이미 들어 있습니다.
+  Vercel 배포 뒤 <code>/manage</code>에서 새로고침이 되는지 한 번 확인해주세요.
+</div>
+
+<h2 id="questions">3. 검토 질문 처리</h2>
+<div class="table-wrap"><table>
+  <tr><th>질문</th><th>처리</th><th>확인</th></tr>
+  <tr><td>Q-01</td><td>제출 현황 요약 카드와 참여자 스터디 상세의 스터디·과제 제목을 3줄까지만 보이고 “…” 처리</td><td><span class="b pass">통과</span> 148자 제목 캡처</td></tr>
+  <tr><td>Q-02</td><td>휴대폰 폭 서랍에서 로그인에 성공하면 서랍이 닫히고 홈으로 이동</td><td><span class="b pass">통과</span> /study에서 로그인 → /</td></tr>
+  <tr><td>Q-03</td><td>Pretendard Regular·Bold·ExtraBold를 앱에 포함</td><td><span class="b pass">통과</span> 한글 글꼴 외부 요청 0건</td></tr>
+  <tr><td>Q-04</td><td>서버 문구를 “로그인이 필요합니다. 다시 로그인해주세요.”로 변경. 앱은 로그인 상태를 비우고 이 문구가 적힌 로그인 창을 띄움</td><td><span class="b pass">통과</span> 쿠키 삭제 후 화면 이동</td></tr>
+</table></div>
+
+<h2 id="verify">4. 검증</h2>
+<ul>
+  <li>
+    <strong>Flutter 위젯 테스트</strong>: <code>test/router_test.dart</code> 8개를 추가해 45개 모두 통과했습니다. 다룬 내용:
+    <ul>
+      <li>주소로 바로 들어오기와 ← 두 번</li>
+      <li>탭 주소 전환과 화면 재사용</li>
+      <li>나가기 확인 (취소 / 나가기)</li>
+      <li>로그인 안내, 권한 안내, 404</li>
+      <li>끝 슬래시 정리와 게시판 분류</li>
+      <li>Q-04</li>
+    </ul>
+  </li>
+  <li><strong>Django</strong>: 로그인하지 않은 요청의 문구를 검사하도록 테스트를 고쳐 80개 모두 통과했습니다.</li>
+  <li>
+    <strong>실제 브라우저</strong>: 로컬 빌드 + 크롬(Playwright)에서 24개를 점검했습니다.
+    <ul>
+      <li>경로 11개 새로고침</li>
+      <li>앱 안 이동 후 브라우저 뒤로 3번·앞으로 1번</li>
+      <li>저장 안 한 출석에서 브라우저 뒤로가기</li>
+      <li>Q-01·02·04</li>
+      <li>콘솔 오류 0건, 한글 글꼴 외부 요청 0건</li>
+    </ul>
+  </li>
+  <li><code>flutter analyze</code> 문제 0건, <code>flutter build web</code> 성공.</li>
+</ul>
+
+<h3>점검 중 찾아 고친 것</h3>
+<ul>
+  <li>
+    <strong>탭을 바꾸면 브라우저 방문 기록이 하나씩 쌓였습니다</strong>
+    (위젯 테스트로는 보이지 않고 실제 브라우저에서만 드러남).
+    go_router의 <code>replace</code>만으로는 기록이 늘어나서, <code>Router.neglect</code>로 감쌌습니다.
+    학기 선택과 게시판 분류도 같습니다.
+  </li>
+  <li>
+    <strong>상세 화면에서 돌아와도 마이페이지·관리 목록 수치가 갱신되지 않았습니다.</strong>
+    <code>push</code>로 연 화면은 <code>currentConfiguration.uri</code>에 반영되지 않기 때문입니다.
+    맨 위 화면 기준인 <code>router.state</code>로 판단하도록 바꿨습니다.
+  </li>
+  <li>
+    <strong>Q-04 문구가 로그인 창에 가려 보이지 않았습니다.</strong>
+    그래서 로그인 창 안에 문구를 넣었습니다.
+  </li>
+</ul>
+
+<h2 id="screens">5. 화면</h2>
+<div class="shots">
+  <figure><a href="images/routes_attendance.png"><img src="images/routes_attendance.png" alt="출석 체크 화면"></a><figcaption>/manage/studies/1/attendance/3 — 제목이 회차에서 옴</figcaption></figure>
+  <figure><a href="images/routes_leave_confirm.png"><img src="images/routes_leave_confirm.png" alt="저장하지 않고 나가기 확인"></a><figcaption>저장 안 한 출석에서 <strong>브라우저</strong> 뒤로가기</figcaption></figure>
+  <figure><a href="images/routes_q04.png"><img src="images/routes_q04.png" alt="로그인 필요 안내가 있는 로그인 창"></a><figcaption>Q-04 세션이 끊긴 뒤 화면 이동</figcaption></figure>
+  <figure><a href="images/routes_q01_submissions.png"><img src="images/routes_q01_submissions.png" alt="긴 제목 3줄 처리"></a><figcaption>Q-01 제출 현황 요약 카드 (3줄)</figcaption></figure>
+  <figure><a href="images/routes_q01_member.png"><img src="images/routes_q01_member.png" alt="참여자 스터디 상세의 긴 과제 제목"></a><figcaption>Q-01 참여자 스터디 상세</figcaption></figure>
+  <figure><a href="images/routes_q02.png"><img src="images/routes_q02.png" alt="휴대폰 폭 로그인 후 홈"></a><figcaption>Q-02 서랍 로그인 후 서랍 닫힘 · 홈</figcaption></figure>
+  <figure><a href="images/routes_404.png"><img src="images/routes_404.png" alt="페이지를 찾을 수 없습니다"></a><figcaption>없는 주소</figcaption></figure>
+</div>
+
+<h2 id="next">6. 남은 것 · 참고</h2>
+<ul>
+  <li><strong>직접 확인</strong>: 수동 체크리스트 M-05(실제 쓰는 브라우저에서 뒤로/앞으로·새로고침)와 Q-01~04를 한 번씩 봐주세요.</li>
+  <li><strong>배포 뒤 확인</strong>: Vercel에서 <code>/manage/studies/1/attendance</code> 같은 주소를 새로 열었을 때 404가 아닌 앱이 떠야 합니다.</li>
+  <li>
+    <strong>로그인 창에서 취소</strong>: 로그인이 풀린 뒤 로그인 창을 취소하면, 보던 화면이 “로그인이 필요합니다” 안내로 바뀝니다.
+    작성 중이던 출석 변경은 저장되지 않습니다. 서버가 이미 막은 상태라 저장할 방법이 없습니다.
+  </li>
+  <li>
+    <strong>아직 없는 주소</strong>: 게시글과 스터디 하나하나의 주소는 없습니다(<code>/board/12</code> 등).
+    지금 화면이 목록·펼치기 방식이라 필요해질 때 추가하면 됩니다.
+  </li>
+  <li>
+    <strong>한글 줄바꿈</strong>: 긴 문장이 단어 중간에서 줄이 바뀌는 것은 Flutter의 한계로, 이번 글꼴 변경과 관계없습니다.
+  </li>
+</ul>
+
+</div>
+</body>
+</html>

@@ -208,8 +208,8 @@ flutter run -d chrome --web-port 3000 --dart-define=API_BASE_URL=http://localhos
     <li data-id="C-07"><span class="k k-new">신규</span> 회차·과제 카드 오른쪽 ⋮ 버튼을 누른다.<span class="e">카드 안으로 들어가지 않고 수정/삭제 메뉴만 뜸</span></li>
     <li data-id="C-08"><span class="k k-new">신규</span> 정회원 홍길동 My Page → 수강 중인 스터디의 줄 → 스터디 상세 → ←.<span class="e">상세로 이동, 돌아오면 과제 수가 다시 불러와짐</span></li>
     <li data-id="C-09"><span class="k k-new">신규</span> 완료한 스터디 줄, 과제 제출 현황 카드의 스터디 줄도 눌러본다.<span class="e">둘 다 해당 스터디 상세로 이동 (가상 데이터에 완료한 스터디가 없으면 Admin에서 다른 스터디 참여를 “수료”로 하나 추가)</span></li>
-    <li data-id="C-10"><span class="k k-opt">선택</span> 상세 화면에 들어간 상태에서 <strong>브라우저</strong> 뒤로가기(← 툴바 버튼, <kbd>Alt</kbd>+<kbd>←</kbd>)를 누르고 어떻게 되는지 기록한다.<span class="e">현재 주소 라우팅이 없어 앱 안의 이전 화면이 아니라 사이트 이전 페이지로 나갈 수 있음 — 알려진 한계. 실제 동작을 메모에 적어두면 라우팅 작업 우선순위 판단에 씀 (앱의 ← 버튼은 C-03~C-08에서 확인)</span></li>
-    <li data-id="C-11">스터디 관리 화면에서 새로고침(F5)을 한다.<span class="e">로그인은 유지되고 <strong>홈으로</strong> 돌아감 — 알려진 한계(주소 라우팅 없음)이므로 이 동작 자체는 정상</span></li>
+    <li data-id="C-10"><span class="k k-opt">선택</span> 상세 화면에 들어간 상태에서 <strong>브라우저</strong> 뒤로가기(← 툴바 버튼, <kbd>Alt</kbd>+<kbd>←</kbd>)를 누르고 어떻게 되는지 기록한다.<span class="e"><strong>2026-09-14 주소 라우팅 적용으로 해결</strong> — 앱 안의 이전 화면으로 돌아가야 함 (수동 체크리스트 M-05). 실제 동작을 메모에 적어두면 라우팅 작업 우선순위 판단에 씀 (앱의 ← 버튼은 C-03~C-08에서 확인)</span></li>
+    <li data-id="C-11">스터디 관리 화면에서 새로고침(F5)을 한다.<span class="e"><strong>2026-09-14 주소 라우팅 적용 후</strong>: 로그인이 유지되고 <strong>같은 화면·같은 탭</strong>이 다시 열림</span></li>
     <li data-id="C-12">스터디 관리 화면에서 My Page 메뉴 → 로그아웃.<span class="e">홈으로 이동, 관리 버튼·패널이 사라지고 Login 버튼</span></li>
     <li data-id="C-13">390px 폭에서 서랍의 메뉴를 눌러 이동한다.<span class="e">이동과 동시에 서랍이 닫히고 선택한 메뉴가 서랍에서 강조 표시</span></li>
     <li data-id="C-14"><span class="k k-fix">수정</span> About · Study · Activity · Board · Contact를 모두 한 번씩 연다(<code>main.dart</code> 파일 분리의 회귀 확인).<span class="e">전과 같은 내용·색·링크. Contact의 인스타그램·이메일 카드, 게시판 본문 링크, 스터디 아코디언 펼치기가 동작</span></li>
@@ -436,7 +436,6 @@ $f=[IO.File]::Create("$PWD\big.zip"); $f.SetLength(60MB); $f.Close()     # 60MB<
 <section class="sec" id="known">
   <header><h2>알려진 한계 (문제로 표시하지 않아도 되는 것)</h2></header>
   <ul>
-    <li>새로고침하면 홈으로 돌아가고, 브라우저 뒤로가기는 앱 안의 화면 이동과 연결되지 않습니다 (주소 라우팅 없음, 기존 구조).</li>
     <li>입력 창(로그인 창 포함) 배경이 연분홍빛입니다 — Material 3 기본 색이 테마 색에 물든 것으로 기존 로그인 창과 같습니다.</li>
     <li>로그아웃 상태 등 일부 오류 문구가 DRF 기본 번역(“자격 인증데이터(authentication credentials)가…”)으로 나옵니다.</li>
     <li>개발 서버(DEBUG=true)에서는 <code>/media/</code> 경로로 제출 파일을 직접 열 수 있습니다 (운영에서는 막힘).</li>
