@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../api_client.dart';
 import '../../format.dart';
 import '../../models.dart';
+import '../../routes.dart';
 import '../../theme.dart';
 import '../../widgets/common.dart';
 import 'forms.dart';
-import 'submissions_page.dart';
 
 class AssignmentsTab extends StatelessWidget {
   const AssignmentsTab({
@@ -56,17 +57,9 @@ class AssignmentsTab extends StatelessWidget {
     }
   }
 
-  Future<void> _open(BuildContext context, AssignmentInfo assignment) async {
-    await Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => SubmissionsPage(
-          assignmentId: assignment.id,
-          title: assignment.title,
-        ),
-      ),
-    );
-    if (context.mounted) onChanged();
-  }
+  /// 돌아오면 스터디 관리 화면이 경로 변화를 보고 다시 불러온다.
+  void _open(BuildContext context, AssignmentInfo assignment) =>
+      context.push<void>(AppRoutes.submissions(detail.id, assignment.id));
 
   @override
   Widget build(BuildContext context) {

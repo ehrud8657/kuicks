@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../api_client.dart';
 import '../../format.dart';
 import '../../models.dart';
+import '../../routes.dart';
 import '../../theme.dart';
 import '../../widgets/common.dart';
 import '../../widgets/status_style.dart';
-import 'attendance_page.dart';
 import 'forms.dart';
 
 class AttendanceTab extends StatelessWidget {
@@ -72,20 +73,9 @@ class AttendanceTab extends StatelessWidget {
     }
   }
 
-  Future<void> _openAttendance(
-    BuildContext context,
-    StudySessionInfo session,
-  ) async {
-    await Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => AttendancePage(
-          sessionId: session.id,
-          title: '${session.number}회차 출석 체크',
-        ),
-      ),
-    );
-    if (context.mounted) onChanged();
-  }
+  /// 돌아오면 스터디 관리 화면이 경로 변화를 보고 다시 불러온다.
+  void _openAttendance(BuildContext context, StudySessionInfo session) =>
+      context.push<void>(AppRoutes.attendance(detail.id, session.id));
 
   @override
   Widget build(BuildContext context) {

@@ -1,311 +1,209 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
-import 'api_client.dart';
+import 'auth.dart';
 import 'models.dart';
-import 'pages/about_page.dart';
-import 'pages/board_page.dart';
-import 'pages/contact_page.dart';
-import 'pages/home_page.dart';
-import 'pages/manage/manage_page.dart';
-import 'pages/my_page.dart';
-import 'pages/placeholder_page.dart';
-import 'pages/study_page.dart';
+import 'routes.dart';
 import 'theme.dart';
-import 'widgets/auth_dialogs.dart';
 import 'widgets/common.dart';
 
-enum SitePage { home, about, study, activity, board, contact, myPage, manage }
+/// 상단 메뉴·메뉴 서랍·로그인 버튼이 있는 사이트 공통 틀. [child]에 현재 경로의 화면이 들어온다.
+class SiteShell extends StatelessWidget {
+  const SiteShell({super.key, required this.location, required this.child});
 
-class SiteShell extends StatefulWidget {
-  const SiteShell({super.key});
-  @override
-  State<SiteShell> createState() => _SiteShellState();
-}
+  /// 현재 주소의 경로 부분. 예: /study, /me
+  final String location;
+  final Widget child;
 
-class _SiteShellState extends State<SiteShell> {
-  SitePage page = SitePage.home;
-  Member? currentMember;
-  bool restoringSession = true;
+  static const _menu = <(String, String)>[
+    ('Home', AppRoutes.home),
+    ('About', AppRoutes.about),
+    ('Study', AppRoutes.study),
+    ('Activity', AppRoutes.activity),
+    ('Board', AppRoutes.board),
+    ('Contact', AppRoutes.contact),
+  ];
 
-  bool get loggedIn => currentMember != null;
+  bool _isActive(String route) => route == AppRoutes.home
+      ? location == AppRoutes.home
+      : location == route || location.startsWith('$route/');
 
-  /// 스터디장·운영진이면 스터디 관리 메뉴를 보여준다. 실제 권한은 서버가 다시 검사한다.
-  bool get canManage => currentMember?.role.canManageStudies ?? false;
-
-  static const labels = {
-    SitePage.home: 'Home',
-    SitePage.about: 'About',
-    SitePage.study: 'Study',
-    SitePage.activity: 'Activity',
-    SitePage.board: 'Board',
-    SitePage.contact: 'Contact',
-  };
-
-  bool _passwordDialogOpen = false;
-
-  @override
-  void initState() {
-    super.initState();
-    ApiClient.passwordChangeRequired.addListener(_onPasswordChangeRequired);
-    _restoreSession();
-  }
-
-  @override
-  void dispose() {
-    ApiClient.passwordChangeRequired.removeListener(_onPasswordChangeRequired);
-    super.dispose();
-  }
-
-  /// 어떤 화면의 API 호출이든 서버가 password_change_required로 막으면 강제 변경 창을 띄운다.
-  void _onPasswordChangeRequired() {
-    final member = currentMember;
-    if (member == null || !mounted) return;
-    setState(() => currentMember = member.copyWith(mustChangePassword: true));
-    _promptChangePassword(forced: true);
-  }
-
-  Future<void> _restoreSession() async {
-    try {
-      final member = await ApiClient.instance.fetchMe();
-      if (!mounted) return;
-      setState(() {
-        currentMember = member;
-        restoringSession = false;
-      });
-      if (member != null && member.mustChangePassword) {
-        _promptChangePassword(forced: true);
-      }
-    } catch (_) {
-      if (!mounted) return;
-      setState(() => restoringSession = false);
+  /// 브라우저 탭에 보일 제목.
+  String get _pageTitle {
+    if (_isActive(AppRoutes.manage)) return '스터디 관리 · KUICS';
+    if (_isActive(AppRoutes.me)) return '마이페이지 · KUICS';
+    for (final (label, route) in _menu.skip(1)) {
+      if (_isActive(route)) return '$label · KUICS';
     }
-  }
-
-  void navigate(SitePage next) {
-    setState(() => page = next);
-    Navigator.maybePop(context);
+    return 'KUICS';
   }
 
   @override
   Widget build(BuildContext context) {
-    final member = currentMember;
+    final auth = AuthScope.of(context);
+    final member = auth.member;
     // 스터디 관리 버튼과 등급 배지가 붙으면 상단 메뉴가 넓어지므로 전환 폭을 늘린다.
-    final wide = MediaQuery.sizeOf(context).width >= (canManage ? 1040 : 820);
-    final nav = labels.entries
-        .map(
-          (entry) => TextButton(
-            onPressed: () => navigate(entry.key),
-            style: TextButton.styleFrom(
-              foregroundColor:
-                  page == entry.key ? AppColors.crimson : AppColors.textBody,
+    final wide =
+        MediaQuery.sizeOf(context).width >= (auth.canManage ? 1040 : 820);
+    return Title(
+      title: _pageTitle,
+      color: AppColors.crimson,
+      child: Scaffold(
+        appBar: AppBar(
+          backgroundColor: Colors.white,
+          surfaceTintColor: Colors.white,
+          titleSpacing: wide ? 40 : 16,
+          title: InkWell(
+            onTap: () => context.go(AppRoutes.home),
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Image(
+                  image: AssetImage('assets/logo.png'),
+                  height: 36,
+                  filterQuality: FilterQuality.medium,
+                ),
+                SizedBox(width: 10),
+                // 메뉴가 늘어 제목 자리가 좁아지면 넘치지 않고 글자를 자른다.
+                Flexible(
+                  child: Text(
+                    'KUICS',
+                    maxLines: 1,
+                    softWrap: false,
+                    overflow: TextOverflow.clip,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 1.5,
+                    ),
+                  ),
+                ),
+              ],
             ),
-            child: Text(entry.value),
           ),
-        )
-        .toList();
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        surfaceTintColor: Colors.white,
-        titleSpacing: wide ? 40 : 16,
-        title: InkWell(
-          onTap: () => navigate(SitePage.home),
-          child: const Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Image(
+          actions: wide
+              ? [
+                  for (final (label, route) in _menu)
+                    TextButton(
+                      onPressed: () => context.go(route),
+                      style: TextButton.styleFrom(
+                        foregroundColor: _isActive(route)
+                            ? AppColors.crimson
+                            : AppColors.textBody,
+                      ),
+                      child: Text(label),
+                    ),
+                  if (auth.canManage) ...[
+                    const SizedBox(width: 8),
+                    _ManageNavButton(
+                      selected: _isActive(AppRoutes.manage),
+                      onPressed: () => context.go(AppRoutes.manage),
+                    ),
+                  ],
+                  const SizedBox(width: 10),
+                  if (member != null)
+                    PopupMenuButton<String>(
+                      tooltip: '마이페이지 메뉴',
+                      onSelected: (value) => value == 'logout'
+                          ? auth.logout()
+                          : context.go(AppRoutes.me),
+                      itemBuilder: (context) => [
+                        PopupMenuItem(
+                          value: 'mypage',
+                          child: Text('마이페이지 (${member.name})'),
+                        ),
+                        const PopupMenuItem(
+                          value: 'logout',
+                          child: Text('로그아웃'),
+                        ),
+                      ],
+                      child: _MyPageButton(member: member),
+                    )
+                  else
+                    OutlinedButton(
+                      onPressed: auth.showLogin,
+                      child: const Text('Login'),
+                    ),
+                  const SizedBox(width: 40),
+                ]
+              : null,
+        ),
+        drawer: wide ? null : _SiteDrawer(isActive: _isActive, menu: _menu),
+        body: child,
+      ),
+    );
+  }
+}
+
+class _SiteDrawer extends StatelessWidget {
+  const _SiteDrawer({required this.isActive, required this.menu});
+  final bool Function(String route) isActive;
+  final List<(String, String)> menu;
+
+  @override
+  Widget build(BuildContext context) {
+    final auth = AuthScope.of(context);
+    final member = auth.member;
+
+    // 서랍을 먼저 닫고 이동한다. (서랍이 열린 채 남지 않게)
+    void close(VoidCallback then) {
+      Scaffold.of(context).closeDrawer();
+      then();
+    }
+
+    return Drawer(
+      child: SafeArea(
+        child: ListView(
+          children: [
+            const ListTile(
+              leading: Image(
                 image: AssetImage('assets/logo.png'),
-                height: 36,
+                width: 32,
+                height: 32,
                 filterQuality: FilterQuality.medium,
               ),
-              SizedBox(width: 10),
-              // 메뉴가 늘어 제목 자리가 좁아지면 넘치지 않고 글자를 자른다.
-              Flexible(
-                child: Text(
-                  'KUICS',
-                  maxLines: 1,
-                  softWrap: false,
-                  overflow: TextOverflow.clip,
-                  style: TextStyle(
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 1.5,
-                  ),
-                ),
+              title: Text(
+                'KUICS',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+            for (final (label, route) in menu)
+              ListTile(
+                selected: isActive(route),
+                title: Text(label),
+                onTap: () => close(() => context.go(route)),
+              ),
+            if (member != null && auth.canManage) ...[
+              const Divider(),
+              ListTile(
+                selected: isActive(AppRoutes.manage),
+                leading: const Icon(Icons.dashboard_customize_outlined),
+                title: const Text('스터디 관리'),
+                subtitle: Text('${member.role.label} 메뉴'),
+                onTap: () => close(() => context.go(AppRoutes.manage)),
               ),
             ],
-          ),
-        ),
-        actions: wide
-            ? [
-                ...nav,
-                if (canManage) ...[
-                  const SizedBox(width: 8),
-                  _ManageNavButton(
-                    selected: page == SitePage.manage,
-                    onPressed: () => navigate(SitePage.manage),
-                  ),
-                ],
-                const SizedBox(width: 10),
-                if (member != null)
-                  PopupMenuButton<String>(
-                    tooltip: '마이페이지 메뉴',
-                    onSelected: (value) => value == 'logout'
-                        ? _logout()
-                        : navigate(SitePage.myPage),
-                    itemBuilder: (context) => [
-                      PopupMenuItem(
-                        value: 'mypage',
-                        child: Text('마이페이지 (${member.name})'),
-                      ),
-                      const PopupMenuItem(value: 'logout', child: Text('로그아웃')),
-                    ],
-                    child: _MyPageButton(member: member),
-                  )
-                else
-                  OutlinedButton(
-                    onPressed: () => _showLogin(context),
-                    child: const Text('Login'),
-                  ),
-                const SizedBox(width: 40),
-              ]
-            : null,
-      ),
-      drawer: wide
-          ? null
-          : Drawer(
-              child: SafeArea(
-                child: ListView(
-                  children: [
-                    const ListTile(
-                      leading: Image(
-                        image: AssetImage('assets/logo.png'),
-                        width: 32,
-                        height: 32,
-                        filterQuality: FilterQuality.medium,
-                      ),
-                      title: Text(
-                        'KUICS',
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                    ...labels.entries.map(
-                      (entry) => ListTile(
-                        selected: page == entry.key,
-                        title: Text(entry.value),
-                        onTap: () => navigate(entry.key),
-                      ),
-                    ),
-                    if (member != null && canManage) ...[
-                      const Divider(),
-                      ListTile(
-                        selected: page == SitePage.manage,
-                        leading: const Icon(Icons.dashboard_customize_outlined),
-                        title: const Text('스터디 관리'),
-                        subtitle: Text('${member.role.label} 메뉴'),
-                        onTap: () => navigate(SitePage.manage),
-                      ),
-                    ],
-                    const Divider(),
-                    ListTile(
-                      leading:
-                          Icon(loggedIn ? Icons.person_outline : Icons.login),
-                      title: Text(loggedIn ? 'My Page' : 'Login'),
-                      onTap: () => loggedIn
-                          ? navigate(SitePage.myPage)
-                          : _showLogin(context),
-                    ),
-                    if (loggedIn)
-                      ListTile(
-                        leading: const Icon(Icons.logout),
-                        title: const Text('로그아웃'),
-                        onTap: () {
-                          Navigator.maybePop(context);
-                          _logout();
-                        },
-                      ),
-                  ],
-                ),
+            const Divider(),
+            ListTile(
+              selected: member != null && isActive(AppRoutes.me),
+              leading:
+                  Icon(member != null ? Icons.person_outline : Icons.login),
+              title: Text(member != null ? 'My Page' : 'Login'),
+              onTap: () => close(
+                () => member != null
+                    ? context.go(AppRoutes.me)
+                    : auth.showLoginThenHome(),
               ),
             ),
-      body: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 220),
-        child: switch (page) {
-          SitePage.home => HomePage(
-              member: member,
-              onStudy: () => navigate(SitePage.study),
-              onBoard: () => navigate(SitePage.board),
-              onManage: () => navigate(SitePage.manage),
-            ),
-          SitePage.study => const StudyPage(),
-          SitePage.board => const BoardPage(),
-          SitePage.about => const AboutPage(),
-          SitePage.contact => const ContactPage(),
-          SitePage.myPage => member == null
-              ? const PlaceholderPage(page: SitePage.myPage)
-              : MyPage(
-                  member: member,
-                  onLogout: _logout,
-                  onChangePassword: () => _promptChangePassword(forced: false),
-                  onManage: canManage ? () => navigate(SitePage.manage) : null,
-                ),
-          SitePage.manage => member != null && canManage
-              ? ManagePage(member: member)
-              : const PlaceholderPage(page: SitePage.manage),
-          _ => PlaceholderPage(page: page),
-        },
+            if (member != null)
+              ListTile(
+                leading: const Icon(Icons.logout),
+                title: const Text('로그아웃'),
+                onTap: () => close(auth.logout),
+              ),
+          ],
+        ),
       ),
     );
-  }
-
-  Future<void> _showLogin(BuildContext context) async {
-    final member = await showDialog<Member>(
-      context: context,
-      builder: (context) => const LoginDialog(),
-    );
-    if (member == null || !mounted) return;
-    setState(() => currentMember = member);
-    if (member.mustChangePassword) {
-      _promptChangePassword(forced: true);
-    }
-  }
-
-  Future<void> _logout() async {
-    try {
-      await ApiClient.instance.logout();
-    } catch (_) {
-      // 세션이 이미 끊겨있어도 로컬 상태는 정리한다.
-    }
-    if (!mounted) return;
-    setState(() {
-      currentMember = null;
-      page = SitePage.home;
-    });
-  }
-
-  Future<void> _promptChangePassword({required bool forced}) async {
-    // 세션 복원과 API 오류가 동시에 요청해도 창은 하나만 띄운다.
-    if (_passwordDialogOpen) return;
-    _passwordDialogOpen = true;
-    final result = await showDialog<PasswordDialogResult>(
-      barrierDismissible: !forced,
-      context: context,
-      builder: (context) => ChangePasswordDialog(forced: forced),
-    );
-    _passwordDialogOpen = false;
-    if (!mounted) return;
-    switch (result) {
-      case PasswordDialogResult.changed:
-        final member = currentMember;
-        if (member != null) {
-          setState(
-            () => currentMember = member.copyWith(mustChangePassword: false),
-          );
-        }
-      case PasswordDialogResult.logout:
-        await _logout();
-      case null:
-        break;
-    }
   }
 }
 

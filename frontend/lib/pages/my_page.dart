@@ -1,32 +1,24 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../api_client.dart';
+import '../auth.dart';
 import '../models.dart';
+import '../routes.dart';
 import '../theme.dart';
 import '../widgets/common.dart';
 import '../widgets/manager_panel.dart';
-import 'my_study_page.dart';
+import '../widgets/refresh_on_return.dart';
 
 class MyPage extends StatefulWidget {
-  const MyPage({
-    super.key,
-    required this.member,
-    required this.onLogout,
-    required this.onChangePassword,
-    this.onManage,
-  });
+  const MyPage({super.key, required this.member});
   final Member member;
-  final VoidCallback onLogout;
-  final VoidCallback onChangePassword;
-
-  /// 스터디장·운영진일 때만 주어진다.
-  final VoidCallback? onManage;
 
   @override
   State<MyPage> createState() => _MyPageState();
 }
 
-class _MyPageState extends State<MyPage> {
+class _MyPageState extends State<MyPage> with RefreshOnReturn {
   late Future<List<MyStudy>> myStudies;
 
   @override
@@ -40,15 +32,14 @@ class _MyPageState extends State<MyPage> {
         myStudies = ApiClient.instance.fetchMyStudies();
       });
 
-  Future<void> _open(MyStudy study) async {
-    await Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => MyStudyPage(studyId: study.studyId, title: study.title),
-      ),
-    );
-    // 과제를 내고 돌아오면 남은 과제 수를 다시 센다.
-    if (mounted) _reload();
-  }
+  void _open(MyStudy study) => context.push(AppRoutes.myStudy(study.studyId));
+
+  // 스터디 상세에서 과제를 내고 돌아오면 남은 과제 수를 다시 센다.
+  @override
+  bool isOwnPath(String path) => path == AppRoutes.me;
+
+  @override
+  void onReturn() => _reload();
 
   @override
   Widget build(BuildContext context) => PageFrame(
@@ -79,20 +70,24 @@ class _MyPageState extends State<MyPage> {
               runSpacing: 8,
               children: [
                 OutlinedButton.icon(
-                  onPressed: widget.onChangePassword,
+                  onPressed: () =>
+                      AuthScope.of(context).promptChangePassword(forced: false),
                   icon: const Icon(Icons.lock_reset),
                   label: const Text('비밀번호 변경'),
                 ),
                 OutlinedButton.icon(
-                  onPressed: widget.onLogout,
+                  onPressed: AuthScope.of(context).logout,
                   icon: const Icon(Icons.logout),
                   label: const Text('로그아웃'),
                 ),
               ],
             ),
-            if (widget.onManage case final onManage?) ...[
+            if (widget.member.role.canManageStudies) ...[
               const SizedBox(height: 24),
-              ManagerPanel(member: widget.member, onManage: onManage),
+              ManagerPanel(
+                member: widget.member,
+                onManage: () => context.go(AppRoutes.manage),
+              ),
             ],
             const SizedBox(height: 24),
             FutureBuilder<List<MyStudy>>(

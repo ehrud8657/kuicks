@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../api_client.dart';
 import '../../format.dart';
@@ -13,11 +14,19 @@ class AttendancePage extends StatefulWidget {
   const AttendancePage({
     super.key,
     required this.sessionId,
-    required this.title,
+    this.title,
   });
 
   final int sessionId;
-  final String title;
+
+  /// 불러오기 전에 상단바에 잠깐 보여줄 제목.
+  final String? title;
+
+  /// 경로를 떠나기 직전(← 버튼, 브라우저 뒤로가기, 메뉴 이동) 라우터가 부른다.
+  /// 저장하지 않은 변경이 있으면 확인을 받고, 나가도 되면 true.
+  static Future<bool> confirmLeave() async => await _leaveGuard?.call() ?? true;
+
+  static Future<bool> Function()? _leaveGuard;
 
   @override
   State<AttendancePage> createState() => _AttendancePageState();
@@ -38,11 +47,25 @@ class _AttendancePageState extends State<AttendancePage> {
   @override
   void initState() {
     super.initState();
+    AttendancePage._leaveGuard = _canLeave;
     _load();
+  }
+
+  Future<bool> _canLeave() async {
+    if (!mounted || sheet == null || !dirty) return true;
+    return confirmAction(
+      context,
+      title: '저장하지 않고 나가기',
+      message: '저장하지 않은 출석 변경 사항이 있습니다. 나가면 변경한 내용이 사라집니다.',
+      confirmLabel: '나가기',
+    );
   }
 
   @override
   void dispose() {
+    if (AttendancePage._leaveGuard == _canLeave) {
+      AttendancePage._leaveGuard = null;
+    }
     for (final controller in notes.values) {
       controller.dispose();
     }
@@ -125,14 +148,9 @@ class _AttendancePageState extends State<AttendancePage> {
     }
   }
 
+  /// 라우터 없이 쓰일 때(위젯 테스트 등) ← 버튼으로 나가는 경우의 확인.
   Future<void> _confirmLeave() async {
-    final leave = await confirmAction(
-      context,
-      title: '저장하지 않고 나가기',
-      message: '저장하지 않은 출석 변경 사항이 있습니다. 나가면 변경한 내용이 사라집니다.',
-      confirmLabel: '나가기',
-    );
-    if (leave && mounted) Navigator.of(context).pop();
+    if (await _canLeave() && mounted) Navigator.of(context).pop();
   }
 
   @override
@@ -140,12 +158,17 @@ class _AttendancePageState extends State<AttendancePage> {
     final current = sheet;
     final isDirty = current != null && dirty;
     return PopScope(
-      canPop: !isDirty,
+      // 라우터가 있으면 onExit(confirmLeave)가 확인하므로 여기서는 막지 않는다.
+      canPop: GoRouter.maybeOf(context) != null || !isDirty,
       onPopInvokedWithResult: (didPop, _) {
         if (!didPop) _confirmLeave();
       },
       child: Scaffold(
-        appBar: detailAppBar(widget.title),
+        appBar: detailAppBar(
+          current == null
+              ? widget.title ?? '출석 체크'
+              : '${current.session.number}회차 출석 체크',
+        ),
         body: current != null
             ? _buildSheet(current)
             : loadError != null

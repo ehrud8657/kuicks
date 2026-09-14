@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../api_client.dart';
 import '../../models.dart';
+import '../../routes.dart';
 import '../../theme.dart';
 import '../../widgets/common.dart';
-import 'study_manage_page.dart';
+import '../../widgets/refresh_on_return.dart';
 
 /// 스터디 관리 첫 화면: 관리할 수 있는 스터디 목록.
 class ManagePage extends StatefulWidget {
@@ -15,7 +17,7 @@ class ManagePage extends StatefulWidget {
   State<ManagePage> createState() => _ManagePageState();
 }
 
-class _ManagePageState extends State<ManagePage> {
+class _ManagePageState extends State<ManagePage> with RefreshOnReturn {
   late Future<List<ManagedStudy>> studies;
 
   /// 선택한 학기. null이면 전체.
@@ -31,15 +33,15 @@ class _ManagePageState extends State<ManagePage> {
         studies = ApiClient.instance.fetchManagedStudies();
       });
 
-  Future<void> _open(ManagedStudy study) async {
-    await Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => StudyManagePage(studyId: study.id, title: study.title),
-      ),
-    );
-    // 출석·과제를 바꾸고 돌아오면 목록의 수치도 갱신한다.
-    if (mounted) _reload();
-  }
+  void _open(ManagedStudy study) =>
+      context.push<void>(AppRoutes.manageStudy(study.id));
+
+  // 스터디 관리 화면에서 출석·과제를 바꾸고 돌아오면 목록의 수치도 갱신한다.
+  @override
+  bool isOwnPath(String path) => path == AppRoutes.manage;
+
+  @override
+  void onReturn() => _reload();
 
   @override
   Widget build(BuildContext context) {

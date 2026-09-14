@@ -15,12 +15,14 @@ class MyStudyPage extends StatefulWidget {
   const MyStudyPage({
     super.key,
     required this.studyId,
-    required this.title,
+    this.title,
     this.pickZip = pickZipFile,
   });
 
   final int studyId;
-  final String title;
+
+  /// 불러오기 전에 상단바에 잠깐 보여줄 제목.
+  final String? title;
 
   /// zip 파일 선택. 테스트에서 바꿔 끼운다.
   final ZipPicker pickZip;
@@ -31,6 +33,20 @@ class MyStudyPage extends StatefulWidget {
 
 class _MyStudyPageState extends State<MyStudyPage> {
   late Future<MyStudyDetail> detail;
+  String? _title;
+
+  Future<MyStudyDetail> _fetch() {
+    final future = ApiClient.instance.fetchMyStudyDetail(widget.studyId);
+    future.then(
+      (data) {
+        if (mounted && _title != data.title) {
+          setState(() => _title = data.title);
+        }
+      },
+      onError: (_) {},
+    );
+    return future;
+  }
 
   /// 올리는 중인 과제 id. 한 번에 하나만 올린다.
   int? uploading;
@@ -38,11 +54,11 @@ class _MyStudyPageState extends State<MyStudyPage> {
   @override
   void initState() {
     super.initState();
-    detail = ApiClient.instance.fetchMyStudyDetail(widget.studyId);
+    detail = _fetch();
   }
 
   void _reload() => setState(() {
-        detail = ApiClient.instance.fetchMyStudyDetail(widget.studyId);
+        detail = _fetch();
       });
 
   Future<void> _submit(MyAssignment assignment) async {
@@ -110,7 +126,7 @@ class _MyStudyPageState extends State<MyStudyPage> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-        appBar: detailAppBar(widget.title),
+        appBar: detailAppBar(_title ?? widget.title ?? '스터디'),
         body: FutureBuilder<MyStudyDetail>(
           future: detail,
           builder: (context, snapshot) {
@@ -213,6 +229,8 @@ class _StudySummary extends StatelessWidget {
             const SizedBox(height: 10),
             Text(
               detail.title,
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
               style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
             ),
             const SizedBox(height: 4),
@@ -322,6 +340,8 @@ class _AssignmentCard extends StatelessWidget {
                     children: [
                       Text(
                         assignment.title,
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
