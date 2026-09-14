@@ -30,6 +30,8 @@ class AppColors {
 /// 앱 테마. 테스트에서도 같은 모양으로 그리도록 여기에 모아 둔다.
 ThemeData buildAppTheme(TextTheme base) => ThemeData(
       useMaterial3: true,
+      // 입력칸·버튼·날짜 선택창까지 모두 앱에 넣어 둔 한글 글꼴을 쓴다.
+      fontFamily: 'Pretendard',
       colorScheme: ColorScheme.fromSeed(
         seedColor: AppColors.crimson,
         primary: AppColors.crimson,
@@ -38,7 +40,7 @@ ThemeData buildAppTheme(TextTheme base) => ThemeData(
       textTheme: base.apply(
         bodyColor: AppColors.navy,
         displayColor: AppColors.navy,
-        fontFamily: 'sans-serif',
+        fontFamily: 'Pretendard',
       ),
       cardTheme: const CardThemeData(
         color: Colors.white,
