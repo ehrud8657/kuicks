@@ -56,7 +56,6 @@ class AttendanceTab extends StatelessWidget {
       message: '${session.label}\n\n이 회차를 삭제할까요? '
           '출석 기록 ${session.recordedCount}건도 함께 삭제되며 되돌릴 수 없습니다.',
       confirmLabel: '삭제',
-      icon: Icons.delete_outline,
     );
     if (!confirmed || !context.mounted) return;
     try {
@@ -315,13 +314,14 @@ class _SessionCard extends StatelessWidget {
                 height: 44,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: AppColors.crimsonSoft,
-                  borderRadius: BorderRadius.circular(12),
+                  color: AppColors.surfaceMuted,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: AppColors.border),
                 ),
                 child: Text(
                   '${session.number}',
                   style: const TextStyle(
-                    color: AppColors.crimson,
+                    color: AppColors.navy,
                     fontWeight: FontWeight.w800,
                     fontSize: 17,
                   ),

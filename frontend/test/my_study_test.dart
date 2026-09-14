@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:kuics_frontend/api_client.dart';
 import 'package:kuics_frontend/main.dart';
 import 'package:kuics_frontend/pages/my_study_page.dart';
+import 'package:kuics_frontend/widgets/common.dart';
 import 'package:kuics_frontend/widgets/zip_picker.dart';
 
 import 'support/fake_backend.dart';
@@ -47,6 +48,13 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  /// 확인 창 문장은 단어 단위 줄바꿈용 KeepAllText로 그리므로 원래 문장으로 찾는다.
+  Finder textIncluding(String part) => find.byWidgetPredicate(
+        (widget) =>
+            (widget is KeepAllText && widget.data.contains(part)) ||
+            (widget is Text && (widget.data ?? '').contains(part)),
+      );
+
   Finder cardOf(String title) =>
       find.ancestor(of: find.text(title), matching: find.byType(Card)).first;
 
@@ -76,7 +84,7 @@ void main() {
           of: cardOf('XSS 필터 우회'), matching: find.text('zip 파일 제출')),
     );
     await tester.pumpAndSettle();
-    expect(find.textContaining('홍길동 XSS 과제.zip (7B)'), findsOneWidget);
+    expect(textIncluding('홍길동 XSS 과제.zip (7B)'), findsOneWidget);
     await tester.tap(find.widgetWithText(FilledButton, '제출'));
     await tester.pumpAndSettle();
 
@@ -125,8 +133,8 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    expect(find.textContaining('지각 제출로 표시됩니다'), findsOneWidget);
-    expect(find.textContaining('확인 상태가 초기화됩니다'), findsOneWidget);
+    expect(textIncluding('지각 제출로 표시됩니다'), findsOneWidget);
+    expect(textIncluding('확인 상태가 초기화됩니다'), findsOneWidget);
 
     await tester.tap(find.widgetWithText(FilledButton, '제출'));
     await tester.pumpAndSettle();
@@ -167,7 +175,7 @@ void main() {
     await pumpStudy(tester);
     expect(find.text('zip 파일 제출'), findsNothing);
     expect(find.text('다시 제출'), findsNothing);
-    expect(find.textContaining('수료 상태에서는 과제를 제출할 수 없습니다.'), findsOneWidget);
+    expect(textIncluding('수료 상태에서는 과제를 제출할 수 없습니다.'), findsOneWidget);
   });
 
   testWidgets('마이페이지에서 제출할 과제를 보고 스터디 상세로 들어간다', (tester) async {

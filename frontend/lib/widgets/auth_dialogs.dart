@@ -61,16 +61,11 @@ class _LoginDialogState extends State<LoginDialog> {
     // 로그인에 실패하면 안내 대신 실패 이유만 보여준다.
     final notice = errorMessage == null ? widget.notice : null;
     return AppDialog(
-      eyebrow: 'KUICS MEMBER',
       title: '학번으로 로그인',
-      // 휴대폰 폭에서도 한 줄에 들어가도록 짧게 둔다.
-      subtitle: '스터디·과제 회원 전용',
-      leading: const Padding(
-        padding: EdgeInsets.all(8),
-        child: Image(
-          image: AssetImage('assets/logo.png'),
-          filterQuality: FilterQuality.medium,
-        ),
+      leading: const Image(
+        image: AssetImage('assets/logo.png'),
+        height: 30,
+        filterQuality: FilterQuality.medium,
       ),
       maxWidth: 400,
       onClose: submitting ? null : () => Navigator.pop(context),
@@ -79,11 +74,9 @@ class _LoginDialogState extends State<LoginDialog> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            if (notice != null)
-              DialogCallout(icon: Icons.lock_clock, message: notice),
+            if (notice != null) DialogCallout(message: notice),
             if (errorMessage != null)
               DialogCallout(
-                icon: Icons.error_outline,
                 message: errorMessage!,
                 strong: true,
               ),
@@ -220,10 +213,7 @@ class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
   Widget build(BuildContext context) => PopScope(
         canPop: !widget.forced,
         child: AppDialog(
-          eyebrow: 'ACCOUNT SECURITY',
           title: '비밀번호 변경',
-          subtitle: '다른 곳에서 쓰지 않는 새 비밀번호로 바꿔주세요.',
-          icon: Icons.lock_reset,
           maxWidth: 420,
           // 강제 변경 중에는 창을 닫을 수 없다.
           closable: !widget.forced,
@@ -252,12 +242,10 @@ class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
               children: [
                 if (widget.forced && errorMessage == null)
                   const DialogCallout(
-                    icon: Icons.waving_hand_outlined,
                     message: '처음 로그인하셨네요. 계속 진행하려면 비밀번호를 바꿔주세요.',
                   ),
                 if (errorMessage != null)
                   DialogCallout(
-                    icon: Icons.error_outline,
                     message: errorMessage!,
                     strong: true,
                   ),

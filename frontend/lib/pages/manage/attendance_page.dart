@@ -58,7 +58,6 @@ class _AttendancePageState extends State<AttendancePage> {
       title: '저장하지 않고 나가기',
       message: '저장하지 않은 출석 변경 사항이 있습니다. 나가면 변경한 내용이 사라집니다.',
       confirmLabel: '나가기',
-      icon: Icons.exit_to_app,
     );
   }
 

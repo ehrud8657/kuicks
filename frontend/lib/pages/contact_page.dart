@@ -73,7 +73,7 @@ class _ContactCard extends StatelessWidget {
             padding: const EdgeInsets.all(24),
             child: Row(
               children: [
-                IconBadge(icon: icon),
+                Icon(icon, color: AppColors.crimson, size: 24),
                 const SizedBox(width: 16),
                 Expanded(
                   child: Column(
@@ -94,18 +94,10 @@ class _ContactCard extends StatelessWidget {
                     ],
                   ),
                 ),
-                Container(
-                  width: 36,
-                  height: 36,
-                  decoration: const BoxDecoration(
-                    color: AppColors.surfaceMuted,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.arrow_outward,
-                    size: 18,
-                    color: AppColors.crimson,
-                  ),
+                const Icon(
+                  Icons.open_in_new,
+                  size: 18,
+                  color: AppColors.textSubtle,
                 ),
               ],
             ),

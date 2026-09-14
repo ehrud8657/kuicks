@@ -162,19 +162,25 @@ class _MyPageCardFrame extends StatelessWidget {
             padding: const EdgeInsets.all(24),
             child: ConstrainedBox(
               // 내용이 없을 때도 기존 카드 높이(150)를 유지한다.
-              constraints: const BoxConstraints(minHeight: 102),
+              constraints: const BoxConstraints(minHeight: 84),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  IconBadge(icon: icon),
-                  const SizedBox(height: 14),
-                  Text(
-                    label,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 17,
-                    ),
+                  Row(
+                    children: [
+                      Icon(icon, size: 20, color: AppColors.crimson),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          label,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 17,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 6),
                   child,

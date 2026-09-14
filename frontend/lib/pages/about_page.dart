@@ -63,7 +63,7 @@ class AboutPage extends StatelessWidget {
               title: 'KUICS를 소개합니다',
             ),
             const SizedBox(height: 20),
-            const Text(
+            const KeepAllText(
               'KUICS는 2005년 1월 11일에 설립된 고려대학교 정보대학 소속 '
               '정보보호동아리입니다. KUICS는 정보보호와 보안에 대한 학구적 탐구심, '
               '올바른 윤리의식을 바탕으로 해킹사고 대응을 위해 다양한 보안기술과 '
@@ -140,15 +140,8 @@ class _StaffChip extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.borderLight),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x14071B33),
-            blurRadius: 8,
-            offset: Offset(0, 2),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppColors.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
