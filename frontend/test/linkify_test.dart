@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:kuics_frontend/main.dart';
+import 'package:kuics_frontend/widgets/linkified_text.dart';
 
 /// 링크 조각만 뽑아낸다.
 List<String> links(String text) => linkSegments(text)
@@ -25,7 +25,8 @@ void main() {
   });
 
   test('http/https 주소를 찾는다', () {
-    expect(links('신청은 https://kuics.org/apply 에서'), ['https://kuics.org/apply']);
+    expect(
+        links('신청은 https://kuics.org/apply 에서'), ['https://kuics.org/apply']);
     expect(links('http://example.com 참고'), ['http://example.com']);
   });
 

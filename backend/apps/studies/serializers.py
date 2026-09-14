@@ -1,7 +1,14 @@
+from django.utils import timezone
 from rest_framework import serializers
-from .models import Participation, Semester, Study
+
+from .models import Assignment, AssignmentSubmission, Participation, Semester, Study, StudySession
 
 LEADER_UNASSIGNED = "미정"
+
+
+def leader_name(study):
+    # 스터디장이 아직 지정되지 않은 스터디도 목록에 그대로 노출한다.
+    return study.leader.name if study.leader else LEADER_UNASSIGNED
 
 
 class ParticipationSerializer(serializers.ModelSerializer):
@@ -25,10 +32,31 @@ class MyStudySerializer(serializers.ModelSerializer):
     title = serializers.CharField(source="study.title", read_only=True)
     semester = serializers.CharField(source="study.semester.name", read_only=True)
     status_label = serializers.CharField(source="get_status_display", read_only=True)
+    assignment_count = serializers.SerializerMethodField()
+    pending_assignment_count = serializers.SerializerMethodField()
+
+    def _stats(self, participation):
+        return self.context.get("assignment_stats", {}).get(participation.pk, {})
+
+    def get_assignment_count(self, participation):
+        return self._stats(participation).get("assignment_count", 0)
+
+    def get_pending_assignment_count(self, participation):
+        """기한이 남았는데 아직 내지 않은 과제 수. 수강 중이 아니면 0."""
+        return self._stats(participation).get("pending_assignment_count", 0)
 
     class Meta:
         model = Participation
-        fields = ("id", "study_id", "title", "semester", "status", "status_label")
+        fields = (
+            "id",
+            "study_id",
+            "title",
+            "semester",
+            "status",
+            "status_label",
+            "assignment_count",
+            "pending_assignment_count",
+        )
 
 
 class StudySerializer(serializers.ModelSerializer):
@@ -36,8 +64,7 @@ class StudySerializer(serializers.ModelSerializer):
     participations = ParticipationSerializer(many=True, read_only=True)
 
     def get_leader_name(self, obj):
-        # 스터디장이 아직 지정되지 않은 스터디도 목록에 그대로 노출한다.
-        return obj.leader.name if obj.leader else LEADER_UNASSIGNED
+        return leader_name(obj)
 
     class Meta:
         model = Study
@@ -58,3 +85,42 @@ class SemesterSerializer(serializers.ModelSerializer):
     class Meta:
         model = Semester
         fields = ("id", "name", "studies")
+
+
+# ── 참여자 본인용 스터디 상세 ─────────────────────────────────────
+
+
+class MySubmissionSerializer(serializers.ModelSerializer):
+    is_late = serializers.BooleanField(read_only=True)
+
+    class Meta:
+        model = AssignmentSubmission
+        fields = ("id", "original_name", "size", "submitted_at", "is_late", "review_status", "feedback", "reviewed_at")
+
+
+class MySessionSerializer(serializers.ModelSerializer):
+    # 스터디장이 남긴 출석 메모는 내부 기록이라 본인에게도 보여주지 않는다.
+    attendance = serializers.SerializerMethodField()
+
+    def get_attendance(self, session):
+        return self.context["attendance"].get(session.pk)
+
+    class Meta:
+        model = StudySession
+        fields = ("id", "number", "title", "held_on", "attendance")
+
+
+class MyAssignmentSerializer(serializers.ModelSerializer):
+    is_closed = serializers.SerializerMethodField()
+    submission = serializers.SerializerMethodField()
+
+    def get_is_closed(self, assignment):
+        return assignment.due_at <= timezone.now()
+
+    def get_submission(self, assignment):
+        submission = self.context["submissions"].get(assignment.pk)
+        return MySubmissionSerializer(submission).data if submission else None
+
+    class Meta:
+        model = Assignment
+        fields = ("id", "title", "description", "due_at", "is_closed", "submission")

@@ -9,7 +9,7 @@ kuics/
 ├─ frontend/            Flutter Web (Dockerfile: flutter build + nginx)
 ├─ backend/             Django + DRF
 │  ├─ apps/accounts/    학번 로그인, 회원, CSV 일괄 생성
-│  ├─ apps/studies/     학기, 스터디, 참여, 과제 제출 골격
+│  ├─ apps/studies/     학기, 스터디, 참여, 회차·출석, 과제·zip 제출, 스터디장 관리 API
 │  ├─ apps/boards/      공지사항 및 모집공고
 │  └─ apps/activities/  행사 및 참여 골격
 ├─ docs/                설계 및 API 문서
@@ -20,7 +20,7 @@ kuics/
 
 ### 처음 참여할 때
 
-1. 이 README의 빠른 시작으로 로컬 환경을 준비하고, [개발 가이드](./DEVELOPMENT_GUIDE.md)와 [API 문서](./docs/API.md)를 읽습니다.
+1. 이 README의 빠른 시작으로 로컬 환경을 준비하고, [개발 가이드](./DEVELOPMENT_GUIDE.md), [API 문서](./docs/API.md), 최신 [진행 보고서](./docs/reports/)를 읽습니다.
 2. 맡을 기능과 수정할 파일을 다른 작업자와 먼저 공유합니다. 같은 파일이나 DB 모델을 동시에 수정하게 되면 작업 범위와 순서를 조율합니다.
 3. 개발에는 로컬 DB와 가상 회원 데이터를 사용합니다. 운영 계정이나 실제 회원 명단은 저장소·이슈·PR에 올리지 않습니다.
 
@@ -28,7 +28,9 @@ kuics/
 
 | 작업 | 위치 |
 |---|---|
-| 화면 및 UI | `frontend/lib/main.dart` |
+| 앱 셸(상단 메뉴·로그인·세션) | `frontend/lib/app_shell.dart` |
+| 화면 | `frontend/lib/pages/` (스터디 관리 화면은 `pages/manage/`) |
+| 공통 위젯·색상·날짜 표기 | `frontend/lib/widgets/`, `frontend/lib/theme.dart`, `frontend/lib/format.dart` |
 | 프론트 데이터 모델 및 API 호출 | `frontend/lib/models.dart`, `frontend/lib/api_client.dart` |
 | 회원·로그인·권한 | `backend/apps/accounts/` |
 | 학기·스터디·참여 | `backend/apps/studies/` |
@@ -86,8 +88,11 @@ python -m venv .venv
 pip install -r requirements.txt
 python manage.py migrate
 python manage.py createsuperuser
+python manage.py seed_demo      # 선택: 개발용 가상 회원·스터디·출석·과제 (DEBUG에서만)
 python manage.py runserver
 ```
+
+Python 3.14는 Django 5.1이 지원하지 않으므로 3.12~3.13으로 가상환경을 만듭니다 (`py -3.13 -m venv .venv`). `seed_demo`가 만드는 계정과 비밀번호는 [API 문서](./docs/API.md#개발용-가상-데이터)에 있습니다.
 
 API는 기본적으로 `http://localhost:8000/api`에서 제공되고 관리자 페이지는 `/admin`입니다.
 
@@ -200,15 +205,19 @@ python manage.py import_members members.csv
 
 초기 비밀번호는 `kuics!학번` 형식으로 고정 부여되고 `must_change_password=true`로 생성되어 최초 로그인 시 비밀번호 변경이 강제됩니다. 이미 등록된 학번은 건너뛰므로, 모집 중 새 명단이 들어올 때마다 CSV를 갱신해 같은 명령을 재실행하면 됩니다. 학번/이름이 담긴 CSV(`backend/members*.csv`)는 개인정보이므로 커밋하지 않습니다.
 
+- 초기 비밀번호 상태인 회원은 비밀번호를 바꾸기 전까지 로그인이 필요한 API와 `/admin`을 쓸 수 없습니다(서버에서 차단). 운영진 계정도 마찬가지이므로 새로 만든 운영진에게는 홈페이지에서 비밀번호부터 바꾸도록 안내합니다.
+- `회원상태`가 `운영진`이면 Django 슈퍼유저 권한(Admin 전체)이 함께 부여됩니다. 운영진은 CSV로 넣기보다 Admin에서 한 명씩 지정하는 것을 권장합니다.
+
 ## 구현 범위
 
-- Home 및 전체 메뉴의 반응형 기본 레이아웃
+- Home 및 전체 메뉴의 반응형 기본 레이아웃, About·Contact·공지/모집 게시판
 - Study 학기 선택, 스터디 아코디언, 수료/우수수료 표시
-- Django Admin 기반 학기·스터디·참여자·게시글 관리
-- 학번 기반 세션 인증 API와 3단계 역할 모델
-- 마이페이지, 과제 제출, 행사 기능의 확장용 골격
+- Django Admin 기반 학기·스터디·참여자·회차·과제·게시글 관리
+- 학번 기반 세션 인증 API와 역할 모델(휴회원·정회원·스터디장·운영진), 초기 비밀번호 변경 서버 강제
+- 스터디장·운영진 관리 화면: 참여자 명단, 회차별 출석 체크·현황표, 과제 등록, 제출 현황(미제출·지각), 확인·피드백 (스터디장은 담당 스터디만, 운영진은 전체)
+- 마이페이지: 수강·완료 스터디, 제출할 과제, 스터디 상세에서 zip 과제 제출·피드백·내 출석 확인
 - API 로딩·빈 결과·오류 UI
 
-DMOJ 연동, 실제 파일 업로드, 마이페이지 데이터 집계, 운영 배포 자동화는 후속 범위입니다.
+DMOJ 연동, 행사(Activity) 기능, URL 라우팅(새로고침 유지), 외부 파일 저장소, 운영 배포 자동화는 후속 범위입니다. 진행 상황과 결정이 필요한 사항은 [docs/reports](./docs/reports/)를 참고하세요.
 
 자세한 규칙과 API는 [DEVELOPMENT_GUIDE.md](./DEVELOPMENT_GUIDE.md) 및 [docs/API.md](./docs/API.md)를 참고하세요.

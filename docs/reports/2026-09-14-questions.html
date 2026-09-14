@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>확인이 필요한 사항 · KUICS 스터디장 관리</title>
+<style>
+  :root {
+    --bg: #f6f7f9; --card: #ffffff; --text: #101828; --muted: #667085; --line: #e4e7ec;
+    --accent: #b31b34; --accent-soft: #fbeaec; --warn: #b54708; --warn-soft: #fef4e6;
+    --info: #175cd3; --info-soft: #eaf2fd; --ok: #067647; --ok-soft: #e7f6ec; --code: #f2f4f7;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0c111d; --card: #161b26; --text: #f5f5f6; --muted: #94969c; --line: #2a303c;
+      --accent: #f0566e; --accent-soft: #3a1720; --warn: #fdb022; --warn-soft: #2e2311;
+      --info: #84adff; --info-soft: #15223f; --ok: #47cd89; --ok-soft: #0f2a1c; --code: #1f242f;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font: 15px/1.7 "Pretendard", "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif;
+    /* 한글은 어절 단위로 줄바꿈하고, 긴 경로·코드는 화면을 넘지 않게 어디서든 끊는다. */
+    word-break: keep-all; overflow-wrap: anywhere; }
+  .wrap { max-width: 900px; margin: 0 auto; padding: 40px 20px 96px; }
+  a { color: var(--accent); }
+  .eyebrow { color: var(--accent); font-weight: 800; letter-spacing: .04em; font-size: 13px; }
+  h1 { font-size: 28px; line-height: 1.3; margin: 6px 0 10px; }
+  h2 { font-size: 20px; margin: 44px 0 14px; }
+  .meta { color: var(--muted); font-size: 14px; }
+  .q { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px; margin: 14px 0; scroll-margin-top: 16px; }
+  .q h3 { margin: 0 0 6px; font-size: 17px; line-height: 1.45; }
+  .q dl { margin: 10px 0 0; display: grid; grid-template-columns: 7.5em 1fr; gap: 6px 12px; }
+  .q dt { color: var(--muted); font-size: 13px; font-weight: 700; padding-top: 2px; }
+  .q dd { margin: 0; }
+  @media (max-width: 560px) { .q dl { grid-template-columns: 1fr; } .q dt { padding-top: 8px; } }
+  .badge { display: inline-block; padding: 1px 9px; border-radius: 999px; font-size: 12px; font-weight: 700; white-space: nowrap; vertical-align: 2px; }
+  .must { color: var(--accent); background: var(--accent-soft); }
+  .policy { color: var(--info); background: var(--info-soft); }
+  .check { color: var(--warn); background: var(--warn-soft); }
+  .temp { color: var(--ok); background: var(--ok-soft); }
+  code { font-family: Consolas, "D2Coding", monospace; font-size: 13px; background: var(--code); padding: 1px 5px; border-radius: 5px; }
+  ul { padding-left: 20px; margin: 4px 0; }
+  li { margin: 2px 0; }
+  .summary { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px 18px; margin-top: 20px; }
+  .summary ol { margin: 6px 0; padding-left: 22px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="eyebrow">KUICS HOMEPAGE · DECISIONS NEEDED</div>
+<h1>확인이 필요한 사항</h1>
+<p class="meta">2026-09-14 · 스터디장 관리 기능 개발 중 결정이 필요했던 부분입니다. 작업을 멈추지 않도록 각 항목에 <span class="badge temp">임시 결정</span>을 적용해 두었고, 바꾸려면 이 문서의 “바꾸려면” 항목을 참고하세요. 개발 내용 전체는 <a href="2026-09-14-study-leader-management-report.html">개발 보고서</a>에 있습니다.</p>
+
+<div class="summary">
+  <strong>우선순위</strong>
+  <ol>
+    <li><span class="badge must">배포 전 필수</span> 1~4번 — Render/Vercel에 올리기 전에 정해야 사고가 없습니다.</li>
+    <li><span class="badge policy">운영 정책</span> 5~11번 — 지금 동작으로 써도 되지만 동아리 방침과 맞는지 확인해주세요.</li>
+    <li><span class="badge check">확인만</span> 12~14번 — 알고만 있으면 되는 사항입니다.</li>
+  </ol>
+</div>
+
+<h2>배포 전 필수</h2>
+
+<section class="q" id="q1">
+  <h3>1. Render 무료 플랜에서는 제출된 zip 파일이 사라집니다 <span class="badge must">배포 전 필수</span></h3>
+  <dl>
+    <dt>상황</dt><dd>Render 무료 웹 서비스는 디스크가 영구적이지 않아, 재배포하거나 서비스가 잠들었다 깨어나면 <code>media/</code>에 저장한 파일이 지워집니다. DB의 제출 기록은 남지만 파일은 없어져, 내려받기가 404(“서버 저장소가 초기화되었을 수 있습니다.”)가 됩니다.</dd>
+    <dt>임시 결정</dt><dd><span class="badge temp">적용됨</span> 서버 로컬 파일로 저장. 전용 서버(<code>docker-compose.prod.yml</code>)는 <code>media_data</code> 볼륨이 있어 보존됩니다.</dd>
+    <dt>선택지</dt><dd><ul>
+      <li>A. 전용 서버로 옮기기 전까지는 과제 제출을 <strong>시험용으로만</strong> 쓰고 실제 과제는 받지 않는다 (추가 비용·코드 없음) — <strong>권장</strong></li>
+      <li>B. Render에 유료 Persistent Disk를 붙인다</li>
+      <li>C. S3·Cloudflare R2 같은 외부 저장소를 <code>django-storages</code>로 연결한다 (코드 수정 필요, 서버 이전 후에도 유지 가능)</li>
+    </ul></dd>
+  </dl>
+</section>
+
+<section class="q" id="q2">
+  <h3>2. Vercel을 거치는 업로드에 크기 제한이 있는지 확인이 필요합니다 <span class="badge must">배포 전 필수</span></h3>
+  <dl>
+    <dt>상황</dt><dd>프론트(Vercel)가 <code>/api</code>를 Render로 넘기는 rewrite 구조라, zip 업로드도 Vercel을 거칩니다. Vercel 프록시가 받는 요청 본문 크기에 한도가 있으면 서버 설정(50MB)과 무관하게 큰 파일이 막힙니다. 이 환경에서는 Vercel에 직접 올려볼 수 없어 확인하지 못했습니다.</dd>
+    <dt>임시 결정</dt><dd><span class="badge temp">적용됨</span> 서버 한도 50MB(<code>SUBMISSION_MAX_BYTES</code>). 프론트는 서버가 413을 돌려주면 “파일이 너무 커서 서버가 받지 않았습니다.”로 안내합니다.</dd>
+    <dt>확인 방법</dt><dd>배포 후 1MB, 5MB, 20MB zip을 차례로 제출해보고 막히는 크기를 확인 → 그 크기보다 작게 <code>SUBMISSION_MAX_BYTES</code>를 낮추고, 앱의 안내 문구 상수 <code>maxSubmissionBytes</code>(<code>frontend/lib/widgets/zip_picker.dart</code>)도 같이 맞춥니다.</dd>
+    <dt>대안</dt><dd>업로드만 Render 도메인으로 직접 보내려면 서로 다른 도메인이 되어 <code>CROSS_SITE_COOKIES=true</code>와 HTTPS 쿠키 설정이 필요합니다. 전용 서버(nginx 같은 도메인)로 옮기면 이 문제는 사라집니다.</dd>
+  </dl>
+</section>
+
+<section class="q" id="q3">
+  <h3>3. 배포 직후 초기 비밀번호 상태인 계정은 관리 기능과 Admin이 막힙니다 <span class="badge must">배포 전 필수</span></h3>
+  <dl>
+    <dt>상황</dt><dd>서버 측 비밀번호 변경 강제가 켜지면, <code>must_change_password=true</code>인 계정은 <strong>운영진이라도</strong> 홈페이지에서 비밀번호를 바꾸기 전까지 마이페이지·스터디 관리·<code>/admin</code>을 쓸 수 없습니다. CSV나 Admin으로 만든 계정은 모두 이 상태로 시작합니다.</dd>
+    <dt>임시 결정</dt><dd><span class="badge temp">적용됨</span> 차단 적용. <code>createsuperuser</code>로 만든 계정만 예외. Admin 차단 화면에 “홈페이지로 이동해 비밀번호 변경하기” 링크와 로그아웃 버튼을 둠.</dd>
+    <dt>할 일</dt><dd>배포 전 Admin → 회원 목록의 “비밀번호 변경 필요” 필터로 대상 인원을 확인하고, 운영진·스터디장에게 “홈페이지 로그인 → 비밀번호 변경”을 먼저 안내해주세요.</dd>
+  </dl>
+</section>
+
+<section class="q" id="q4">
+  <h3>4. 쓰지 않던 기존 <code>AssignmentSubmit</code> 테이블이 삭제됩니다 <span class="badge must">배포 전 필수</span></h3>
+  <dl>
+    <dt>상황</dt><dd>기존 코드에 있던 과제 제출 골격(파일 URL만 저장, 화면·API 없음)을 새 <code>AssignmentSubmission</code>으로 대체하면서 마이그레이션 <code>studies.0003</code>이 옛 테이블을 지웁니다. Admin에는 등록돼 있었으므로, 누군가 Admin에서 직접 넣은 데이터가 있다면 사라집니다.</dd>
+    <dt>확인 방법</dt><dd>배포 전 운영 Admin → Studies → “Assignment submits” 목록이 비어 있는지 확인. 데이터가 있으면 배포 전에 알려주세요(옮기는 마이그레이션을 따로 만들어야 합니다).</dd>
+  </dl>
+</section>
+
+<h2>운영 정책</h2>
+
+<section class="q" id="q5">
+  <h3>5. CSV의 회원상태 ‘운영진’은 곧 Django 슈퍼유저입니다 <span class="badge policy">운영 정책</span></h3>
+  <dl>
+    <dt>지금 동작</dt><dd><code>Member.save()</code>가 <code>role == admin</code>이면 <code>is_staff</code>와 <code>is_superuser</code>를 항상 <code>True</code>로 맞춥니다. 그래서 <code>import_members</code> CSV에 <code>운영진</code>이라고 적힌 회원은 생성 즉시 Admin 전체 권한(회원 삭제, 비밀번호 설정, 모든 데이터 수정)을 갖습니다. 반대로 Admin에서 운영진을 해제하면 두 권한이 함께 사라집니다.</dd>
+    <dt>위험</dt><dd>초기 비밀번호가 <code>kuics!학번</code>이라, 명단이 유출되면 운영진 계정으로 바로 로그인할 수 있었습니다. 이번에 추가한 서버 측 비밀번호 변경 강제로 “초기 비밀번호로 Admin·API 사용”은 막혔지만, 본인보다 먼저 로그인해 비밀번호를 바꿔버리는 경우는 막을 수 없습니다.</dd>
+    <dt>임시 결정</dt><dd><span class="badge temp">유지</span> 기존 설계 그대로.</dd>
+    <dt>권장</dt><dd><ul>
+      <li>운영진 계정은 CSV로 넣지 말고 Admin에서 한 명씩 지정하고, 지정 직후 본인이 로그인해 비밀번호를 바꾸게 하기</li>
+      <li>장기적으로는 “운영진(스터디·게시판 관리)”과 “슈퍼유저(회원·권한 관리)”를 분리하는 방안 검토</li>
+    </ul></dd>
+  </dl>
+</section>
+
+<section class="q" id="q6">
+  <h3>6. 과제 재제출 규칙 <span class="badge policy">운영 정책</span></h3>
+  <dl>
+    <dt>임시 결정</dt><dd><span class="badge temp">적용됨</span> 기한과 무관하게 다시 낼 수 있음 → 이전 파일은 새 파일로 교체(삭제) → 확인 상태는 “미확인”으로 초기화 → 피드백 내용은 남겨둠. 기한 후 제출은 “지각 제출”로 표시.</dd>
+    <dt>다른 선택지</dt><dd>기한 후 제출 금지, 재제출 시 이전 파일 보관(버전 기록), 확인 완료된 제출은 재제출 금지 등.</dd>
+    <dt>바꾸려면</dt><dd><code>backend/apps/studies/views.py</code>의 <code>AssignmentSubmitView</code></dd>
+  </dl>
+</section>
+
+<section class="q" id="q7">
+  <h3>7. 과제를 낼 수 있는 사람 <span class="badge policy">운영 정책</span></h3>
+  <dl>
+    <dt>임시 결정</dt><dd><span class="badge temp">적용됨</span> 참여 상태가 <strong>수강 중</strong>인 참여자만 제출. 수료·우수 수료·중도 포기는 과제와 피드백만 볼 수 있음. 스터디장이 참여자를 “수료”로 바꾸는 순간 제출이 막힙니다.</dd>
+    <dt>확인</dt><dd>스터디가 끝난 뒤 늦게 내는 과제를 받아야 한다면 수료 상태도 허용하도록 바꿔야 합니다.</dd>
+  </dl>
+</section>
+
+<section class="q" id="q8">
+  <h3>8. 출석 메모 공개 범위와 출석률 계산 <span class="badge policy">운영 정책</span></h3>
+  <dl>
+    <dt>임시 결정</dt><dd><span class="badge temp">적용됨</span> <ul>
+      <li>스터디장이 남긴 출석 메모는 참여자 본인에게도 보이지 않음(내부 기록)</li>
+      <li>출석률 = (출석 + 지각) ÷ (전체 회차 − 공결). 공결은 분모에서 뺌. 기록하지 않은 회차는 결석처럼 분모에 포함</li>
+    </ul></dd>
+    <dt>확인</dt><dd>지각을 반만 인정하거나(0.5), 수료 기준 출석률이 따로 있다면 알려주세요. 계산은 <code>frontend/lib/models.dart</code>의 <code>AttendanceSummary.rate</code>, <code>AttendanceMatrixRow.rate</code>에 있습니다.</dd>
+  </dl>
+</section>
+
+<section class="q" id="q9">
+  <h3>9. 스터디장에게 참여자 학번 전체가 보입니다 <span class="badge policy">운영 정책</span></h3>
+  <dl>
+    <dt>임시 결정</dt><dd><span class="badge temp">적용됨</span> 관리 화면(로그인한 담당 스터디장·운영진)에는 동명이인 구분과 명단 관리를 위해 학번 전체를 보여줍니다. 공개 스터디 페이지는 기존대로 뒷 2자리만.</dd>
+    <dt>확인</dt><dd>스터디장에게도 일부만 보여야 한다면 <code>ManageParticipantSerializer</code>에서 가리면 됩니다.</dd>
+  </dl>
+</section>
+
+<section class="q" id="q10">
+  <h3>10. 참여자 등록은 누가 하나요? <span class="badge policy">운영 정책</span></h3>
+  <dl>
+    <dt>임시 결정</dt><dd><span class="badge temp">적용됨</span> 요청하신 대로 운영진이 <code>/admin</code>의 스터디 화면(참여자 인라인)에서 등록. 스터디장 화면에서는 참여 <em>상태</em>만 바꿀 수 있고 추가·삭제는 못 합니다.</dd>
+    <dt>확인</dt><dd>스터디장이 직접 참여자를 추가·삭제해야 한다면 관리 API와 화면을 추가해야 합니다(학번 검색 포함).</dd>
+  </dl>
+</section>
+
+<section class="q" id="q11">
+  <h3>11. 제출 파일 크기 한도 50MB <span class="badge policy">운영 정책</span></h3>
+  <dl>
+    <dt>임시 결정</dt><dd><span class="badge temp">적용됨</span> 50MB. 서버 <code>SUBMISSION_MAX_BYTES</code>, 프론트 <code>maxSubmissionBytes</code>, nginx <code>client_max_body_size 60m</code>을 함께 맞춰 두었습니다.</dd>
+    <dt>확인</dt><dd>바이너리·VM 이미지 과제처럼 더 큰 파일이 필요하면 세 값을 같이 올려야 하고, 2번(Vercel 한도)과 1번(저장소)에도 영향이 있습니다.</dd>
+  </dl>
+</section>
+
+<h2>확인만</h2>
+
+<section class="q" id="q12">
+  <h3>12. About 페이지 운영진 명단에 같은 이름이 두 부서에 있습니다 <span class="badge check">확인만</span></h3>
+  <dl>
+    <dt>상황</dt><dd>“신채민”이 교육부와 총무부에 모두 들어 있습니다(<code>frontend/lib/pages/about_page.dart</code>). 겸직이면 그대로 두고, 오타면 알려주세요. 이번 작업에서는 건드리지 않았습니다.</dd>
+  </dl>
+</section>
+
+<section class="q" id="q13">
+  <h3>13. 커밋 <code>72dd723</code>은 단독으로 빌드되지 않습니다 <span class="badge check">확인만</span></h3>
+  <dl>
+    <dt>상황</dt><dd>feat와 fix 커밋을 나누는 과정에서 두 파일의 변경 조각이 잘못 들어갔습니다. 바로 다음 커밋 <code>dabfe78</code>부터 정상이고, 브랜치 최신 상태는 모든 점검을 통과합니다. 이미 push한 이력이라 강제로 고치지 않았습니다(<code>force push</code> 금지 규칙).</dd>
+    <dt>영향</dt><dd>그 커밋으로 체크아웃하거나 <code>git bisect</code>를 할 때만 문제. bisect 중 만나면 <code>git bisect skip</code>. PR을 squash merge하면 사라집니다.</dd>
+  </dl>
+</section>
+
+<section class="q" id="q14">
+  <h3>14. 개발 서버(DEBUG)에서는 제출 파일이 <code>/media/</code>로도 열립니다 <span class="badge check">확인만</span></h3>
+  <dl>
+    <dt>상황</dt><dd>기존 <code>config/urls.py</code>가 DEBUG일 때 <code>/media/</code>를 공개 서빙합니다. 파일 경로에 추측하기 어려운 12자리 임의값이 들어가지만, 경로를 알면 로그인 없이 받을 수 있습니다. 운영(DEBUG=false)에서는 서빙하지 않고 권한 검사를 거치는 다운로드 API만 씁니다.</dd>
+    <dt>권장</dt><dd>개발용 DB에 실제 과제 파일을 올리지 않기. 필요하면 DEBUG에서도 <code>submissions/</code> 경로는 서빙하지 않도록 바꿀 수 있습니다.</dd>
+  </dl>
+</section>
+
+</div>
+</body>
+</html>

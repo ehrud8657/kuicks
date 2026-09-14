@@ -1,7 +1,10 @@
+import uuid
+
 from django.conf import settings
 from django.db import models
 from django.db.models.signals import post_delete
 from django.dispatch import receiver
+from django.utils import timezone
 
 class Semester(models.Model):
     name = models.CharField("학기", max_length=20, unique=True)
@@ -56,18 +59,104 @@ class Participation(models.Model):
     class Meta:
         constraints = [models.UniqueConstraint(fields=("member", "study"), name="unique_study_participation")]
 
-class AssignmentSubmit(models.Model):
-    class Status(models.TextChoices):
-        SUBMITTED = "submitted", "제출"
-        ACCEPTED = "accepted", "승인"
-        REJECTED = "rejected", "반려"
-    member = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="assignment_submits")
-    study = models.ForeignKey(Study, on_delete=models.CASCADE, related_name="assignment_submits")
-    file_url = models.URLField("파일 URL", max_length=500)
-    status = models.CharField(max_length=20, choices=Status.choices, default=Status.SUBMITTED)
-    created_at = models.DateTimeField(auto_now_add=True)
-    def __str__(self): return f"{self.member} · {self.study} · {self.status}"
 
+class StudySession(models.Model):
+    """스터디 회차. 출석은 회차 단위로 기록한다."""
+
+    study = models.ForeignKey(Study, on_delete=models.CASCADE, related_name="sessions")
+    number = models.PositiveIntegerField("회차")
+    title = models.CharField("주제", max_length=100, blank=True)
+    held_on = models.DateField("진행일")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.study} · {self.number}회차"
+
+    class Meta:
+        ordering = ("number",)
+        constraints = [models.UniqueConstraint(fields=("study", "number"), name="unique_session_number_per_study")]
+
+
+class Attendance(models.Model):
+    class Status(models.TextChoices):
+        PRESENT = "present", "출석"
+        LATE = "late", "지각"
+        ABSENT = "absent", "결석"
+        EXCUSED = "excused", "공결"
+
+    session = models.ForeignKey(StudySession, on_delete=models.CASCADE, related_name="attendances")
+    # 회원이 아니라 참여 기록에 연결해, 스터디 명단에 있는 사람만 출석을 가질 수 있게 한다.
+    participation = models.ForeignKey(Participation, on_delete=models.CASCADE, related_name="attendances")
+    status = models.CharField("출석 상태", max_length=10, choices=Status.choices)
+    note = models.CharField("메모", max_length=200, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.session} · {self.participation.member} · {self.get_status_display()}"
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=("session", "participation"), name="unique_attendance_per_session")]
+
+
+class Assignment(models.Model):
+    study = models.ForeignKey(Study, on_delete=models.CASCADE, related_name="assignments")
+    title = models.CharField("제목", max_length=150)
+    description = models.TextField("설명", blank=True)
+    due_at = models.DateTimeField("제출 기한")
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.study} · {self.title}"
+
+    class Meta:
+        ordering = ("due_at", "id")
+
+
+def submission_upload_to(instance, filename):
+    """제출 파일 저장 경로. 원본 파일명은 DB에만 두고, 경로에는 추측하기 어려운 이름을 쓴다."""
+    assignment = instance.assignment
+    member_id = instance.participation.member_id
+    return f"submissions/{assignment.study_id}/{assignment.pk}/{member_id}_{uuid.uuid4().hex[:12]}.zip"
+
+
+class AssignmentSubmission(models.Model):
+    """과제 제출. 참여자당 과제 하나에 한 건이며, 다시 제출하면 파일을 교체한다."""
+
+    class ReviewStatus(models.TextChoices):
+        PENDING = "pending", "미확인"
+        CHECKED = "checked", "확인"
+
+    assignment = models.ForeignKey(Assignment, on_delete=models.CASCADE, related_name="submissions")
+    participation = models.ForeignKey(Participation, on_delete=models.CASCADE, related_name="submissions")
+    file = models.FileField("제출 파일", upload_to=submission_upload_to, max_length=255)
+    original_name = models.CharField("원본 파일명", max_length=255)
+    size = models.PositiveBigIntegerField("크기(바이트)")
+    submitted_at = models.DateTimeField("제출 시각", default=timezone.now)
+    review_status = models.CharField(
+        "확인 여부", max_length=10, choices=ReviewStatus.choices, default=ReviewStatus.PENDING
+    )
+    feedback = models.TextField("피드백", blank=True)
+    reviewed_at = models.DateTimeField("확인 시각", null=True, blank=True)
+    reviewed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
+
+    @property
+    def is_late(self):
+        return self.submitted_at > self.assignment.due_at
+
+    def __str__(self):
+        return f"{self.assignment} · {self.participation.member}"
+
+    class Meta:
+        ordering = ("submitted_at",)
+        constraints = [
+            models.UniqueConstraint(fields=("assignment", "participation"), name="unique_submission_per_assignment")
+        ]
 
 
 def sync_leader_roles(*member_ids):
@@ -102,3 +191,10 @@ def sync_leader_roles(*member_ids):
 @receiver(post_delete, sender=Study)
 def _sync_leader_role_on_study_delete(sender, instance, **kwargs):
     sync_leader_roles(instance.leader_id)
+
+
+@receiver(post_delete, sender=AssignmentSubmission)
+def _delete_submission_file(sender, instance, **kwargs):
+    # 과제·스터디가 지워져 연쇄 삭제될 때도 저장소에 파일이 남지 않게 한다.
+    if instance.file:
+        instance.file.delete(save=False)

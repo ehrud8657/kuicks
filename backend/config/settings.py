@@ -37,6 +37,8 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    # 초기 비밀번호를 바꾸지 않은 회원의 API/Admin 접근 차단. 인증 미들웨어 바로 뒤에 와야 한다.
+    "apps.accounts.middleware.PasswordChangeRequiredMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
@@ -73,6 +75,8 @@ STORAGES = {
 }
 MEDIA_URL = "media/"
 MEDIA_ROOT = BASE_DIR / "media"
+# 과제 제출 zip 최대 크기(바이트). nginx의 client_max_body_size도 이보다 크게 둬야 한다.
+SUBMISSION_MAX_BYTES = int(os.getenv("SUBMISSION_MAX_BYTES", str(50 * 1024 * 1024)))
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 AUTH_USER_MODEL = "accounts.Member"
 
@@ -114,5 +118,6 @@ REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.AllowAny"],
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 20,
+    "EXCEPTION_HANDLER": "config.exceptions.api_exception_handler",
 }
 
