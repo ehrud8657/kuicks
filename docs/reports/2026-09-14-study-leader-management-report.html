@@ -68,7 +68,7 @@
     2026-09-13 ~ 2026-09-14 · 브랜치 <code>dev_tweho</code> · 기준 커밋 <code>5fdf52a</code>(main) 이후 ·
     작성: Claude Opus 5 (김태호 요청) · 계획 문서: <a href="../plans/2026-09-13-study-leader-management.md">docs/plans/2026-09-13-study-leader-management.md</a>
   </div>
-  <div class="meta">함께 읽을 문서: <a href="2026-09-14-questions.html">확인이 필요한 사항</a> · <a href="../API.md">API 문서</a></div>
+  <div class="meta">함께 읽을 문서: <a href="2026-09-14-questions.html">확인이 필요한 사항</a> · <a href="2026-09-14-review-checklist.html">수동 검토 체크리스트</a> · <a href="../API.md">API 문서</a></div>
 
   <div class="cards">
     <div class="card"><div class="metric">7 / 7</div><div class="metric-label">계획한 분기점 완료</div></div>
@@ -207,7 +207,7 @@
 <ol>
   <li><strong>배포 전 결정</strong>: <a href="2026-09-14-questions.html">확인이 필요한 사항</a>의 “배포 전 필수” 4건 결정 후 Render/Vercel에 올려 실제 로그인·업로드 확인.</li>
   <li><strong><code>dev_tweho</code> → <code>main</code> PR</strong>: README 규칙상 리뷰어 1명이 필요한데 현재 단독 개발이라, 규칙을 “단독 기간에는 자체 점검 후 병합”으로 바꿀지 정해야 합니다.</li>
-  <li><strong>URL 라우팅</strong>(예: <code>go_router</code>): 지금은 새로고침하면 홈으로 돌아가고, 과제·스터디 화면 링크를 공유할 수 없습니다. 스터디장이 과제 링크를 공지에 붙이기 어렵습니다.</li>
+  <li><s><strong>URL 라우팅</strong>(예: <code>go_router</code>)</s> — 2026-09-14 적용함 (<a href="2026-09-14-url-routing-report.html">주소 라우팅 보고서</a>).</li>
   <li><strong>보안</strong>: 로그인 시도 제한(무차별 대입 방지), 운영진이 비밀번호를 초기화하는 흐름(현재 Admin에서 직접 설정만 가능).</li>
   <li><strong>스터디장 편의</strong>: 출석·제출 현황 CSV/엑셀 내보내기, 참여자가 제출하면 목록에 표시되는 새 제출 알림, (정책 결정 시) 스터디장이 참여자를 직접 추가.</li>
   <li><strong>전용 서버 이전</strong>: <code>docker-compose.prod.yml</code> + HTTPS + <code>media_data</code> 볼륨 백업 절차, <code>CSRF_TRUSTED_ORIGINS</code>에 포트 포함 여부 점검.</li>

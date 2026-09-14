@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../api_client.dart';
+import '../auth.dart';
 import '../models.dart';
+import '../routes.dart';
 import '../theme.dart';
 import '../widgets/common.dart';
 import '../widgets/manager_panel.dart';
@@ -15,19 +18,7 @@ class _HomeNow {
 }
 
 class HomePage extends StatefulWidget {
-  const HomePage({
-    super.key,
-    this.member,
-    required this.onStudy,
-    required this.onBoard,
-    required this.onManage,
-  });
-
-  /// 로그인한 회원. 스터디장·운영진이면 관리 바로가기를 보여준다.
-  final Member? member;
-  final VoidCallback onStudy;
-  final VoidCallback onBoard;
-  final VoidCallback onManage;
+  const HomePage({super.key});
   @override
   State<HomePage> createState() => _HomePageState();
 }
@@ -115,20 +106,20 @@ class _HomePageState extends State<HomePage> {
                   ),
                   const SizedBox(height: 28),
                   FilledButton.icon(
-                    onPressed: widget.onStudy,
+                    onPressed: () => context.go(AppRoutes.study),
                     icon: const Icon(Icons.arrow_forward),
                     label: const Text('스터디 둘러보기'),
                   ),
                 ],
               ),
             ),
-            if (widget.member case final member?
+            if (AuthScope.of(context).member case final member?
                 when member.role.canManageStudies) ...[
               const SizedBox(height: 24),
               ManagerPanel(
                 key: ValueKey(member.studentId),
                 member: member,
-                onManage: widget.onManage,
+                onManage: () => context.go(AppRoutes.manage),
               ),
             ],
             const SizedBox(height: 44),
@@ -167,14 +158,14 @@ class _HomePageState extends State<HomePage> {
                           body: body(
                             (data) => data.notice?.title ?? '등록된 공지사항이 없습니다.',
                           ),
-                          onTap: widget.onBoard,
+                          onTap: () => context.go(AppRoutes.board),
                         ),
                         _InfoCard(
                           width: width,
                           icon: Icons.menu_book_outlined,
                           title: '진행 중인 스터디',
                           body: body(_studySummary),
-                          onTap: widget.onStudy,
+                          onTap: () => context.go(AppRoutes.study),
                         ),
                         // activities API가 아직 없어 채울 데이터가 없다.
                         _InfoCard(

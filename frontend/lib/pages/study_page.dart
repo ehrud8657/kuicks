@@ -2,23 +2,47 @@ import 'package:flutter/material.dart';
 
 import '../api_client.dart';
 import '../models.dart';
+import '../routes.dart';
 import '../theme.dart';
 import '../widgets/common.dart';
 
 class StudyPage extends StatefulWidget {
-  const StudyPage({super.key});
+  const StudyPage({super.key, this.semester});
+
+  /// 주소의 ?semester= 값. 없거나 없는 학기면 최신 학기를 보여준다.
+  final String? semester;
   @override
   State<StudyPage> createState() => _StudyPageState();
 }
 
 class _StudyPageState extends State<StudyPage> {
   late Future<List<Semester>> semesters;
-  int selected = 0;
+
+  /// 주소를 바꿀 수 없는 환경(테스트 등)에서 고른 학기.
+  String? _picked;
 
   @override
   void initState() {
     super.initState();
     semesters = ApiClient.instance.fetchSemesters();
+  }
+
+  @override
+  void didUpdateWidget(StudyPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.semester != oldWidget.semester) _picked = null;
+  }
+
+  int _selectedIndex(List<Semester> data) {
+    final name = _picked ?? widget.semester;
+    final index = name == null ? -1 : data.indexWhere((s) => s.name == name);
+    return index < 0 ? 0 : index;
+  }
+
+  /// 학기 선택을 주소에 남기되 방문 기록은 늘리지 않는다.
+  void _select(Semester semester) {
+    setState(() => _picked = semester.name);
+    replaceLocation(context, AppRoutes.studyOf(semester.name));
   }
 
   @override
@@ -65,7 +89,7 @@ class _StudyPageState extends State<StudyPage> {
                 }
                 final data = snapshot.data ?? const [];
                 if (data.isEmpty) return const EmptyState();
-                if (selected >= data.length) selected = 0;
+                final selected = _selectedIndex(data);
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -77,7 +101,7 @@ class _StudyPageState extends State<StudyPage> {
                         (index) => ChoiceChip(
                           label: Text(data[index].name),
                           selected: selected == index,
-                          onSelected: (_) => setState(() => selected = index),
+                          onSelected: (_) => _select(data[index]),
                         ),
                       ),
                     ),

@@ -117,7 +117,7 @@ class ApiErrorFormatTests(TestCase):
         self.assertEqual(response.status_code, 403)
         body = response.json()
         self.assertEqual(body["code"], "not_authenticated")
-        self.assertTrue(body["message"])
+        self.assertEqual(body["message"], "로그인이 필요합니다. 다시 로그인해주세요.")
         self.assertIsNone(body["fields"])
 
     def test_없는_리소스는_not_found로_응답한다(self):

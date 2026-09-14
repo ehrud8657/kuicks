@@ -47,6 +47,11 @@ class ApiClient {
   /// 앱 셸이 이 값을 듣고 강제 변경 창을 띄운다.
   static final passwordChangeRequired = ValueNotifier<int>(0);
 
+  /// 로그인이 끊긴 상태로 로그인이 필요한 API를 부를 때마다 값이 바뀐다.
+  static final loginRequired = ValueNotifier<int>(0);
+
+  static const loginRequiredMessage = '로그인이 필요합니다. 다시 로그인해주세요.';
+
   static const baseUrl = String.fromEnvironment(
     'API_BASE_URL',
     defaultValue: 'http://localhost:8000/api',
@@ -93,6 +98,11 @@ class ApiClient {
     }
     if (response.statusCode == 413) {
       message = '파일이 너무 커서 서버가 받지 않았습니다.';
+    }
+    if (code == 'not_authenticated' || code == 'authentication_failed') {
+      // 다른 탭에서 로그아웃했거나 세션이 끝난 경우. 앱이 로그인 창을 다시 띄운다.
+      message = loginRequiredMessage;
+      loginRequired.value++;
     }
     final error = ApiException(
       message,

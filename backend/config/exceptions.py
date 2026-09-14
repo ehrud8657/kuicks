@@ -2,6 +2,9 @@ from rest_framework import exceptions, status
 from rest_framework.response import Response
 from rest_framework.views import exception_handler
 
+LOGIN_REQUIRED_CODES = {"not_authenticated", "authentication_failed"}
+LOGIN_REQUIRED_MESSAGE = "로그인이 필요합니다. 다시 로그인해주세요."
+
 PASSWORD_CHANGE_REQUIRED = {
     "code": "password_change_required",
     "message": "초기 비밀번호를 변경한 뒤 이용할 수 있습니다.",
@@ -51,9 +54,10 @@ def api_exception_handler(exc, context):
         return response
 
     detail = response.data.get("detail") if isinstance(response.data, dict) else None
-    response.data = {
-        "code": getattr(detail, "code", None) or getattr(exc, "default_code", "error"),
-        "message": str(detail) if detail is not None else str(exc),
-        "fields": None,
-    }
+    code = getattr(detail, "code", None) or getattr(exc, "default_code", "error")
+    message = str(detail) if detail is not None else str(exc)
+    if code in LOGIN_REQUIRED_CODES:
+        # DRF 기본 번역("자격 인증데이터(authentication credentials)가…")은 사용자에게 어색하다.
+        message = LOGIN_REQUIRED_MESSAGE
+    response.data = {"code": code, "message": message, "fields": None}
     return response

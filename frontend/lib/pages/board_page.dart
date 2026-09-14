@@ -2,12 +2,16 @@ import 'package:flutter/material.dart';
 
 import '../api_client.dart';
 import '../models.dart';
+import '../routes.dart';
 import '../theme.dart';
 import '../widgets/common.dart';
 import '../widgets/linkified_text.dart';
 
 class BoardPage extends StatefulWidget {
-  const BoardPage({super.key});
+  const BoardPage({super.key, this.category});
+
+  /// 주소의 ?category= 값. 없으면 전체.
+  final PostCategory? category;
   @override
   State<BoardPage> createState() => _BoardPageState();
 }
@@ -19,7 +23,7 @@ class _BoardPageState extends State<BoardPage> {
     (PostCategory.recruit, '모집공고'),
   ];
 
-  PostCategory? category;
+  late PostCategory? category = widget.category;
   final List<Post> posts = [];
   int page = 1;
   bool hasMore = false;
@@ -82,10 +86,22 @@ class _BoardPageState extends State<BoardPage> {
     }
   }
 
+  @override
+  void didUpdateWidget(BoardPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // 브라우저 뒤로가기 등으로 주소의 분류가 바뀐 경우
+    if (widget.category != oldWidget.category && widget.category != category) {
+      setState(() => category = widget.category);
+      _load();
+    }
+  }
+
   void _select(PostCategory? value) {
     if (category == value) return;
     setState(() => category = value);
     _load();
+    // 분류를 주소에 남기되 방문 기록은 늘리지 않는다.
+    replaceLocation(context, AppRoutes.boardOf(value));
   }
 
   /// 선택한 분류에 맞춘 페이지 제목. 전에는 모집공고를 골라도 '공지사항'으로 고정돼 있었다.

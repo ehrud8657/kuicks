@@ -1,0 +1,302 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>직접 확인할 항목 · KUICS 스터디장 관리</title>
+<style>
+  :root {
+    --bg: #f6f7f9; --card: #fff; --text: #101828; --muted: #667085; --line: #e4e7ec;
+    --accent: #b31b34; --accent-soft: #fbeaec; --ok: #067647; --ok-soft: #e7f6ec;
+    --bad: #b42318; --bad-soft: #fee4e2; --warn: #b54708; --warn-soft: #fef4e6; --code: #f2f4f7;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0c111d; --card: #161b26; --text: #f5f5f6; --muted: #94969c; --line: #2a303c;
+      --accent: #f0566e; --accent-soft: #3a1720; --ok: #47cd89; --ok-soft: #0f2a1c;
+      --bad: #f97066; --bad-soft: #3b1512; --warn: #fdb022; --warn-soft: #2e2311; --code: #1f242f;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font: 15px/1.65 "Pretendard", "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif;
+    word-break: keep-all; overflow-wrap: anywhere; }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 32px 16px 120px; }
+  a { color: var(--accent); }
+  .eyebrow { color: var(--accent); font-weight: 800; letter-spacing: .04em; font-size: 13px; }
+  h1 { font-size: 28px; line-height: 1.3; margin: 6px 0 8px; }
+  h2 { font-size: 19px; margin: 0; }
+  h3 { font-size: 15px; margin: 18px 0 6px; color: var(--muted); }
+  .meta { color: var(--muted); font-size: 14px; }
+  code { font-family: Consolas, "D2Coding", monospace; font-size: 13px; background: var(--code); padding: 1px 5px; border-radius: 5px; }
+  pre { background: var(--code); padding: 12px 14px; border-radius: 10px; overflow-x: auto; font-size: 13px; line-height: 1.5; }
+  .box { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; margin: 14px 0; }
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; min-width: 560px; font-size: 14px; }
+  th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-size: 13px; }
+  td code { white-space: nowrap; }
+
+  /* 상단 진행 막대 */
+  .bar { position: sticky; top: 0; z-index: 5; background: var(--bg); padding: 10px 0; border-bottom: 1px solid var(--line); }
+  .bar-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .progress { flex: 1 1 220px; height: 10px; background: var(--line); border-radius: 99px; overflow: hidden; display: flex; }
+  .progress .p-ok { background: var(--ok); } .progress .p-bad { background: var(--bad); }
+  .count { font-weight: 700; font-size: 14px; white-space: nowrap; }
+  button { font: inherit; font-size: 13px; border: 1px solid var(--line); background: var(--card); color: var(--text); border-radius: 8px; padding: 5px 10px; cursor: pointer; }
+  button.on { border-color: var(--accent); color: var(--accent); font-weight: 700; }
+
+  /* 섹션과 항목 */
+  section.sec { background: var(--card); border: 1px solid var(--line); border-radius: 14px; margin: 16px 0; padding: 4px 18px 12px; }
+  section.sec > header { display: flex; flex-wrap: wrap; gap: 8px; align-items: baseline; justify-content: space-between; padding: 12px 0 4px; }
+  .sec-count { font-size: 13px; color: var(--muted); white-space: nowrap; }
+  .sec-desc { color: var(--muted); font-size: 14px; margin: 2px 0 8px; }
+  ol.items { list-style: none; margin: 0; padding: 0; }
+  ol.items > li { display: grid; grid-template-columns: 34px 1fr; gap: 4px 10px; padding: 10px 0; border-top: 1px solid var(--line); }
+  ol.items > li .state { width: 30px; height: 30px; padding: 0; border-radius: 8px; font-size: 16px; line-height: 1; }
+  li[data-state="ok"] .state { background: var(--ok-soft); color: var(--ok); border-color: var(--ok); }
+  li[data-state="bad"] .state { background: var(--bad-soft); color: var(--bad); border-color: var(--bad); }
+  li[data-state="ok"] .body { opacity: .6; }
+  .id { font-family: Consolas, monospace; font-size: 12px; color: var(--muted); margin-right: 6px; }
+  .e { display: block; color: var(--ok); font-size: 14px; margin-top: 2px; }
+  .e::before { content: "기대 결과: "; font-weight: 700; }
+  .k { display: inline-block; font-size: 11px; font-weight: 700; padding: 0 7px; border-radius: 99px; margin-left: 4px; vertical-align: 1px; }
+  .k-new { color: var(--accent); background: var(--accent-soft); }
+  .k-fix { color: var(--warn); background: var(--warn-soft); }
+  .k-opt { color: var(--muted); background: var(--code); }
+  .note { grid-column: 2; width: 100%; min-height: 54px; font: inherit; font-size: 14px; padding: 6px 8px; border: 1px solid var(--bad); border-radius: 8px; background: var(--bad-soft); color: var(--text); }
+  body.only-todo li[data-state="ok"] { display: none; }
+  body.only-bad li:not([data-state="bad"]) { display: none; }
+  .legend span { margin-right: 12px; white-space: nowrap; }
+  #export { width: 100%; min-height: 160px; font-family: Consolas, monospace; font-size: 13px; margin-top: 8px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="eyebrow">KUICS HOMEPAGE · MANUAL REVIEW (REMAINING)</div>
+<h1>직접 확인할 항목 체크리스트</h1>
+<p class="meta">2026-09-14 · 브랜치 <code>dev_tweho</code> · 원본 <a href="2026-09-14-review-checklist.html">수동 검토 체크리스트</a>(179개) 중 <strong>A·B는 태호님이 확인 완료</strong>했고, C~L 147개는 실제 크롬 자동 점검으로 132개를 확인해 제외했습니다. 여기에는 <strong>자동으로 확인할 수 없거나 배포 사이트에서만 볼 수 있는 항목</strong>과 <strong>결정이 필요한 관찰</strong>만 남겼습니다.
+자동 점검 내역: <a href="2026-09-14-auto-review-results.html">자동 점검 결과</a></p>
+
+<div class="bar">
+  <div class="bar-row">
+    <div class="progress" aria-hidden="true"><div class="p-ok" id="p-ok"></div><div class="p-bad" id="p-bad"></div></div>
+    <span class="count" id="total-count">0 / 0</span>
+  </div>
+  <div class="bar-row" style="margin-top:8px">
+    <button id="f-all" class="on">전체 보기</button>
+    <button id="f-todo">확인 안 한 것만</button>
+    <button id="f-bad">문제만</button>
+    <button id="btn-export">문제 목록 복사</button>
+    <button id="btn-reset">전부 초기화</button>
+  </div>
+</div>
+
+<div class="box">
+  <strong>사용법</strong>
+  <ul>
+    <li>항목 왼쪽 네모를 누를 때마다 <strong>☐ 확인 전 → ✔ 통과 → ✖ 문제 → ☐</strong>. ✖로 두면 메모 칸이 열립니다. 체크와 메모는 이 브라우저에 저장됩니다.</li>
+    <li>끝나면 <strong>문제 목록 복사</strong> 결과를 붙여넣어 주세요. “결정해주세요” 항목은 ✔(지금대로 둠) 또는 ✖(바꿔줘 + 메모에 원하는 방향)로 표시하면 됩니다.</li>
+    <li>로컬에서 볼 때 준비 방법·가상 계정은 <a href="2026-09-14-review-checklist.html#sec-0">원본 체크리스트 0. 준비</a>와 같습니다 (비밀번호 모두 <code>Kuics-demo-2026!</code>, 스터디장 <code>2099000001</code>, 참여자 <code>2099000101</code>).</li>
+  </ul>
+</div>
+
+<section class="sec" id="sec-m1">
+  <header><h2>1. 자동으로 확인할 수 없는 항목</h2><span class="sec-count"></span></header>
+  <p class="sec-desc">자동 점검 도구는 한글 입력기의 조합 과정, 운영체제 파일 선택창의 취소 버튼, 브라우저 자체 버튼을 흉내 낼 수 없습니다. 로컬·배포 사이트 어디서 해도 됩니다.</p>
+  <ol class="items">
+    <li data-id="M-01"><span class="k k-opt">원본 E-16 · G-09 · K-05</span> 아래 칸에 한글을 <strong>직접 타이핑</strong>합니다(붙여넣기 금지). 중간에 백스페이스로 몇 글자 지웠다 다시 쓰고, 여러 줄 칸에서는 Enter로 줄을 바꿉니다: 출석 체크의 <em>메모</em>, 회차 추가의 <em>주제</em>, 과제 등록의 <em>제목·설명</em>, 제출 현황 피드백 창의 <em>피드백</em>. 저장한 뒤 화면을 나갔다가 다시 엽니다.<span class="e">자모 흩어짐(ㅂㅓㅅ), 글자 두 번 입력, 커서가 끝·앞으로 튐, 조합 중 글자 사라짐이 없음. 다시 열었을 때 입력한 그대로 (자동 점검은 완성된 한글 입력·저장·표시만 확인)</span></li>
+    <li data-id="M-02"><span class="k k-opt">원본 F-04</span> 과제 등록 창에서 <em>마감 시각</em>을 눌러 시계 다이얼로 시·분을 바꿔 저장하고, 다음엔 수정 창에서 연필(텍스트 입력 모드)을 눌러 <code>09:30</code> 오전으로 입력해 저장합니다.<span class="e">과제 카드와 다시 연 수정 창에 고른 시각이 그대로 (예: “기한 … 09:30”). 자동 점검은 선택창이 한국어로 뜨는 것, 기본값 오후 11:59 저장, 시간대(+09:00)가 맞는 것까지만 확인</span></li>
+    <li data-id="M-03"><span class="k k-opt">원본 H-09</span> 과제 수정에서 설명에 <code>https://owasp.org</code>를 넣고, 참여자 계정의 스터디 상세와 스터디장 제출 현황에서 그 링크 글자를 누릅니다.<span class="e">새 탭으로 해당 주소가 열림 (밑줄 친 빨간 링크로 보이는 것은 자동 점검에서 확인)</span></li>
+    <li data-id="M-04"><span class="k k-opt">원본 H-10</span> 참여자 스터디 상세에서 “zip 파일 제출” → 파일 선택창에서 <strong>취소</strong>.<span class="e">확인 창·알림이 뜨지 않고 버튼이 그대로 눌러지는 상태. 선택창 기본 필터가 zip인지도 확인</span></li>
+    <li data-id="M-05"><span class="k k-opt">원본 C-10</span> 스터디 관리·출석 체크·스터디 상세 같은 안쪽 화면에서 <strong>브라우저</strong> 뒤로가기(툴바 ←, <kbd>Alt</kbd>+<kbd>←</kbd>)를 누르고, <kbd>Alt</kbd>+<kbd>→</kbd>로 다시 앞으로 갑니다. 출석 체크에서 상태를 바꾼 뒤(저장 안 함) 브라우저 뒤로가기도 해봅니다. 각 화면에서 새로고침(F5)도 합니다.<span class="e"><strong>2026-09-14 주소 라우팅 적용 후 기대 동작</strong>: 사이트 밖으로 나가지 않고 앱 안의 이전 화면(출석 체크 → 출석 탭 → 스터디 관리 목록 → 홈)으로 돌아감. 탭을 바꾼 것은 기록에 남지 않음. 저장 안 한 출석이 있으면 “저장하지 않고 나가기” 확인 창. 새로고침해도 같은 화면·같은 탭 유지 (자동 점검에서 크롬으로 확인함 — 실제 사용하는 브라우저에서 한 번 더)</span></li>
+    <li data-id="M-06"><span class="k k-opt">선택</span> 실제 휴대폰 브라우저로 로그인 → 마이페이지 → 스터디 상세에서 휴대폰 파일 앱으로 zip을 골라 제출 → 스터디장 계정의 제출 현황에서 확인. 입력 칸을 눌렀을 때 키보드가 창·저장 버튼을 가리지 않는지, 탭을 손가락으로 넘길 수 있는지도 봅니다.<span class="e">제출·확인이 되고 키보드에 가려 누를 수 없는 버튼이 없음 (자동 점검은 PC 크롬에서 390px 폭·터치 흉내로만 확인)</span></li>
+  </ol>
+</section>
+
+<section class="sec" id="sec-m2">
+  <header><h2>2. 배포 사이트에서만 확인할 수 있는 항목</h2><span class="sec-count"></span></header>
+  <p class="sec-desc">원본 L 구역 그대로입니다. 배경은 <a href="2026-09-14-questions.html">확인이 필요한 사항</a> 1~4번. 실제 회원 데이터가 있는 DB이므로 테스트로 만든 과제·제출물은 확인 후 지워주세요.</p>
+  <ol class="items">
+    <li data-id="L-01">배포 전 운영 Admin에서 “Assignment submits” 목록이 비어 있는지 확인.<span class="e">비어 있음 (데이터가 있으면 배포 보류하고 알려주기)</span></li>
+    <li data-id="L-02">운영 Admin 회원 목록의 “비밀번호 변경 필요” 필터로 운영진·스터디장 계정을 확인하고 비밀번호 변경을 안내.<span class="e">대상 인원 파악·안내 완료 (앞서 확인한 <code>testadmin</code>도 변경 필요 상태)</span></li>
+    <li data-id="L-03">Render 빌드 로그에서 <code>migrate</code>가 <code>studies.0003_session_attendance_assignment</code>를 적용.<span class="e">오류 없이 적용</span></li>
+    <li data-id="L-04">Vercel 빌드(<code>build.sh</code>)가 새 의존성(<code>file_picker</code>, <code>flutter_localizations</code>)으로 성공하고, 실제 사이트에서 파일 선택창이 열림.<span class="e">배포 성공, 선택창 열림</span></li>
+    <li data-id="L-05">실제 사이트에서 1MB · 5MB · 20MB zip을 제출.<span class="e">어느 크기부터 막히는지 기록 (Vercel 경유 한도). 느린 네트워크에서 “올리는 중…” 표시가 끝까지 유지되는지도 확인</span></li>
+    <li data-id="L-06">제출 후 Render를 재배포(또는 재시작)하고 그 파일을 내려받기.<span class="e">무료 플랜이면 404 “파일을 찾을 수 없습니다…” 가능성 — 결과 기록</span></li>
+    <li data-id="L-07">실제 사이트(DEBUG=false)에서 <code>/media/submissions/…</code> 경로를 직접 연다(경로는 Render 셸에서 확인).<span class="e">파일이 열리지 않음(404). 권한 검사 다운로드 API로만 받을 수 있음</span></li>
+    <li data-id="L-08">Render Shell에서 <code>python manage.py seed_demo</code> 실행 시도.<span class="e">“운영 환경(DJANGO_DEBUG=false)에서는 가상 데이터를 만들 수 없습니다.”로 거부 (로컬 DEBUG=false에서는 확인됨)</span></li>
+    <li data-id="L-09">실제 사이트에서 A(비밀번호 강제)·B(등급별 화면)와 zip 제출 한 번을 다시 확인.<span class="e">로컬과 같게 동작, 쿠키·CSRF 오류 없음</span></li>
+  </ol>
+</section>
+
+<section class="sec" id="sec-m3">
+  <header><h2>3. 자동 점검 중 발견한 것 — 결정 반영됨</h2><span class="sec-count"></span></header>
+  <p class="sec-desc">버그는 아니지만 사용감에 영향이 있는 것들입니다. ✔ = 지금대로 둠, ✖ = 바꿔주세요(메모에 원하는 방향).</p>
+  <ol class="items">
+    <li data-id="Q-01">긴 제목(100~150자)이 <strong>제출 현황 요약 카드</strong>와 <strong>참여자 스터디 상세</strong>에서는 말줄임 없이 끝까지 여러 줄로 나옵니다. 목록·과제 카드·상단바는 말줄임이 정상입니다. 캡처는 <a href="2026-09-14-auto-review-results.html#observations">자동 점검 결과</a>에 있습니다.<span class="e"><strong>처리함: 제출 현황 요약 카드·참여자 스터디 상세의 제목도 3줄까지 보이고 “…”</strong> — 화면에서 한 번 보고 ✔ 해주세요. (원래 제안: 상세에서도 3줄까지만 보이고 “…” 처리. 실제 제목이 짧다면 지금대로 둬도 무방)</span></li>
+    <li data-id="Q-02">휴대폰 폭에서 ☰ 메뉴 서랍의 Login으로 로그인하면, 로그인 후에도 서랍이 열린 채 남습니다.<span class="e"><strong>처리함: 서랍에서 로그인에 성공하면 서랍이 닫히고 홈으로 이동</strong> — 화면에서 한 번 보고 ✔ 해주세요. (원래 제안: 로그인 성공 시 서랍을 닫고 홈을 보여줌)</span></li>
+    <li data-id="Q-03">처음 보는 한글 글자가 아주 잠깐 네모(□)로 보일 수 있습니다. Flutter 웹이 한글 글꼴 조각을 필요할 때 구글 서버에서 받아오기 때문이며(자동 점검 첫 캡처에서 ‘눌’, ‘꿀’이 네모였다가 곧 정상), 느린 네트워크일수록 눈에 띕니다.<span class="e"><strong>처리함: Pretendard 글꼴을 앱에 포함 (첫 로딩 약 4.7MB 증가). 한글 글꼴을 따로 받아오지 않는 것을 자동 점검으로 확인</strong> — 화면에서 한 번 보고 ✔ 해주세요. (원래 제안: 신경 쓰이면 한글 글꼴을 앱에 포함 — 첫 로딩 용량이 늘어남. 지금대로 둬도 기능 문제 없음)</span></li>
+    <li data-id="Q-04">다른 탭에서 로그아웃했거나 세션이 끝난 상태로 저장하면 알림이 “자격 인증데이터(authentication credentials)가 제공되지 않았습니다.”로 나옵니다(서버 기본 문구).<span class="e"><strong>처리함: 서버·앱 문구를 “로그인이 필요합니다. 다시 로그인해주세요.”로 바꾸고, 로그인 창을 이 문구와 함께 띄움</strong> — 화면에서 한 번 보고 ✔ 해주세요. (원래 제안: “로그인이 필요합니다. 다시 로그인해주세요.”로 바꾸고 로그인 창을 띄움)</span></li>
+  </ol>
+</section>
+
+<section class="sec" id="known">
+  <header><h2>참고: 알려진 한계 (문제로 표시하지 않아도 되는 것)</h2></header>
+  <ul>
+    <li>입력 창 배경이 연분홍빛입니다 (Material 3 기본 색, 기존 로그인 창과 같음).</li>
+    <li>개발 서버(DEBUG=true)에서는 <code>/media/</code>로 제출 파일을 직접 열 수 있습니다 (운영에서는 막힘).</li>
+    <li>로컬에서 Admin 비밀번호 안내 페이지의 “홈페이지로 이동” 링크는 8000번으로 가서 404가 납니다 (같은 도메인 배포에서는 정상).</li>
+    <li>등급만 스터디장이고 담당 스터디가 없는 계정은 메뉴는 보이지만 서버가 막습니다.</li>
+    <li>Flutter는 한국어 어절 단위 줄바꿈을 지원하지 않아 긴 문장이 단어 중간에서 줄이 바뀔 수 있습니다 (예: 360px 홈 본문 “동아/리입니다”).</li>
+    <li>제출 zip 안의 내용물은 검사하지 않습니다. 출석률 계산식·재제출 규칙·50MB 한도는 임시 정책입니다.</li>
+  </ul>
+</section>
+
+<div class="box" id="export-box" hidden>
+  <strong>문제 목록</strong> — 자동 복사가 막힌 경우 아래 내용을 직접 복사하세요.
+  <textarea id="export" readonly></textarea>
+</div>
+
+</div>
+<script>
+(() => {
+  const KEY = 'kuics-manual-checklist-2026-09-14';
+  const ORDER = ['todo', 'ok', 'bad'];
+  const MARK = { todo: '☐', ok: '✔', bad: '✖' };
+  const NAME = { todo: '확인 전', ok: '통과', bad: '문제' };
+
+  // 저장소가 막힌 환경(시크릿 창 설정 등)에서도 페이지는 동작하게 한다.
+  let data = {};
+  try { data = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { data = {}; }
+  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(data)); } catch (e) {} };
+  const stateOf = (id) => (data[id] && data[id].s) || 'todo';
+
+  const items = Array.from(document.querySelectorAll('li[data-id]'));
+
+  items.forEach((li) => {
+    const id = li.dataset.id;
+    const body = document.createElement('div');
+    body.className = 'body';
+    const tag = document.createElement('span');
+    tag.className = 'id';
+    tag.textContent = id;
+    body.append(tag, ...Array.from(li.childNodes));
+
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'state';
+
+    const note = document.createElement('textarea');
+    note.className = 'note';
+    note.placeholder = '무엇이 기대와 달랐는지 적어주세요 (화면, 계정, 입력값, 실제 결과)';
+
+    li.append(btn, body, note);
+
+    const render = () => {
+      const s = stateOf(id);
+      li.dataset.state = s;
+      btn.textContent = MARK[s];
+      btn.title = `${id} · ${NAME[s]} (누르면 바뀜)`;
+      btn.setAttribute('aria-label', btn.title);
+      note.hidden = s !== 'bad';
+      note.value = (data[id] && data[id].n) || '';
+    };
+
+    btn.addEventListener('click', () => {
+      const next = ORDER[(ORDER.indexOf(stateOf(id)) + 1) % ORDER.length];
+      data[id] = Object.assign({}, data[id], { s: next });
+      if (next === 'todo' && !data[id].n) delete data[id];
+      save();
+      render();
+      update();
+      if (next === 'bad') note.focus();
+    });
+
+    note.addEventListener('input', () => {
+      data[id] = Object.assign({ s: 'bad' }, data[id], { n: note.value });
+      save();
+    });
+
+    render();
+  });
+
+  function update() {
+    const count = (list) => {
+      const c = { ok: 0, bad: 0, todo: 0 };
+      list.forEach((li) => { c[stateOf(li.dataset.id)] += 1; });
+      return c;
+    };
+    const total = count(items);
+    const n = items.length || 1;
+    document.getElementById('p-ok').style.width = `${(total.ok / n) * 100}%`;
+    document.getElementById('p-bad').style.width = `${(total.bad / n) * 100}%`;
+    document.getElementById('total-count').textContent =
+      `확인 ${total.ok + total.bad} / ${items.length} · 통과 ${total.ok} · 문제 ${total.bad}`;
+    document.querySelectorAll('section.sec').forEach((sec) => {
+      const own = Array.from(sec.querySelectorAll('li[data-id]'));
+      const label = sec.querySelector('.sec-count');
+      if (!label || !own.length) return;
+      const c = count(own);
+      label.textContent = `${c.ok + c.bad} / ${own.length}` + (c.bad ? ` · 문제 ${c.bad}` : '');
+    });
+  }
+
+  const filters = { 'f-all': '', 'f-todo': 'only-todo', 'f-bad': 'only-bad' };
+  Object.keys(filters).forEach((btnId) => {
+    document.getElementById(btnId).addEventListener('click', () => {
+      document.body.classList.remove('only-todo', 'only-bad');
+      if (filters[btnId]) document.body.classList.add(filters[btnId]);
+      Object.keys(filters).forEach((other) =>
+        document.getElementById(other).classList.toggle('on', other === btnId));
+    });
+  });
+
+  // 항목 문장만 뽑는다 (기대 결과·번호 제외, 공백 정리).
+  const textOf = (li) => {
+    const clone = li.querySelector('.body').cloneNode(true);
+    clone.querySelectorAll('.e, .id, .k').forEach((el) => el.remove());
+    return clone.textContent.replace(/\s+/g, ' ').trim();
+  };
+
+  document.getElementById('btn-export').addEventListener('click', async () => {
+    const bad = items.filter((li) => stateOf(li.dataset.id) === 'bad');
+    const todo = items.filter((li) => stateOf(li.dataset.id) === 'todo');
+    const lines = [
+      `KUICS 직접 확인 항목 결과 (2026-09-14, 자동 점검 이후 남은 항목)`,
+      `통과 ${items.length - bad.length - todo.length} · 문제 ${bad.length} · 미확인 ${todo.length} / 전체 ${items.length}`,
+      '',
+      '[문제]',
+      ...(bad.length ? bad.flatMap((li) => {
+        const memo = (data[li.dataset.id] && data[li.dataset.id].n || '').trim();
+        return [`- ${li.dataset.id} ${textOf(li)}`, `  메모: ${memo || '(메모 없음)'}`];
+      }) : ['- 없음']),
+      '',
+      '[확인하지 않은 항목]',
+      todo.length ? todo.map((li) => li.dataset.id).join(', ') : '없음',
+    ];
+    const text = lines.join('\n');
+    const area = document.getElementById('export');
+    area.value = text;
+    let copied = false;
+    try { await navigator.clipboard.writeText(text); copied = true; } catch (e) {}
+    document.getElementById('export-box').hidden = copied;
+    const btn = document.getElementById('btn-export');
+    btn.textContent = copied ? '복사했습니다' : '아래에서 복사하세요';
+    if (!copied) { area.focus(); area.select(); area.scrollIntoView({ block: 'center' }); }
+    setTimeout(() => { btn.textContent = '문제 목록 복사'; }, 2000);
+  });
+
+  document.getElementById('btn-reset').addEventListener('click', () => {
+    if (!confirm('모든 체크와 메모를 지울까요? 되돌릴 수 없습니다.')) return;
+    data = {};
+    save();
+    location.reload();
+  });
+
+  update();
+})();
+</script>
+</body>
+</html>

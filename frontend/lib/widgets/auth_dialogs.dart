@@ -4,7 +4,11 @@ import '../api_client.dart';
 import '../theme.dart';
 
 class LoginDialog extends StatefulWidget {
-  const LoginDialog({super.key});
+  const LoginDialog({super.key, this.notice});
+
+  /// 로그인 창을 띄운 이유 (예: 세션이 끊겨 다시 로그인해야 할 때).
+  final String? notice;
+
   @override
   State<LoginDialog> createState() => _LoginDialogState();
 }
@@ -59,6 +63,13 @@ class _LoginDialogState extends State<LoginDialog> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
+                if (widget.notice != null && errorMessage == null) ...[
+                  Text(
+                    widget.notice!,
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                  const SizedBox(height: 12),
+                ],
                 if (errorMessage != null) ...[
                   Text(
                     errorMessage!,

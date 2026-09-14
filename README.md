@@ -110,6 +110,19 @@ flutter run -d chrome --web-port 3000 --dart-define=API_BASE_URL=http://localhos
 flutter build web --dart-define=API_BASE_URL=https://새도메인.example/api
 ```
 
+화면 주소는 `go_router`로 관리합니다(`frontend/lib/router.dart`, 경로 문자열은 `lib/routes.dart`). `/#/` 없는 주소를 쓰므로 **배포 서버는 없는 경로도 `index.html`을 돌려줘야** 합니다 — nginx `try_files`와 `vercel.json` rewrites에 이미 설정되어 있습니다.
+
+| 경로 | 화면 |
+|---|---|
+| `/`, `/about`, `/activity`, `/contact` | 홈 · 소개 · 활동 · 문의 |
+| `/study?semester=2026-1` | 스터디 (학기 선택이 주소에 남음) |
+| `/board?category=notice` · `recruit` | 게시판 분류 |
+| `/me` · `/me/studies/:id` | 마이페이지 · 내 스터디 상세(과제 제출) — 로그인 필요 |
+| `/manage` · `/manage/studies/:id/{participants,attendance,assignments}` | 스터디 관리 목록 · 관리 탭 — 스터디장·운영진 |
+| `/manage/studies/:id/attendance/:sessionId` · `/manage/studies/:id/assignments/:assignmentId` | 회차 출석 체크 · 제출 현황 |
+
+한글 글꼴은 Pretendard(SIL OFL, `frontend/assets/fonts`)를 앱에 포함합니다. CanvasKit이 한글 글꼴 조각을 그때그때 받아오며 글자가 잠깐 ☒로 보이던 현상을 없애기 위함이며, 첫 로딩이 약 4.7MB 늘어납니다.
+
 ### Docker로 전체 스택 실행 — 개발용
 
 `docker-compose.yml`은 실제 배포와 동일하게 **프론트(nginx)와 백엔드를 같은 도메인**으로 묶는 구성입니다. nginx가 `/`는 Flutter web 빌드 결과물을, `/api`·`/admin`·`/static`·`/media`는 backend로 라우팅하므로 브라우저 입장에선 항상 하나의 origin만 봅니다 — CORS/CSRF/쿠키 설정이 단순해지는 이유입니다. 프론트는 `API_BASE_URL=/api`(상대 경로)로 빌드되어 이 구조를 그대로 전제합니다.
@@ -216,8 +229,9 @@ python manage.py import_members members.csv
 - 학번 기반 세션 인증 API와 역할 모델(휴회원·정회원·스터디장·운영진), 초기 비밀번호 변경 서버 강제
 - 스터디장·운영진 관리 화면: 참여자 명단, 회차별 출석 체크·현황표, 과제 등록, 제출 현황(미제출·지각), 확인·피드백 (스터디장은 담당 스터디만, 운영진은 전체)
 - 마이페이지: 수강·완료 스터디, 제출할 과제, 스터디 상세에서 zip 과제 제출·피드백·내 출석 확인
+- 화면별 주소(새로고침·링크 공유·브라우저 뒤로/앞으로), 로그인·권한 안내 화면, 없는 주소 안내
 - API 로딩·빈 결과·오류 UI
 
-DMOJ 연동, 행사(Activity) 기능, URL 라우팅(새로고침 유지), 외부 파일 저장소, 운영 배포 자동화는 후속 범위입니다. 진행 상황과 결정이 필요한 사항은 [docs/reports](./docs/reports/)를 참고하세요.
+DMOJ 연동, 행사(Activity) 기능, 외부 파일 저장소, 운영 배포 자동화는 후속 범위입니다. 진행 상황과 결정이 필요한 사항은 [docs/reports](./docs/reports/)를 참고하세요.
 
 자세한 규칙과 API는 [DEVELOPMENT_GUIDE.md](./DEVELOPMENT_GUIDE.md) 및 [docs/API.md](./docs/API.md)를 참고하세요.

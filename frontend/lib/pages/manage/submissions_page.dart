@@ -32,11 +32,13 @@ class SubmissionsPage extends StatefulWidget {
   const SubmissionsPage({
     super.key,
     required this.assignmentId,
-    required this.title,
+    this.title,
   });
 
   final int assignmentId;
-  final String title;
+
+  /// 불러오기 전에 상단바에 잠깐 보여줄 제목.
+  final String? title;
 
   @override
   State<SubmissionsPage> createState() => _SubmissionsPageState();
@@ -44,6 +46,20 @@ class SubmissionsPage extends StatefulWidget {
 
 class _SubmissionsPageState extends State<SubmissionsPage> {
   late Future<SubmissionSheet> sheet;
+  String? _title;
+
+  Future<SubmissionSheet> _fetch() {
+    final future = ApiClient.instance.fetchSubmissions(widget.assignmentId);
+    future.then(
+      (data) {
+        final title = data.assignment.title;
+        if (mounted && _title != title) setState(() => _title = title);
+      },
+      onError: (_) {},
+    );
+    return future;
+  }
+
   SubmissionFilter filter = SubmissionFilter.all;
 
   /// 확인 상태를 바꾸는 중인 제출물 id.
@@ -52,11 +68,11 @@ class _SubmissionsPageState extends State<SubmissionsPage> {
   @override
   void initState() {
     super.initState();
-    sheet = ApiClient.instance.fetchSubmissions(widget.assignmentId);
+    sheet = _fetch();
   }
 
   void _reload() => setState(() {
-        sheet = ApiClient.instance.fetchSubmissions(widget.assignmentId);
+        sheet = _fetch();
       });
 
   Future<void> _toggleReview(Submission submission) async {
@@ -103,7 +119,7 @@ class _SubmissionsPageState extends State<SubmissionsPage> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-        appBar: detailAppBar(widget.title),
+        appBar: detailAppBar(_title ?? widget.title ?? '제출 현황'),
         body: FutureBuilder<SubmissionSheet>(
           future: sheet,
           builder: (context, snapshot) {
@@ -181,6 +197,8 @@ class _AssignmentSummary extends StatelessWidget {
                   Expanded(
                     child: Text(
                       assignment.title,
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w800,
