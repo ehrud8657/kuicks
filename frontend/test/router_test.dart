@@ -161,7 +161,7 @@ void main() {
       findsOneWidget,
     );
     // 로그인 창 뒤의 화면은 로그인 안내로 바뀐다.
-    await tester.tap(find.text('취소'));
+    await tester.tap(find.byTooltip('닫기'));
     await tester.pumpAndSettle();
     expect(find.text('로그인이 필요합니다'), findsOneWidget);
   });
