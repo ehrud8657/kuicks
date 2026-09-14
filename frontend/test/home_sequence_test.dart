@@ -135,7 +135,7 @@ void main() {
       expect(find.byType(MeteorShower), findsNothing);
     });
 
-    testWidgets('연출 중 화면을 누르면 바로 끝난다', (tester) async {
+    testWidgets('연출 중 누르면 제작 표기로 건너뛰고, 한 번 더 누르면 끝난다', (tester) async {
       await open(tester, '/');
       for (var i = 0; i < 2; i++) {
         await tester.tap(logo());
@@ -143,6 +143,12 @@ void main() {
       }
       await tapTitle(tester, 6);
       await tester.pump(const Duration(milliseconds: 500));
+      await tester.tapAt(const Offset(640, 450));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(find.byType(MeteorShower), findsOneWidget);
+      expect(find.textContaining('2026320053 김태호'), findsOneWidget);
+
       await tester.tapAt(const Offset(640, 450));
       await tester.pump();
       expect(find.byType(MeteorShower), findsNothing);
