@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -8,6 +9,8 @@ import '../routes.dart';
 import '../theme.dart';
 import '../widgets/common.dart';
 import '../widgets/manager_panel.dart';
+import '../widgets/meteor_shower.dart';
+import '../widgets/tap_sequence.dart';
 
 /// KUICS NOW 카드에 채울 실제 데이터.
 class _HomeNow {
@@ -33,6 +36,19 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     now = _load();
+    HomeTapSequence.instance.completed.addListener(_onSequence);
+  }
+
+  @override
+  void dispose() {
+    HomeTapSequence.instance.completed.removeListener(_onSequence);
+    // 홈을 떠나면 누르던 순서를 버린다.
+    HomeTapSequence.instance.reset();
+    super.dispose();
+  }
+
+  void _onSequence() {
+    if (mounted) MeteorShower.show(context);
   }
 
   Future<_HomeNow> _load() async {
@@ -251,15 +267,7 @@ class _Hero extends StatelessWidget {
                     ),
                   ),
                   SizedBox(height: narrow ? 14 : 18),
-                  Text(
-                    '보안을 배우고,\n함께 성장합니다.',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: narrow ? 28 : 42,
-                      fontWeight: FontWeight.w800,
-                      height: 1.2,
-                    ),
-                  ),
+                  _HeroTitle(narrow: narrow),
                   SizedBox(height: narrow ? 12 : 16),
                   KeepAllText(
                     'KUICS는 고려대학교 정보대학 소속 대한민국 최고의 보안 학술 동아리입니다.',
@@ -285,6 +293,49 @@ class _Hero extends StatelessWidget {
               ),
             ),
           ],
+        ),
+      );
+}
+
+/// 첫 화면 제목. "보안" 두 글자는 따로 누름을 받는다(겉보기와 읽기는 그대로).
+class _HeroTitle extends StatefulWidget {
+  const _HeroTitle({required this.narrow});
+  final bool narrow;
+
+  @override
+  State<_HeroTitle> createState() => _HeroTitleState();
+}
+
+class _HeroTitleState extends State<_HeroTitle> {
+  late final TapGestureRecognizer _tap = TapGestureRecognizer()
+    ..onTap = HomeTapSequence.instance.titleTapped;
+
+  @override
+  void dispose() {
+    _tap.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => Text.rich(
+        TextSpan(
+          children: [
+            // 올려도 커서 모양이 바뀌지 않게 둔다.
+            TextSpan(
+              text: '보안',
+              recognizer: _tap,
+              mouseCursor: SystemMouseCursors.basic,
+            ),
+            const TextSpan(text: '을 배우고,\n함께 성장합니다.'),
+          ],
+        ),
+        // 화면 낭독기에는 한 문장으로 읽힌다.
+        semanticsLabel: '보안을 배우고,\n함께 성장합니다.',
+        style: TextStyle(
+          color: Colors.white,
+          fontSize: widget.narrow ? 28 : 42,
+          fontWeight: FontWeight.w800,
+          height: 1.2,
         ),
       );
 }

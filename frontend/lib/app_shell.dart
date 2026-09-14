@@ -6,6 +6,7 @@ import 'models.dart';
 import 'routes.dart';
 import 'theme.dart';
 import 'widgets/common.dart';
+import 'widgets/tap_sequence.dart';
 
 /// 상단 메뉴·메뉴 서랍·로그인 버튼이 있는 사이트 공통 틀. [child]에 현재 경로의 화면이 들어온다.
 class SiteShell extends StatelessWidget {
@@ -54,7 +55,12 @@ class SiteShell extends StatelessWidget {
           surfaceTintColor: Colors.white,
           titleSpacing: wide ? 40 : 16,
           title: InkWell(
-            onTap: () => context.go(AppRoutes.home),
+            onTap: () {
+              if (location == AppRoutes.home) {
+                HomeTapSequence.instance.logoTapped();
+              }
+              context.go(AppRoutes.home);
+            },
             child: const Row(
               mainAxisSize: MainAxisSize.min,
               children: [
