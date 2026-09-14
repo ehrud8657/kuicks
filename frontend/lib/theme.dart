@@ -49,7 +49,8 @@ ThemeData buildAppTheme(TextTheme base) => ThemeData(
         seedColor: AppColors.crimson,
         primary: AppColors.crimson,
       ),
-      scaffoldBackgroundColor: AppColors.background,
+      // 실제 바탕은 AppBackdrop 그라데이션이 칠한다. 로딩 중에도 튀지 않게 가운데 색으로 둔다.
+      scaffoldBackgroundColor: const Color(0xFFF6F5F8),
       textTheme: base.apply(
         bodyColor: AppColors.navy,
         displayColor: AppColors.navy,
@@ -59,8 +60,8 @@ ThemeData buildAppTheme(TextTheme base) => ThemeData(
         color: Colors.white,
         surfaceTintColor: Colors.transparent,
         // 테두리만 있던 카드에 아주 옅은 그림자를 더해 바닥에서 살짝 띄운다.
-        elevation: 2,
-        shadowColor: Color(0x1F071B33),
+        elevation: 3,
+        shadowColor: Color(0x29071B33),
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.all(Radius.circular(16)),

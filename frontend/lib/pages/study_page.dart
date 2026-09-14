@@ -126,8 +126,8 @@ class StudyCard extends StatelessWidget {
         .where((p) => p.status == ParticipationStatus.excellent)
         .map((p) => p.label)
         .toList();
-    return Card(
-      clipBehavior: Clip.antiAlias,
+    return SoftCard(
+      accent: true,
       child: ExpansionTile(
         tilePadding: const EdgeInsets.symmetric(horizontal: 22, vertical: 8),
         childrenPadding: const EdgeInsets.fromLTRB(22, 0, 22, 22),

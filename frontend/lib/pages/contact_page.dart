@@ -66,8 +66,7 @@ class _ContactCard extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) => Card(
-        clipBehavior: Clip.antiAlias,
+  Widget build(BuildContext context) => SoftCard(
         child: InkWell(
           onTap: () => _open(context),
           child: Padding(

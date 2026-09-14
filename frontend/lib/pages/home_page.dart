@@ -157,8 +157,7 @@ class _InfoCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) => SizedBox(
         width: width,
-        child: Card(
-          clipBehavior: Clip.antiAlias,
+        child: SoftCard(
           child: InkWell(
             onTap: onTap,
             hoverColor: AppColors.crimsonSoft.withAlpha(110),

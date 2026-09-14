@@ -149,8 +149,8 @@ class _ManagedStudyCard extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) => Card(
-        clipBehavior: Clip.antiAlias,
+  Widget build(BuildContext context) => SoftCard(
+        accent: true,
         child: InkWell(
           onTap: onTap,
           child: Padding(

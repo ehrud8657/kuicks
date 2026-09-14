@@ -157,7 +157,7 @@ class _MyPageCardFrame extends StatelessWidget {
   @override
   Widget build(BuildContext context) => SizedBox(
         width: width,
-        child: Card(
+        child: SoftCard(
           child: Padding(
             padding: const EdgeInsets.all(24),
             child: ConstrainedBox(
