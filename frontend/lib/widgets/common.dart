@@ -457,6 +457,9 @@ class SoftCard extends StatelessWidget {
           ),
           child: accent
               ? Stack(
+                  // 기본(loose)이면 안쪽 InkWell이 글자 폭만큼 줄어들어, 카드 오른쪽을 눌러도
+                  // 반응하지 않는다. 카드 폭을 그대로 넘겨 눌리는 영역을 카드 전체로 둔다.
+                  fit: StackFit.passthrough,
                   children: [
                     Padding(
                       padding: const EdgeInsets.only(left: 3),
