@@ -58,17 +58,9 @@ class AboutPage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'ABOUT',
-              style: TextStyle(
-                color: AppColors.crimson,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'KUICS를 소개합니다',
-              style: TextStyle(fontSize: 32, fontWeight: FontWeight.w800),
+            const PageHeader(
+              eyebrow: 'ABOUT',
+              title: 'KUICS를 소개합니다',
             ),
             const SizedBox(height: 20),
             const Text(
@@ -119,10 +111,7 @@ class _StaffGroupCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  Text(
-                    '${group.members.length}명',
-                    style: const TextStyle(color: AppColors.textSubtle),
-                  ),
+                  StatusBadge(label: '${group.members.length}명'),
                 ],
               ),
               const SizedBox(height: 16),
@@ -150,24 +139,24 @@ class _StaffChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: AppColors.surfaceMuted,
-        borderRadius: BorderRadius.circular(10),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.borderLight),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x14071B33),
+            blurRadius: 8,
+            offset: Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
           if (role != null) ...[
-            Text(
-              role,
-              style: const TextStyle(
-                color: AppColors.crimson,
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 2),
+            StatusBadge(label: role, tone: BadgeTone.danger),
+            const SizedBox(height: 6),
           ],
           Text(
             member.name,

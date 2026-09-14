@@ -41,23 +41,63 @@ class PageHeader extends StatelessWidget {
   Widget build(BuildContext context) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            eyebrow,
-            style: const TextStyle(
-              color: AppColors.crimson,
-              fontWeight: FontWeight.w700,
+          // 머리말은 연크림슨 알약 배지로 둔다.
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: AppColors.crimsonSoft,
+              borderRadius: BorderRadius.circular(999),
+            ),
+            child: Text(
+              eyebrow,
+              style: const TextStyle(
+                color: AppColors.crimson,
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 1.1,
+              ),
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           Text(
             title,
-            style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w800),
+            style: const TextStyle(
+              fontSize: 32,
+              fontWeight: FontWeight.w800,
+              height: 1.25,
+              letterSpacing: -0.4,
+            ),
           ),
           if (subtitle != null) ...[
             const SizedBox(height: 8),
-            Text(subtitle!, style: const TextStyle(color: AppColors.textMuted)),
+            Text(
+              subtitle!,
+              style: const TextStyle(
+                color: AppColors.textMuted,
+                fontSize: 15,
+                height: 1.5,
+              ),
+            ),
           ],
         ],
+      );
+}
+
+/// 연크림슨 둥근 사각형 안의 크림슨 아이콘. 카드 머리 아이콘을 이 모양으로 통일한다.
+class IconBadge extends StatelessWidget {
+  const IconBadge({super.key, required this.icon, this.size = 44});
+  final IconData icon;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          color: AppColors.crimsonSoft,
+          borderRadius: BorderRadius.circular(size * 0.3),
+        ),
+        child: Icon(icon, color: AppColors.crimson, size: size * 0.52),
       );
 }
 
@@ -81,31 +121,65 @@ class LoadError extends StatelessWidget {
   final String? message;
 
   @override
-  Widget build(BuildContext context) => Card(
-        child: Padding(
-          padding: const EdgeInsets.all(32),
-          child: Column(
-            children: [
-              const Icon(Icons.cloud_off_outlined, size: 36),
-              const SizedBox(height: 12),
-              Text(
-                message ?? '서버에 연결할 수 없습니다.',
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 12),
-              OutlinedButton(onPressed: onRetry, child: const Text('다시 시도')),
-            ],
+  Widget build(BuildContext context) => SizedBox(
+        width: double.infinity,
+        child: Card(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
+            child: Column(
+              children: [
+                const IconBadge(icon: Icons.cloud_off_outlined),
+                const SizedBox(height: 14),
+                Text(
+                  message ?? '서버에 연결할 수 없습니다.',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: AppColors.textBody),
+                ),
+                const SizedBox(height: 16),
+                OutlinedButton.icon(
+                  onPressed: onRetry,
+                  icon: const Icon(Icons.refresh, size: 18),
+                  label: const Text('다시 시도'),
+                ),
+              ],
+            ),
           ),
         ),
       );
 }
 
+/// 빈 결과 안내. 가로를 채우고 가운데에 아이콘과 문장을 둔다.
 class EmptyState extends StatelessWidget {
-  const EmptyState({super.key, this.message = '등록된 학기가 없습니다.'});
+  const EmptyState({
+    super.key,
+    this.message = '등록된 학기가 없습니다.',
+    this.icon = Icons.inbox_outlined,
+  });
   final String message;
+  final IconData icon;
+
   @override
-  Widget build(BuildContext context) => Card(
-        child: Padding(padding: const EdgeInsets.all(32), child: Text(message)),
+  Widget build(BuildContext context) => SizedBox(
+        width: double.infinity,
+        child: Card(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
+            child: Column(
+              children: [
+                IconBadge(icon: icon),
+                const SizedBox(height: 14),
+                Text(
+                  message,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: AppColors.textMuted,
+                    fontSize: 15,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       );
 }
 

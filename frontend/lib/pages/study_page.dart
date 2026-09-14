@@ -51,22 +51,10 @@ class _StudyPageState extends State<StudyPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'STUDY',
-              style: TextStyle(
-                color: AppColors.crimson,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              '함께 배우는 KUICS 스터디',
-              style: TextStyle(fontSize: 32, fontWeight: FontWeight.w800),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              '학기를 선택하고 스터디별 커리큘럼과 수료자를 확인하세요.',
-              style: TextStyle(color: AppColors.textMuted),
+            const PageHeader(
+              eyebrow: 'STUDY',
+              title: '함께 배우는 KUICS 스터디',
+              subtitle: '학기를 선택하고 스터디별 커리큘럼과 수료자를 확인하세요.',
             ),
             const SizedBox(height: 28),
             FutureBuilder<List<Semester>>(
@@ -147,7 +135,10 @@ class StudyCard extends StatelessWidget {
           study.title,
           style: const TextStyle(fontWeight: FontWeight.w700),
         ),
-        subtitle: Text('스터디장 · ${study.leader}'),
+        subtitle: Text(
+          '스터디장 · ${study.leader}',
+          style: const TextStyle(color: AppColors.textMuted),
+        ),
         children: [
           const Divider(),
           Align(

@@ -68,51 +68,7 @@ class _HomePageState extends State<HomePage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              width: double.infinity,
-              // 휴대폰 폭에서는 여백과 글자를 줄여 문구가 음절 중간에서 끊기지 않게 한다.
-              padding: _isNarrow(context)
-                  ? const EdgeInsets.symmetric(horizontal: 24, vertical: 44)
-                  : const EdgeInsets.symmetric(horizontal: 40, vertical: 72),
-              decoration: BoxDecoration(
-                color: AppColors.navy,
-                borderRadius: BorderRadius.circular(24),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'KOREA UNIVERSITY\nINSTITUTE of COMPUTER SECURITY',
-                    style: TextStyle(
-                      color: AppColors.heroAccent,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 1.2,
-                    ),
-                  ),
-                  const SizedBox(height: 18),
-                  Text(
-                    '보안을 배우고,\n함께 성장합니다.',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: _isNarrow(context) ? 30 : 42,
-                      fontWeight: FontWeight.w800,
-                      height: 1.2,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'KUICS는 고려대학교 정보보호 동아리입니다.',
-                    style: TextStyle(color: AppColors.heroSubtle, fontSize: 17),
-                  ),
-                  const SizedBox(height: 28),
-                  FilledButton.icon(
-                    onPressed: () => context.go(AppRoutes.study),
-                    icon: const Icon(Icons.arrow_forward),
-                    label: const Text('스터디 둘러보기'),
-                  ),
-                ],
-              ),
-            ),
+            _Hero(narrow: _isNarrow(context)),
             if (AuthScope.of(context).member case final member?
                 when member.role.canManageStudies) ...[
               const SizedBox(height: 24),
@@ -205,12 +161,25 @@ class _InfoCard extends StatelessWidget {
           clipBehavior: Clip.antiAlias,
           child: InkWell(
             onTap: onTap,
+            hoverColor: AppColors.crimsonSoft.withAlpha(110),
             child: Padding(
               padding: const EdgeInsets.all(24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(icon, color: AppColors.crimson),
+                  Row(
+                    children: [
+                      IconBadge(icon: icon),
+                      const Spacer(),
+                      // 눌러서 이동하는 카드만 화살표로 알려준다.
+                      if (onTap != null)
+                        const Icon(
+                          Icons.arrow_forward,
+                          size: 20,
+                          color: AppColors.crimson,
+                        ),
+                    ],
+                  ),
                   const SizedBox(height: 18),
                   Text(
                     title,
@@ -220,12 +189,119 @@ class _InfoCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  Text(body,
-                      style: const TextStyle(color: AppColors.textMuted)),
+                  Text(
+                    body,
+                    style: const TextStyle(color: AppColors.textMuted),
+                  ),
                 ],
               ),
             ),
           ),
+        ),
+      );
+}
+
+/// 첫 화면 소개 판. 남색 그라데이션 위에 크림슨 빛을 번지게 해 명암을 준다.
+class _Hero extends StatelessWidget {
+  const _Hero({required this.narrow});
+  final bool narrow;
+
+  static Widget _glow(double size, Color color) => Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: RadialGradient(colors: [color, color.withAlpha(0)]),
+        ),
+      );
+
+  @override
+  Widget build(BuildContext context) => Container(
+        width: double.infinity,
+        clipBehavior: Clip.antiAlias,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(24),
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF0E2A4D), AppColors.navy, Color(0xFF040D1A)],
+            stops: [0, 0.55, 1],
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.navy.withAlpha(50),
+              blurRadius: 30,
+              offset: const Offset(0, 14),
+            ),
+          ],
+        ),
+        child: Stack(
+          children: [
+            Positioned(
+              right: narrow ? -150 : -60,
+              top: narrow ? -150 : -130,
+              child: _glow(
+                narrow ? 320 : 440,
+                AppColors.crimson.withAlpha(80),
+              ),
+            ),
+            Positioned(
+              right: narrow ? 20 : 240,
+              bottom: narrow ? -170 : -210,
+              child: _glow(
+                narrow ? 240 : 340,
+                AppColors.heroAccent.withAlpha(34),
+              ),
+            ),
+            Padding(
+              // 휴대폰 폭에서는 여백과 글자를 줄여 문구가 음절 중간에서 끊기지 않게 한다.
+              padding: narrow
+                  ? const EdgeInsets.symmetric(horizontal: 24, vertical: 44)
+                  : const EdgeInsets.symmetric(horizontal: 40, vertical: 72),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'KOREA UNIVERSITY\nINSTITUTE of COMPUTER SECURITY',
+                    style: TextStyle(
+                      color: AppColors.heroAccent,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  Text(
+                    '보안을 배우고,\n함께 성장합니다.',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: narrow ? 30 : 42,
+                      fontWeight: FontWeight.w800,
+                      height: 1.2,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'KUICS는 고려대학교 정보대학 소속 대한민국 최고의 보안 학술 동아리입니다.',
+                    style: TextStyle(color: AppColors.heroSubtle, fontSize: 17),
+                  ),
+                  const SizedBox(height: 28),
+                  FilledButton.icon(
+                    onPressed: () => context.go(AppRoutes.study),
+                    style: FilledButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 18,
+                      ),
+                      elevation: 4,
+                      shadowColor: Colors.black.withAlpha(120),
+                    ),
+                    icon: const Icon(Icons.arrow_forward),
+                    label: const Text('스터디 둘러보기'),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       );
 }

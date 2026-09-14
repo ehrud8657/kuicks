@@ -17,22 +17,10 @@ class ContactPage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'CONTACT',
-              style: TextStyle(
-                color: AppColors.crimson,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            SizedBox(height: 8),
-            Text(
-              'KUICS와 연결하기',
-              style: TextStyle(fontSize: 32, fontWeight: FontWeight.w800),
-            ),
-            SizedBox(height: 8),
-            Text(
-              '공식 채널에서 KUICS의 소식을 받아보세요.',
-              style: TextStyle(color: AppColors.textMuted),
+            PageHeader(
+              eyebrow: 'CONTACT',
+              title: 'KUICS와 연결하기',
+              subtitle: '공식 채널에서 KUICS의 소식을 받아보세요.',
             ),
             SizedBox(height: 28),
             _ContactCard(
@@ -86,7 +74,7 @@ class _ContactCard extends StatelessWidget {
             padding: const EdgeInsets.all(24),
             child: Row(
               children: [
-                Icon(icon, color: AppColors.crimson, size: 28),
+                IconBadge(icon: icon),
                 const SizedBox(width: 16),
                 Expanded(
                   child: Column(
@@ -107,7 +95,19 @@ class _ContactCard extends StatelessWidget {
                     ],
                   ),
                 ),
-                const Icon(Icons.open_in_new, color: AppColors.textSubtle),
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: const BoxDecoration(
+                    color: AppColors.surfaceMuted,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.arrow_outward,
+                    size: 18,
+                    color: AppColors.crimson,
+                  ),
+                ),
               ],
             ),
           ),
