@@ -145,6 +145,7 @@ class _ParticipantCard extends StatelessWidget {
         message: '${participant.memberName}님을 중도 포기로 바꾸면 과제를 제출할 수 없고, '
             '출석부와 미제출자 집계에서 빠집니다.',
         confirmLabel: '변경',
+        icon: Icons.person_off_outlined,
       );
       if (!confirmed || !context.mounted) return;
     }

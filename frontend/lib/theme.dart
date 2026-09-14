@@ -7,6 +7,14 @@ class AppColors {
   static const navy = Color(0xFF071B33);
   static const crimson = Color(0xFFB31B34);
   static const crimsonSoft = Color(0xFFFBEAEC);
+
+  // 창(모달) 머리처럼 넓은 면에 칠하는 크림슨. 원색보다 채도·명도를 낮춰 눈이 덜 부시게 한다.
+  static const crimsonDeepTop = Color(0xFF9E3346);
+  static const crimsonDeep = Color(0xFF872536);
+  static const crimsonDeepBottom = Color(0xFF611A29);
+
+  /// 연크림슨 바탕 위 글자·아이콘용 차분한 크림슨.
+  static const crimsonMuted = Color(0xFF93303F);
   static const background = Color(0xFFF6F7F9);
   static const border = Color(0xFFE3E7EC);
   static const borderLight = Color(0xFFEAECF0);
@@ -50,6 +58,75 @@ ThemeData buildAppTheme(TextTheme base) => ThemeData(
           borderRadius: BorderRadius.all(Radius.circular(16)),
           side: BorderSide(color: AppColors.border),
         ),
+      ),
+      // 창(모달)·메뉴·날짜/시각 선택창은 흰 바탕에 그림자를 두고, 크림슨은 강조에만 쓴다.
+      dialogTheme: DialogThemeData(
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
+        elevation: 24,
+        shadowColor: AppColors.navy.withAlpha(90),
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(20)),
+        ),
+      ),
+      popupMenuTheme: PopupMenuThemeData(
+        color: Colors.white,
+        surfaceTintColor: Colors.transparent,
+        elevation: 10,
+        shadowColor: AppColors.navy.withAlpha(70),
+        position: PopupMenuPosition.under,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(12)),
+          side: BorderSide(color: AppColors.borderLight),
+        ),
+        labelTextStyle: const WidgetStatePropertyAll(
+          TextStyle(
+            fontFamily: 'Pretendard',
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            color: AppColors.textBody,
+          ),
+        ),
+      ),
+      datePickerTheme: DatePickerThemeData(
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
+        elevation: 24,
+        shadowColor: AppColors.navy.withAlpha(90),
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(20)),
+        ),
+        headerBackgroundColor: AppColors.crimsonDeep,
+        headerForegroundColor: Colors.white,
+        dividerColor: AppColors.borderLight,
+        todayBorder: const BorderSide(color: AppColors.crimson),
+      ),
+      timePickerTheme: TimePickerThemeData(
+        backgroundColor: Colors.white,
+        elevation: 24,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(20)),
+        ),
+        dialBackgroundColor: AppColors.surfaceMuted,
+        dialHandColor: AppColors.crimson,
+        hourMinuteColor: WidgetStateColor.resolveWith(
+          (states) => states.contains(WidgetState.selected)
+              ? AppColors.crimsonSoft
+              : AppColors.surfaceMuted,
+        ),
+        hourMinuteTextColor: WidgetStateColor.resolveWith(
+          (states) => states.contains(WidgetState.selected)
+              ? AppColors.crimson
+              : AppColors.textBody,
+        ),
+        dayPeriodColor: AppColors.crimsonSoft,
+        dayPeriodTextColor: WidgetStateColor.resolveWith(
+          (states) => states.contains(WidgetState.selected)
+              ? AppColors.crimson
+              : AppColors.textMuted,
+        ),
+        dayPeriodBorderSide: const BorderSide(color: AppColors.border),
+        entryModeIconColor: AppColors.textMuted,
       ),
     );
 

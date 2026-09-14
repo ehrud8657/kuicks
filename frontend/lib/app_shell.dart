@@ -109,11 +109,14 @@ class SiteShell extends StatelessWidget {
                       itemBuilder: (context) => [
                         PopupMenuItem(
                           value: 'mypage',
-                          child: Text('마이페이지 (${member.name})'),
+                          child: MenuItemLabel(
+                            Icons.person_outline,
+                            '마이페이지 (${member.name})',
+                          ),
                         ),
                         const PopupMenuItem(
                           value: 'logout',
-                          child: Text('로그아웃'),
+                          child: MenuItemLabel(Icons.logout, '로그아웃'),
                         ),
                       ],
                       child: _MyPageButton(member: member),

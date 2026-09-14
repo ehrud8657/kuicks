@@ -5,9 +5,10 @@ import '../../api_client.dart';
 import '../../format.dart';
 import '../../models.dart';
 import '../../theme.dart';
+import '../../widgets/app_dialog.dart';
 import '../../widgets/common.dart';
 
-/// 폼 위쪽에 보여주는 서버 오류 문장.
+/// 폼 위쪽에 보여주는 서버 오류 상자.
 class _DialogError extends StatelessWidget {
   const _DialogError(this.message);
   final String? message;
@@ -16,10 +17,8 @@ class _DialogError extends StatelessWidget {
   Widget build(BuildContext context) {
     final text = message;
     if (text == null) return const SizedBox.shrink();
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Text(text, style: const TextStyle(color: AppColors.crimson)),
-    );
+    return DialogCallout(
+        icon: Icons.error_outline, message: text, strong: true);
   }
 }
 
@@ -42,12 +41,13 @@ class _PickerField extends StatelessWidget {
   @override
   Widget build(BuildContext context) => InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: BorderRadius.circular(12),
         child: InputDecorator(
-          decoration: InputDecoration(
-            labelText: label,
-            prefixIcon: Icon(icon),
-            suffixIcon: const Icon(Icons.arrow_drop_down),
+          decoration: dialogFieldDecoration(
+            context,
+            label: label,
+            icon: icon,
+            suffix: const Icon(Icons.expand_more),
             errorText: error,
             enabled: onTap != null,
           ),
@@ -56,23 +56,18 @@ class _PickerField extends StatelessWidget {
       );
 }
 
-class _DialogActions {
-  static List<Widget> build(
-    BuildContext context, {
-    required bool saving,
-    required VoidCallback onSubmit,
-  }) =>
-      [
-        TextButton(
-          onPressed: saving ? null : () => Navigator.pop(context),
-          child: const Text('취소'),
-        ),
-        FilledButton(
-          onPressed: saving ? null : onSubmit,
-          child: saving ? const ButtonSpinner() : const Text('저장'),
-        ),
-      ];
-}
+/// 입력 창 아래의 취소 / 저장 버튼.
+List<Widget> _dialogActions(
+  BuildContext context, {
+  required bool saving,
+  required VoidCallback onSubmit,
+}) =>
+    [
+      DialogCancelButton(
+        onPressed: saving ? null : () => Navigator.pop(context),
+      ),
+      DialogPrimaryButton(label: '저장', busy: saving, onPressed: onSubmit),
+    ];
 
 /// 회차 추가·수정.
 class SessionFormDialog extends StatefulWidget {
@@ -152,63 +147,61 @@ class _SessionFormDialogState extends State<SessionFormDialog> {
   }
 
   @override
-  Widget build(BuildContext context) => AlertDialog(
-        scrollable: true,
-        title: Text(widget.session == null ? '회차 추가' : '회차 수정'),
-        content: SizedBox(
-          width: 380,
-          child: Form(
-            key: formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _DialogError(error),
-                TextFormField(
-                  controller: numberController,
-                  enabled: !saving,
-                  keyboardType: TextInputType.number,
-                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                  decoration: const InputDecoration(
-                    labelText: '회차 번호',
-                    prefixIcon: Icon(Icons.tag),
-                  ),
-                  validator: (value) {
-                    final number = int.tryParse(value ?? '');
-                    if (number == null || number < 1) {
-                      return '1 이상의 숫자를 입력해주세요.';
-                    }
-                    return fieldErrors['number'];
-                  },
+  Widget build(BuildContext context) => AppDialog(
+        eyebrow: 'STUDY SESSION',
+        title: widget.session == null ? '회차 추가' : '회차 수정',
+        subtitle: '회차 번호와 진행일을 정하면 출석을 기록할 수 있어요.',
+        icon: Icons.event_note_outlined,
+        maxWidth: 440,
+        onClose: saving ? null : () => Navigator.pop(context),
+        actions: _dialogActions(context, saving: saving, onSubmit: _submit),
+        child: Form(
+          key: formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _DialogError(error),
+              TextFormField(
+                controller: numberController,
+                enabled: !saving,
+                keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                decoration: dialogFieldDecoration(
+                  context,
+                  label: '회차 번호',
+                  icon: Icons.tag,
                 ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: titleController,
-                  enabled: !saving,
-                  inputFormatters: [LengthLimitingTextInputFormatter(100)],
-                  decoration: const InputDecoration(
-                    labelText: '주제 (선택)',
-                    hintText: '예: SQL Injection',
-                    prefixIcon: Icon(Icons.subject),
-                  ),
-                  validator: (_) => fieldErrors['title'],
+                validator: (value) {
+                  final number = int.tryParse(value ?? '');
+                  if (number == null || number < 1) {
+                    return '1 이상의 숫자를 입력해주세요.';
+                  }
+                  return fieldErrors['number'];
+                },
+              ),
+              const SizedBox(height: 14),
+              TextFormField(
+                controller: titleController,
+                enabled: !saving,
+                inputFormatters: [LengthLimitingTextInputFormatter(100)],
+                decoration: dialogFieldDecoration(
+                  context,
+                  label: '주제 (선택)',
+                  hint: '예: SQL Injection',
+                  icon: Icons.subject,
                 ),
-                const SizedBox(height: 16),
-                _PickerField(
-                  label: '진행일',
-                  value: formatDateWithWeekday(heldOn),
-                  icon: Icons.event_outlined,
-                  onTap: saving ? null : _pickDate,
-                  error: fieldErrors['held_on'],
-                ),
-              ],
-            ),
+                validator: (_) => fieldErrors['title'],
+              ),
+              const SizedBox(height: 14),
+              _PickerField(
+                label: '진행일',
+                value: formatDateWithWeekday(heldOn),
+                icon: Icons.event_outlined,
+                onTap: saving ? null : _pickDate,
+                error: fieldErrors['held_on'],
+              ),
+            ],
           ),
-        ),
-        actions: _DialogActions.build(
-          context,
-          saving: saving,
-          onSubmit: _submit,
         ),
       );
 }
@@ -330,74 +323,72 @@ class _AssignmentFormDialogState extends State<AssignmentFormDialog> {
       icon: Icons.schedule,
       onTap: saving ? null : _pickTime,
     );
-    return AlertDialog(
-      scrollable: true,
-      title: Text(widget.assignment == null ? '과제 등록' : '과제 수정'),
-      content: SizedBox(
-        width: 460,
-        child: Form(
-          key: formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _DialogError(error),
-              TextFormField(
-                controller: titleController,
-                enabled: !saving,
-                inputFormatters: [LengthLimitingTextInputFormatter(150)],
-                decoration: const InputDecoration(labelText: '제목'),
-                validator: (value) => (value ?? '').trim().isEmpty
-                    ? '제목을 입력해주세요.'
-                    : fieldErrors['title'],
+    return AppDialog(
+      eyebrow: 'ASSIGNMENT',
+      title: widget.assignment == null ? '과제 등록' : '과제 수정',
+      subtitle: '참여자는 마감 뒤에도 지각으로 제출할 수 있어요.',
+      icon: Icons.assignment_outlined,
+      maxWidth: 540,
+      onClose: saving ? null : () => Navigator.pop(context),
+      actions: _dialogActions(context, saving: saving, onSubmit: _submit),
+      child: Form(
+        key: formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _DialogError(error),
+            TextFormField(
+              controller: titleController,
+              enabled: !saving,
+              inputFormatters: [LengthLimitingTextInputFormatter(150)],
+              decoration: dialogFieldDecoration(
+                context,
+                label: '제목',
+                icon: Icons.title,
               ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: descriptionController,
-                enabled: !saving,
-                minLines: 4,
-                maxLines: 10,
-                keyboardType: TextInputType.multiline,
-                decoration: const InputDecoration(
-                  labelText: '설명 (선택)',
-                  hintText: '과제 내용, 제출물 구성, 참고 링크 등을 적어주세요.',
-                  alignLabelWithHint: true,
-                ),
-                validator: (_) => fieldErrors['description'],
+              validator: (value) => (value ?? '').trim().isEmpty
+                  ? '제목을 입력해주세요.'
+                  : fieldErrors['title'],
+            ),
+            const SizedBox(height: 14),
+            TextFormField(
+              controller: descriptionController,
+              enabled: !saving,
+              minLines: 4,
+              maxLines: 10,
+              keyboardType: TextInputType.multiline,
+              decoration: dialogFieldDecoration(
+                context,
+                label: '설명 (선택)',
+                hint: '과제 내용, 제출물 구성, 참고 링크 등을 적어주세요.',
+                alignLabelWithHint: true,
               ),
-              const SizedBox(height: 16),
-              // AlertDialog는 내용의 고유 크기를 재므로 LayoutBuilder를 쓸 수 없다.
-              // 화면 폭으로 날짜·시각 칸을 나란히 둘지 정한다.
-              if (MediaQuery.sizeOf(context).width < 600)
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [dateField, const SizedBox(height: 12), timeField],
-                )
-              else
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(child: dateField),
-                    const SizedBox(width: 12),
-                    Expanded(child: timeField),
-                  ],
-                ),
-              if (dueAt.isBefore(DateTime.now()))
-                const Padding(
-                  padding: EdgeInsets.only(top: 8),
-                  child: Text(
-                    '이미 지난 시각입니다. 저장하면 바로 마감된 과제로 표시됩니다.',
-                    style: TextStyle(color: AppColors.crimson, fontSize: 12),
-                  ),
-                ),
-            ],
-          ),
+              validator: (_) => fieldErrors['description'],
+            ),
+            const SizedBox(height: 14),
+            // 화면 폭으로 날짜·시각 칸을 나란히 둘지 정한다.
+            if (MediaQuery.sizeOf(context).width < 600)
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [dateField, const SizedBox(height: 14), timeField],
+              )
+            else
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(child: dateField),
+                  const SizedBox(width: 12),
+                  Expanded(child: timeField),
+                ],
+              ),
+            if (dueAt.isBefore(DateTime.now()))
+              const DialogCallout(
+                icon: Icons.history,
+                message: '이미 지난 시각입니다. 저장하면 바로 마감된 과제로 표시됩니다.',
+                margin: EdgeInsets.only(top: 14),
+              ),
+          ],
         ),
-      ),
-      actions: _DialogActions.build(
-        context,
-        saving: saving,
-        onSubmit: _submit,
       ),
     );
   }
@@ -457,66 +448,47 @@ class _FeedbackDialogState extends State<FeedbackDialog> {
   }
 
   @override
-  Widget build(BuildContext context) => AlertDialog(
-        scrollable: true,
-        title: Text('${widget.memberName}님 피드백'),
-        content: SizedBox(
-          width: 460,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Row(
-                children: [
-                  const Icon(
-                    Icons.folder_zip_outlined,
-                    size: 18,
-                    color: AppColors.textMuted,
-                  ),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Text(
-                      widget.submission.originalName,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: AppColors.textMuted,
-                        fontSize: 13,
-                      ),
-                    ),
-                  ),
-                ],
+  Widget build(BuildContext context) => AppDialog(
+        eyebrow: 'FEEDBACK',
+        title: '${widget.memberName}님 피드백',
+        subtitle: widget.submission.originalName,
+        icon: Icons.rate_review_outlined,
+        maxWidth: 540,
+        onClose: saving ? null : () => Navigator.pop(context),
+        actions: _dialogActions(context, saving: saving, onSubmit: _submit),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _DialogError(error),
+            TextField(
+              controller: controller,
+              enabled: !saving,
+              minLines: 4,
+              maxLines: 10,
+              keyboardType: TextInputType.multiline,
+              decoration: dialogFieldDecoration(
+                context,
+                hint: '참여자에게 보여줄 피드백을 적어주세요.',
               ),
-              const SizedBox(height: 12),
-              _DialogError(error),
-              TextField(
-                controller: controller,
-                enabled: !saving,
-                minLines: 4,
-                maxLines: 10,
-                keyboardType: TextInputType.multiline,
-                decoration: const InputDecoration(
-                  hintText: '참여자에게 보여줄 피드백을 적어주세요.',
-                  border: OutlineInputBorder(),
+            ),
+            if (!widget.submission.isChecked) ...[
+              const SizedBox(height: 10),
+              CheckboxListTile(
+                contentPadding: EdgeInsets.zero,
+                controlAffinity: ListTileControlAffinity.leading,
+                activeColor: AppColors.crimson,
+                value: markChecked,
+                onChanged: saving
+                    ? null
+                    : (value) => setState(() => markChecked = value ?? false),
+                title: const Text('확인 완료로 표시'),
+                subtitle: const Text(
+                  '참여자 화면에 “스터디장 확인 완료”로 보입니다.',
+                  style: TextStyle(fontSize: 12.5, color: AppColors.textMuted),
                 ),
               ),
-              if (!widget.submission.isChecked)
-                CheckboxListTile(
-                  contentPadding: EdgeInsets.zero,
-                  controlAffinity: ListTileControlAffinity.leading,
-                  value: markChecked,
-                  onChanged: saving
-                      ? null
-                      : (value) => setState(() => markChecked = value ?? false),
-                  title: const Text('확인 완료로 표시'),
-                ),
             ],
-          ),
-        ),
-        actions: _DialogActions.build(
-          context,
-          saving: saving,
-          onSubmit: _submit,
+          ],
         ),
       );
 }
