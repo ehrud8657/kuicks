@@ -54,6 +54,9 @@ class Command(BaseCommand):
                     "description": "OWASP Top 10을 실습 위주로 다룹니다.",
                     "prerequisites": "없음",
                     "recommended": "웹 기초",
+                    "method": "대면 · 매주 개념 발표 후 실습",
+                    "schedule": "매주 화요일 19:00 ~ 21:00\n3월 둘째 주 ~ 6월 첫째 주 (12회)",
+                    "completion_requirements": "출석 80% 이상, 과제 제출 80% 이상\n우수 수료: 최종 발표 우수자",
                 },
             )
             Study.objects.get_or_create(
