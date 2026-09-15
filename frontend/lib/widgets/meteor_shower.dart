@@ -113,7 +113,7 @@ class _Credit extends StatelessWidget {
   final bool narrow;
 
   static const title = 'Development & Design Support';
-  static const name = '— 2026320053 김태호';
+  static const name = '2026320053 김태호';
 
   /// 떠오르기 시작하는 시각(초). 공룡들이 한창 날아오르는 중이다.
   static const showAt = 3.5;
