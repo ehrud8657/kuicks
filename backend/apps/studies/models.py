@@ -27,6 +27,10 @@ class Study(models.Model):
     description = models.TextField("설명", blank=True)
     prerequisites = models.CharField("선이수과목", max_length=200, blank=True)
     recommended = models.CharField("권장과목", max_length=200, blank=True)
+    # 스터디 소개 화면에 보여줄 안내. 형식이 스터디마다 달라 여러 줄 자유 입력으로 둔다.
+    method = models.TextField("진행 방식", blank=True, help_text="예: 대면 · 매주 발표와 실습")
+    schedule = models.TextField("일정", blank=True, help_text="예: 매주 화요일 19:00, 3월 둘째 주 ~ 6월 첫째 주")
+    completion_requirements = models.TextField("수료 요건", blank=True, help_text="예: 출석 80% 이상, 과제 제출")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     def __str__(self): return f"{self.semester} · {self.title}"

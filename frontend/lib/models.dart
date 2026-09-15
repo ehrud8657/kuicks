@@ -91,6 +91,9 @@ class Study {
     required this.prerequisites,
     required this.recommended,
     required this.participants,
+    this.method = '',
+    this.schedule = '',
+    this.completionRequirements = '',
   });
 
   final int id;
@@ -101,6 +104,11 @@ class Study {
   final String recommended;
   final List<Participant> participants;
 
+  /// 진행 방식·일정·수료 요건. 운영진이 적지 않았으면 빈 문자열이다.
+  final String method;
+  final String schedule;
+  final String completionRequirements;
+
   factory Study.fromJson(Map<String, dynamic> json) => Study(
         id: json['id'] as int,
         title: json['title'] as String,
@@ -108,6 +116,10 @@ class Study {
         description: json['description'] as String? ?? '',
         prerequisites: json['prerequisites'] as String? ?? '없음',
         recommended: json['recommended'] as String? ?? '없음',
+        method: json['method'] as String? ?? '',
+        schedule: json['schedule'] as String? ?? '',
+        completionRequirements:
+            json['completion_requirements'] as String? ?? '',
         participants: (json['participations'] as List<dynamic>? ?? const [])
             .map((item) => Participant.fromJson(item as Map<String, dynamic>))
             .toList(),

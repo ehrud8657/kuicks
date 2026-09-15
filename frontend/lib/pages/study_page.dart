@@ -146,6 +146,13 @@ class StudyCard extends StatelessWidget {
             child: Text(study.description),
           ),
           const SizedBox(height: 16),
+          // 운영진이 적어둔 항목만 보여준다.
+          for (final (label, value) in [
+            ('진행 방식', study.method),
+            ('일정', study.schedule),
+            ('수료 요건', study.completionRequirements),
+          ])
+            if (value.trim().isNotEmpty) _InfoBlock(label: label, value: value),
           _DetailRow(label: '선이수과목', value: study.prerequisites),
           _DetailRow(label: '권장과목', value: study.recommended),
           const SizedBox(height: 14),
@@ -156,6 +163,32 @@ class StudyCard extends StatelessWidget {
       ),
     );
   }
+}
+
+/// 여러 줄일 수 있는 스터디 안내 항목. 제목 아래에 본문을 둔다.
+class _InfoBlock extends StatelessWidget {
+  const _InfoBlock({required this.label, required this.value});
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.only(bottom: 14),
+        child: Align(
+          alignment: Alignment.centerLeft,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(label, style: const TextStyle(fontWeight: FontWeight.w700)),
+              const SizedBox(height: 4),
+              KeepAllText(
+                value.trim(),
+                style: const TextStyle(color: AppColors.textBody, height: 1.5),
+              ),
+            ],
+          ),
+        ),
+      );
 }
 
 class _DetailRow extends StatelessWidget {

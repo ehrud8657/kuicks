@@ -110,6 +110,23 @@ class SemesterApiTests(TestCase):
         self.study.save()
         self.assertEqual(self._study_payload()["leader_name"], "미정")
 
+    def test_진행_방식_일정_수료_요건이_내려온다(self):
+        self.study.method = "대면 · 매주 발표"
+        self.study.schedule = "매주 화요일 19:00\n3월 ~ 6월"
+        self.study.completion_requirements = "출석 80% 이상"
+        self.study.save()
+        payload = self._study_payload()
+        self.assertEqual(payload["method"], "대면 · 매주 발표")
+        self.assertEqual(payload["schedule"], "매주 화요일 19:00\n3월 ~ 6월")
+        self.assertEqual(payload["completion_requirements"], "출석 80% 이상")
+
+    def test_적지_않은_안내는_빈_문자열로_내려온다(self):
+        payload = self._study_payload()
+        self.assertEqual(
+            (payload["method"], payload["schedule"], payload["completion_requirements"]),
+            ("", "", ""),
+        )
+
 
 class MyStudyApiTests(TestCase):
     """마이페이지의 수강 중/수료 스터디 카드가 쓰는 엔드포인트."""

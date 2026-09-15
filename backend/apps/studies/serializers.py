@@ -75,6 +75,9 @@ class StudySerializer(serializers.ModelSerializer):
             "description",
             "prerequisites",
             "recommended",
+            "method",
+            "schedule",
+            "completion_requirements",
             "participations",
         )
 

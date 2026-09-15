@@ -177,6 +177,9 @@ PUT 요청 본문 (응답은 GET과 같음):
       "description": "...",
       "prerequisites": "없음",
       "recommended": "없음",
+      "method": "대면 · 매주 개념 발표 후 실습",
+      "schedule": "매주 화요일 19:00 ~ 21:00\n3월 둘째 주 ~ 6월 첫째 주 (12회)",
+      "completion_requirements": "출석 80% 이상, 과제 제출 80% 이상",
       "participations": [
         {"id": 7, "member_name": "김철수", "student_id_tail": "44", "status": "completed"}
       ]
@@ -186,6 +189,7 @@ PUT 요청 본문 (응답은 GET과 같음):
 ```
 
 - `leader_name`: 스터디장이 지정되지 않은 스터디는 `"미정"`으로 내려옵니다.
+- `method`(진행 방식) · `schedule`(일정) · `completion_requirements`(수료 요건): 운영진이 Admin에서 적는 여러 줄 자유 텍스트입니다. 적지 않았으면 빈 문자열이고, 화면은 빈 항목을 표시하지 않습니다.
 - `status`: `active`(수강 중) · `completed`(수료) · `excellent`(우수 수료) · `withdrawn`(중도 포기)
 
 `/me/studies/`는 로그인 회원 본인의 참여 이력만 반환합니다.
