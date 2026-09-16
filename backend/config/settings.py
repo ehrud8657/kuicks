@@ -77,6 +77,8 @@ MEDIA_URL = "media/"
 MEDIA_ROOT = BASE_DIR / "media"
 # 과제 제출 zip 최대 크기(바이트). nginx의 client_max_body_size도 이보다 크게 둬야 한다.
 SUBMISSION_MAX_BYTES = int(os.getenv("SUBMISSION_MAX_BYTES", str(50 * 1024 * 1024)))
+# 공지·모집공고 첨부파일 최대 크기(바이트). nginx의 client_max_body_size보다 작아야 한다.
+BOARD_ATTACHMENT_MAX_BYTES = int(os.getenv("BOARD_ATTACHMENT_MAX_BYTES", str(20 * 1024 * 1024)))
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 AUTH_USER_MODEL = "accounts.Member"
 

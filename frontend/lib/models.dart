@@ -178,6 +178,38 @@ class MyStudy {
 
 enum PostCategory { notice, recruit }
 
+/// 게시글에 붙은 사진이나 문서. 없는 글이 기본이다.
+class PostAttachment {
+  const PostAttachment({
+    required this.id,
+    required this.name,
+    required this.size,
+    required this.contentType,
+    required this.isImage,
+    required this.url,
+  });
+
+  final int id;
+
+  /// 올린 사람이 붙인 원본 파일명. 저장 경로와는 다르다.
+  final String name;
+  final int size;
+  final String contentType;
+
+  /// 사진이면 본문 아래에 바로 띄우고, 아니면 내려받기 줄로 보여준다.
+  final bool isImage;
+  final String url;
+
+  factory PostAttachment.fromJson(Map<String, dynamic> json) => PostAttachment(
+        id: json['id'] as int,
+        name: json['name'] as String? ?? '',
+        size: json['size'] as int? ?? 0,
+        contentType: json['content_type'] as String? ?? '',
+        isImage: json['is_image'] as bool? ?? false,
+        url: json['url'] as String? ?? '',
+      );
+}
+
 class Post {
   const Post({
     required this.id,
@@ -187,6 +219,7 @@ class Post {
     required this.authorName,
     required this.isPinned,
     required this.publishedAt,
+    this.attachments = const [],
   });
 
   final int id;
@@ -196,6 +229,13 @@ class Post {
   final String authorName;
   final bool isPinned;
   final DateTime? publishedAt;
+  final List<PostAttachment> attachments;
+
+  List<PostAttachment> get images =>
+      attachments.where((item) => item.isImage).toList();
+
+  List<PostAttachment> get files =>
+      attachments.where((item) => !item.isImage).toList();
 
   factory Post.fromJson(Map<String, dynamic> json) => Post(
         id: json['id'] as int,
@@ -208,6 +248,10 @@ class Post {
         authorName: json['author_name'] as String? ?? '',
         isPinned: json['is_pinned'] as bool? ?? false,
         publishedAt: DateTime.tryParse(json['published_at'] as String? ?? ''),
+        // 서버가 아직 첨부를 내려주지 않는 경우에도 깨지지 않게 기본값을 둔다.
+        attachments: (json['attachments'] as List<dynamic>? ?? const [])
+            .map((item) => PostAttachment.fromJson(item as Map<String, dynamic>))
+            .toList(),
       );
 }
 
