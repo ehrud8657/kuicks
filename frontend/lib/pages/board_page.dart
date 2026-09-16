@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../api_client.dart';
+import '../format.dart';
 import '../models.dart';
 import '../routes.dart';
 import '../theme.dart';
@@ -225,6 +227,14 @@ class PostCard extends StatelessWidget {
             alignment: Alignment.centerLeft,
             child: LinkifiedText(text: post.content),
           ),
+          if (post.images.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            PostImages(images: post.images),
+          ],
+          if (post.files.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            PostFiles(files: post.files),
+          ],
         ],
       ),
     );
@@ -246,6 +256,124 @@ class _PinnedBadge extends StatelessWidget {
             color: Colors.white,
             fontSize: 12,
             fontWeight: FontWeight.w700,
+          ),
+        ),
+      );
+}
+
+/// 게시글에 붙은 사진. 본문 아래에 바로 보여주고, 누르면 원본을 새 창으로 연다.
+class PostImages extends StatelessWidget {
+  const PostImages({super.key, required this.images});
+  final List<PostAttachment> images;
+
+  @override
+  Widget build(BuildContext context) => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          for (final image in images)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: Material(
+                  color: AppColors.surfaceMuted,
+                  child: InkWell(
+                    onTap: () => launchUrl(Uri.parse(image.url)),
+                    child: Image.network(
+                      image.url,
+                      // 원본이 아주 큰 사진이어도 카드를 밀어내지 않게 높이를 제한한다.
+                      fit: BoxFit.contain,
+                      alignment: Alignment.centerLeft,
+                      errorBuilder: (context, error, stackTrace) =>
+                          _AttachmentRow(attachment: image, failed: true),
+                      loadingBuilder: (context, child, progress) =>
+                          progress == null
+                              ? child
+                              : const SizedBox(
+                                  height: 120,
+                                  child: Center(
+                                    child: CircularProgressIndicator(),
+                                  ),
+                                ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      );
+}
+
+/// 사진이 아닌 첨부(PDF·한글 문서 등). 누르면 내려받는다.
+class PostFiles extends StatelessWidget {
+  const PostFiles({super.key, required this.files});
+  final List<PostAttachment> files;
+
+  @override
+  Widget build(BuildContext context) => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          for (final file in files)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: _AttachmentRow(attachment: file),
+            ),
+        ],
+      );
+}
+
+class _AttachmentRow extends StatelessWidget {
+  const _AttachmentRow({required this.attachment, this.failed = false});
+
+  final PostAttachment attachment;
+
+  /// 사진을 그리지 못했을 때도 최소한 내려받을 수 있게 같은 줄을 재사용한다.
+  final bool failed;
+
+  @override
+  Widget build(BuildContext context) => Material(
+        color: AppColors.surfaceMuted,
+        borderRadius: BorderRadius.circular(10),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(10),
+          onTap: () => launchUrl(Uri.parse('${attachment.url}?download=1')),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            child: Row(
+              children: [
+                Icon(
+                  failed ? Icons.broken_image_outlined : Icons.description_outlined,
+                  size: 20,
+                  color: AppColors.textMuted,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    attachment.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textBody,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Text(
+                  formatSize(attachment.size),
+                  style: const TextStyle(
+                    color: AppColors.textSubtle,
+                    fontSize: 13,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                const Icon(
+                  Icons.download_outlined,
+                  size: 18,
+                  color: AppColors.textMuted,
+                ),
+              ],
+            ),
           ),
         ),
       );
