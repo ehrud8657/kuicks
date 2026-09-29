@@ -10,8 +10,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .files import validate_submission_file
-from .models import Assignment, AssignmentSubmission, Participation, Semester, Study
-from .permissions import IsAssignedLeaderOrAdmin, can_manage_study
+from .models import Assignment, AssignmentSubmission, Participation, Semester, Study, StudyPostAttachment
+from .permissions import IsAssignedLeaderOrAdmin, can_manage_study, can_view_study_board
 from .serializers import (
     MyAssignmentSerializer,
     MySessionSerializer,
@@ -21,6 +21,7 @@ from .serializers import (
     SemesterSerializer,
     StudySerializer,
     leader_name,
+    study_posts_data,
 )
 
 class SemesterListView(generics.ListAPIView):
@@ -130,12 +131,13 @@ class MyStudyDetailView(APIView):
                 "can_submit": participation.status == Participation.Status.ACTIVE,
                 "sessions": MySessionSerializer(study.sessions.all(), many=True, context=context).data,
                 "assignments": MyAssignmentSerializer(study.assignments.all(), many=True, context=context).data,
+                "posts": study_posts_data(study, request),
             }
         )
 
 
 class AssignmentSubmitView(APIView):
-    """zip 파일로 과제를 제출한다. 이미 제출했다면 파일을 교체하고 확인 상태를 초기화한다."""
+    """파일 하나로 과제를 제출한다. 형식은 가리지 않는다. 이미 제출했다면 파일을 교체하고 확인 상태를 초기화한다."""
 
     permission_classes = (permissions.IsAuthenticated,)
     parser_classes = (MultiPartParser, FormParser)
@@ -195,6 +197,36 @@ class SubmissionDownloadView(APIView):
             handle = submission.file.storage.open(submission.file.name, "rb")
         except FileNotFoundError as exc:
             raise NotFound("파일을 찾을 수 없습니다. 서버 저장소가 초기화되었을 수 있습니다.") from exc
+        # 어떤 형식이든 브라우저가 열지 않고 내려받게 한다.
         return FileResponse(
-            handle, as_attachment=True, filename=submission.original_name, content_type="application/zip"
+            handle,
+            as_attachment=True,
+            filename=submission.original_name,
+            content_type="application/octet-stream",
+        )
+
+
+class StudyPostAttachmentDownloadView(APIView):
+    """스터디 게시판 자료 내려주기. 해당 스터디 참여자와 스터디장·운영진만 받는다.
+
+    사진(jpg·png·gif·webp)은 화면에 바로 띄워야 하므로 기본이 inline이고,
+    ?download=1이면 내려받기가 된다. 나머지 형식은 항상 내려받기로만 내보낸다.
+    """
+
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def get(self, request, pk):
+        attachment = get_object_or_404(StudyPostAttachment.objects.select_related("post__study"), pk=pk)
+        if not can_view_study_board(request.user, attachment.post.study):
+            raise PermissionDenied("이 스터디의 참여자만 받을 수 있습니다.")
+        try:
+            handle = attachment.file.storage.open(attachment.file.name, "rb")
+        except FileNotFoundError as exc:
+            raise NotFound("파일을 찾을 수 없습니다. 서버 저장소가 초기화되었을 수 있습니다.") from exc
+        inline = attachment.is_image and request.query_params.get("download") != "1"
+        return FileResponse(
+            handle,
+            as_attachment=not inline,
+            filename=attachment.original_name,
+            content_type=attachment.content_type if inline else "application/octet-stream",
         )

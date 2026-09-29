@@ -30,7 +30,7 @@ const _staffGroups = <_StaffGroup>[
   _StaffGroup(
     name: '교육부',
     members: [
-      _Staff(name: '강근호', department: '컴퓨터학과'),
+      _Staff(name: '강근호', department: '데이터과학과'),
       _Staff(name: '이건하', department: '컴퓨터학과'),
       _Staff(name: '신채민', department: '컴퓨터학과'),
       _Staff(name: '이호준', department: '컴퓨터학과'),

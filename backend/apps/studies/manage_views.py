@@ -8,8 +8,9 @@ from django.db import IntegrityError, transaction
 from django.db.models import Count, Max, Q
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
-from rest_framework import generics
+from rest_framework import generics, status
 from rest_framework.exceptions import PermissionDenied, ValidationError
+from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -23,8 +24,19 @@ from .manage_serializers import (
     roster_count,
     with_assignment_counts,
 )
-from .models import Assignment, AssignmentSubmission, Attendance, Participation, Study, StudySession
+from .files import content_type_of, validate_study_post_file
+from .models import (
+    Assignment,
+    AssignmentSubmission,
+    Attendance,
+    Participation,
+    Study,
+    StudyPost,
+    StudyPostAttachment,
+    StudySession,
+)
 from .permissions import IsStudyManager, can_manage_study, managed_studies
+from .serializers import StudyPostAttachmentSerializer, StudyPostSerializer
 
 WITHDRAWN = Participation.Status.WITHDRAWN
 COUNTED_STATUSES = [status for status in Participation.Status.values if status != WITHDRAWN]
@@ -265,3 +277,61 @@ class ManageSubmissionReviewView(generics.UpdateAPIView):
             serializer.save(reviewed_by=self.request.user, reviewed_at=timezone.now())
         else:
             serializer.save(reviewed_by=None, reviewed_at=None)
+
+
+# ── 스터디 게시판 ────────────────────────────────────────────
+
+
+def _post_queryset():
+    return StudyPost.objects.select_related("study", "author").prefetch_related("attachments")
+
+
+class ManageStudyPostCreateView(StudyChildMixin, generics.CreateAPIView):
+    """글만 먼저 만든다. 첨부는 글이 생긴 뒤 한 파일씩 올린다(요청 하나가 너무 커지지 않게)."""
+
+    serializer_class = StudyPostSerializer
+    permission_classes = (IsStudyManager,)
+
+    def perform_create(self, serializer):
+        serializer.save(study=self.get_study(), author=self.request.user)
+
+
+class ManageStudyPostDetailView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = StudyPostSerializer
+    permission_classes = (IsStudyManager,)
+    http_method_names = ("get", "patch", "delete", "options")
+
+    def get_queryset(self):
+        return _post_queryset()
+
+
+class ManageStudyPostAttachmentCreateView(APIView):
+    """글 하나에 파일 하나를 붙인다. 형식은 가리지 않는다."""
+
+    permission_classes = (IsStudyManager,)
+    parser_classes = (MultiPartParser, FormParser)
+
+    def post(self, request, pk):
+        post = get_object_or_404(StudyPost.objects.select_related("study"), pk=pk)
+        self.check_object_permissions(request, post)
+        upload = request.FILES.get("file")
+        validate_study_post_file(upload)
+        name = upload.name[-255:]
+        attachment = StudyPostAttachment.objects.create(
+            post=post,
+            file=upload,
+            original_name=name,
+            content_type=content_type_of(name)[:120],
+            size=upload.size,
+        )
+        # 첨부가 바뀌면 글도 수정된 것으로 본다.
+        post.save(update_fields=["updated_at"])
+        return Response(
+            StudyPostAttachmentSerializer(attachment, context={"request": request}).data,
+            status=status.HTTP_201_CREATED,
+        )
+
+
+class ManageStudyPostAttachmentDetailView(generics.DestroyAPIView):
+    queryset = StudyPostAttachment.objects.select_related("post__study")
+    permission_classes = (IsStudyManager,)

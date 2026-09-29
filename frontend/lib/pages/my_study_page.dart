@@ -8,15 +8,16 @@ import '../theme.dart';
 import '../widgets/common.dart';
 import '../widgets/linkified_text.dart';
 import '../widgets/status_style.dart';
-import '../widgets/zip_picker.dart';
+import '../widgets/study_post_card.dart';
+import '../widgets/upload_picker.dart';
 
-/// 참여자 본인의 스터디 상세: 과제 확인·zip 제출, 피드백, 회차별 내 출석.
+/// 참여자 본인의 스터디 상세: 스터디 게시판, 과제 확인·파일 제출, 피드백, 회차별 내 출석.
 class MyStudyPage extends StatefulWidget {
   const MyStudyPage({
     super.key,
     required this.studyId,
     this.title,
-    this.pickZip = pickZipFile,
+    this.pickFile = pickOneFile,
   });
 
   final int studyId;
@@ -24,8 +25,8 @@ class MyStudyPage extends StatefulWidget {
   /// 불러오기 전에 상단바에 잠깐 보여줄 제목.
   final String? title;
 
-  /// zip 파일 선택. 테스트에서 바꿔 끼운다.
-  final ZipPicker pickZip;
+  /// 제출할 파일 선택. 테스트에서 바꿔 끼운다.
+  final UploadPicker pickFile;
 
   @override
   State<MyStudyPage> createState() => _MyStudyPageState();
@@ -62,15 +63,15 @@ class _MyStudyPageState extends State<MyStudyPage> {
       });
 
   Future<void> _submit(MyAssignment assignment) async {
-    final PickedZip? file;
+    final PickedUpload? file;
     try {
-      file = await widget.pickZip();
+      file = await widget.pickFile();
     } catch (_) {
       if (mounted) showMessage(context, '파일을 불러오지 못했습니다. 다시 시도해주세요.');
       return;
     }
     if (file == null || !mounted) return;
-    final problem = checkZip(file);
+    final problem = checkUpload(file, maxBytes: maxSubmissionBytes);
     if (problem != null) {
       showMessage(context, problem);
       return;
@@ -159,11 +160,22 @@ class _MyStudyPageState extends State<MyStudyPage> {
                   ),
                 ],
                 const SizedBox(height: 28),
+                SectionHeader(title: '스터디 게시판 ${data.posts.length}개'),
+                const SizedBox(height: 12),
+                if (data.posts.isEmpty)
+                  const WideEmptyState(message: '아직 올라온 공지나 자료가 없습니다.')
+                else
+                  for (final post in data.posts)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: StudyPostCard(post: post),
+                    ),
+                const SizedBox(height: 28),
                 SectionHeader(title: '과제 ${data.assignments.length}개'),
                 const SizedBox(height: 6),
                 // 좁은 화면에서 문장 중간이 끊기지 않게 두 줄로 나눠 둔다.
                 Text(
-                  'zip 파일 하나로 제출합니다. (최대 ${formatSize(maxSubmissionBytes)})\n'
+                  '파일 하나로 제출합니다. 형식은 상관없습니다. (최대 ${formatSize(maxSubmissionBytes)})\n'
                   '기한이 지나도 낼 수 있지만 지각으로 표시됩니다.',
                   style: const TextStyle(
                     color: AppColors.textMuted,
@@ -393,7 +405,7 @@ class _AssignmentCard extends StatelessWidget {
                   uploading
                       ? '올리는 중…'
                       : submission == null
-                          ? 'zip 파일 제출'
+                          ? '파일 제출'
                           : '다시 제출',
                 ),
               ),
@@ -457,7 +469,10 @@ class _SubmittedBox extends StatelessWidget {
           children: [
             Row(
               children: [
-                const Icon(Icons.folder_zip_outlined, color: AppColors.crimson),
+                const Icon(
+                  Icons.insert_drive_file_outlined,
+                  color: AppColors.crimson,
+                ),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Column(

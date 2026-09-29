@@ -9,7 +9,7 @@ kuics/
 ├─ frontend/            Flutter Web (Dockerfile: flutter build + nginx)
 ├─ backend/             Django + DRF
 │  ├─ apps/accounts/    학번 로그인, 회원, CSV 일괄 생성
-│  ├─ apps/studies/     학기, 스터디, 참여, 회차·출석, 과제·zip 제출, 스터디장 관리 API
+│  ├─ apps/studies/     학기, 스터디, 참여, 회차·출석, 과제 제출, 스터디 게시판, 스터디장 관리 API
 │  ├─ apps/boards/      공지사항 및 모집공고
 │  └─ apps/activities/  행사 및 참여 골격
 ├─ docs/                설계 및 API 문서
@@ -118,7 +118,7 @@ flutter build web --dart-define=API_BASE_URL=https://새도메인.example/api
 | `/study?semester=2026-1` | 스터디 (학기 선택이 주소에 남음) |
 | `/board?category=notice` · `recruit` | 게시판 분류 |
 | `/me` · `/me/studies/:id` | 마이페이지 · 내 스터디 상세(과제 제출) — 로그인 필요 |
-| `/manage` · `/manage/studies/:id/{participants,attendance,assignments}` | 스터디 관리 목록 · 관리 탭 — 스터디장·운영진 |
+| `/manage` · `/manage/studies/:id/{participants,attendance,assignments,board}` | 스터디 관리 목록 · 관리 탭 — 스터디장·운영진 |
 | `/manage/studies/:id/attendance/:sessionId` · `/manage/studies/:id/assignments/:assignmentId` | 회차 출석 체크 · 제출 현황 |
 
 한글 글꼴은 Pretendard(SIL OFL, `frontend/assets/fonts`)를 앱에 포함합니다. CanvasKit이 한글 글꼴 조각을 그때그때 받아오며 글자가 잠깐 ☒로 보이던 현상을 없애기 위함이며, 첫 로딩이 약 4.7MB 늘어납니다.
@@ -235,14 +235,49 @@ python manage.py import_members members.csv
 
 업로드된 파일은 `media_data` 볼륨에 쌓이므로 **DB와 함께 백업해야 합니다.** 하나만 백업하면 첨부 기록만 남고 파일이 없는 상태가 됩니다.
 
+## 스터디 게시판
+
+스터디마다 공지·자료 게시판이 있습니다. **그 스터디 참여자와 스터디장·운영진만** 볼 수 있습니다.
+
+- 스터디장·운영진: 스터디 관리 → 스터디 선택 → **게시판** 탭에서 글쓰기. 분류(공지/자료), 상단 고정, 파일 첨부(여러 개, 형식 무관, 파일당 최대 50MB)를 고릅니다. 운영진은 Admin의 **스터디 게시글**에서도 쓸 수 있습니다.
+- 참여자: 마이페이지 → 스터디 상세 맨 위 **스터디 게시판**에서 글을 펼쳐 본문과 첨부를 봅니다.
+- 첨부는 권한을 확인하는 API로만 내려가고(`/media/`로 공개하지 않음), 저장 위치는 게시글 첨부와 같은 `media_data` 볼륨입니다.
+
+## 운영 데이터 백업과 복구
+
+회원·스터디·출석·게시글은 `postgres_data` 볼륨(DB)에, 과제 제출물과 첨부 파일은 `media_data` 볼륨에 있습니다. `git pull` 후 `docker compose -f docker-compose.prod.yml up -d --build`로 다시 배포해도 두 볼륨은 그대로 남고, 새 모델이 있으면 컨테이너가 뜰 때 `migrate`가 기존 데이터를 보존한 채 테이블만 추가합니다. 데이터가 사라지는 경우는 `down -v`, `docker volume rm`, 다른 폴더(=다른 compose 프로젝트 이름)에서 띄우는 경우입니다.
+
+**배포 전에는 항상 백업합니다.** 저장소 루트에서 실행하며, `backups/`는 커밋하지 않습니다.
+
+Git Bash(Windows) 또는 Linux 셸에서 실행합니다. PowerShell 5.1의 `>`는 바이너리 파일을 깨뜨리므로 쓰지 않습니다.
+
+```bash
+mkdir -p backups
+stamp=$(date +%Y%m%d-%H%M)
+# DB (회원·스터디·출석·게시글)
+docker compose -f docker-compose.prod.yml exec -T db pg_dump -U kuics -Fc kuics > "backups/db-$stamp.dump"
+# 업로드 파일 (과제 제출물·첨부)
+docker compose -f docker-compose.prod.yml exec -T backend tar czf - -C /app media > "backups/media-$stamp.tar.gz"
+ls -lh backups   # 크기가 0이 아닌지 확인
+```
+
+백업 파일은 서버 밖(USB 등)에도 한 부 복사해 둡니다. 서버 디스크가 고장 나면 같은 디스크의 백업도 함께 사라집니다.
+
+복구는 반대 방향입니다. 복구하면 현재 DB 내용이 백업 시점으로 바뀌므로 먼저 지금 상태도 백업해 둡니다.
+
+```bash
+docker compose -f docker-compose.prod.yml exec -T db pg_restore -U kuics -d kuics --clean --if-exists < backups/db-XXXX.dump
+docker compose -f docker-compose.prod.yml exec -T backend tar xzf - -C /app < backups/media-XXXX.tar.gz
+```
+
 ## 구현 범위
 
 - Home 및 전체 메뉴의 반응형 기본 레이아웃, About·Contact·공지/모집 게시판
 - Study 학기 선택, 스터디 아코디언, 수료/우수수료 표시
 - Django Admin 기반 학기·스터디·참여자·회차·과제·게시글 관리
 - 학번 기반 세션 인증 API와 역할 모델(휴회원·정회원·스터디장·운영진), 초기 비밀번호 변경 서버 강제
-- 스터디장·운영진 관리 화면: 참여자 명단, 회차별 출석 체크·현황표, 과제 등록, 제출 현황(미제출·지각), 확인·피드백 (스터디장은 담당 스터디만, 운영진은 전체)
-- 마이페이지: 수강·완료 스터디, 제출할 과제, 스터디 상세에서 zip 과제 제출·피드백·내 출석 확인
+- 스터디장·운영진 관리 화면: 참여자 명단, 회차별 출석 체크·현황표, 과제 등록, 제출 현황(미제출·지각), 확인·피드백, 스터디 게시판(공지·자료 첨부) (스터디장은 담당 스터디만, 운영진은 전체)
+- 마이페이지: 수강·완료 스터디, 제출할 과제, 스터디 상세에서 스터디 게시판 확인·과제 파일 제출(형식 무관)·피드백·내 출석 확인
 - 화면별 주소(새로고침·링크 공유·브라우저 뒤로/앞으로), 로그인·권한 안내 화면, 없는 주소 안내
 - API 로딩·빈 결과·오류 UI
 

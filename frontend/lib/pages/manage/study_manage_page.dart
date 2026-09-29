@@ -8,9 +8,10 @@ import '../../widgets/common.dart';
 import '../../widgets/refresh_on_return.dart';
 import 'assignments_tab.dart';
 import 'attendance_tab.dart';
+import 'board_tab.dart';
 import 'participants_tab.dart';
 
-/// 스터디 하나의 관리 화면. 참여자 / 출석 / 과제 탭으로 나누고, 탭은 주소에 남긴다.
+/// 스터디 하나의 관리 화면. 참여자 / 출석 / 과제 / 게시판 탭으로 나누고, 탭은 주소에 남긴다.
 /// 예: /manage/studies/3/attendance
 class StudyManagePage extends StatefulWidget {
   const StudyManagePage({
@@ -106,6 +107,7 @@ class _StudyManagePageState extends State<StudyManagePage>
               Tab(icon: Icon(Icons.group_outlined), text: '참여자'),
               Tab(icon: Icon(Icons.event_available_outlined), text: '출석'),
               Tab(icon: Icon(Icons.assignment_outlined), text: '과제'),
+              Tab(icon: Icon(Icons.forum_outlined), text: '게시판'),
             ],
           ),
         ),
@@ -140,6 +142,7 @@ class _StudyManagePageState extends State<StudyManagePage>
                       ParticipantsTab(detail: data, onChanged: _reload),
                       AttendanceTab(detail: data, onChanged: _reload),
                       AssignmentsTab(detail: data, onChanged: _reload),
+                      BoardTab(detail: data, onChanged: _reload),
                     ],
                   ),
                 ),

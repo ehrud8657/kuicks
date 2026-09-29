@@ -3,7 +3,17 @@ from django.urls import reverse
 from django.utils.html import format_html
 
 from .files import format_size
-from .models import Assignment, AssignmentSubmission, Attendance, Participation, Semester, Study, StudySession
+from .models import (
+    Assignment,
+    AssignmentSubmission,
+    Attendance,
+    Participation,
+    Semester,
+    Study,
+    StudyPost,
+    StudyPostAttachment,
+    StudySession,
+)
 
 class ParticipationInline(admin.TabularInline):
     model = Participation
@@ -117,3 +127,30 @@ class AssignmentSubmissionAdmin(admin.ModelAdmin):
     @admin.display(description="지각", boolean=True)
     def late_display(self, obj):
         return obj.is_late
+
+
+class StudyPostAttachmentInline(admin.TabularInline):
+    model = StudyPostAttachment
+    extra = 1
+    fields = ("file", "original_name", "size_display")
+    readonly_fields = ("original_name", "size_display")
+
+    @admin.display(description="크기")
+    def size_display(self, attachment):
+        return format_size(attachment.size) if attachment.pk else "-"
+
+
+@admin.register(StudyPost)
+class StudyPostAdmin(admin.ModelAdmin):
+    list_display = ("title", "study", "kind", "is_pinned", "author", "created_at")
+    list_filter = ("kind", "study__semester")
+    search_fields = ("title", "content", "study__title")
+    autocomplete_fields = ("study",)
+    readonly_fields = ("author", "created_at", "updated_at")
+    list_select_related = ("study", "study__semester", "author")
+    inlines = (StudyPostAttachmentInline,)
+
+    def save_model(self, request, obj, form, change):
+        if not obj.author_id:
+            obj.author = request.user
+        super().save_model(request, obj, form, change)

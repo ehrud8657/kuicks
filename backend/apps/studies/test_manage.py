@@ -11,7 +11,17 @@ from django.urls import reverse
 from django.utils import timezone
 
 from apps.accounts.models import Member
-from .models import Assignment, AssignmentSubmission, Attendance, Participation, Semester, Study, StudySession
+from .models import (
+    Assignment,
+    AssignmentSubmission,
+    Attendance,
+    Participation,
+    Semester,
+    Study,
+    StudyPost,
+    StudyPostAttachment,
+    StudySession,
+)
 
 TEMP_MEDIA = tempfile.mkdtemp(prefix="kuics-test-media-")
 
@@ -25,7 +35,8 @@ def create_member(student_id, name, role=Member.Role.MEMBER):
 def make_zip(content=b"print('hello')"):
     buffer = BytesIO()
     with zipfile.ZipFile(buffer, "w") as archive:
-        archive.writestr("main.py", content)
+        # 시각을 고정해야 두 번 만든 zip이 같은 바이트가 된다.
+        archive.writestr(zipfile.ZipInfo("main.py", date_time=(2026, 1, 1, 0, 0, 0)), content)
     return buffer.getvalue()
 
 
@@ -326,12 +337,26 @@ class SubmissionTests(StudyManageTestBase):
         self.assertFalse(old_path.exists())
         self.assertTrue(Path(submission.file.path).exists())
 
-    def test_zip이_아닌_파일은_거절한다(self):
+    def test_zip이_아니어도_어떤_형식이든_제출할_수_있다(self):
         assignment = self.create_assignment()
-        by_extension = self.submit(assignment, upload=SimpleUploadedFile("report.pdf", b"%PDF-1.4"))
-        by_content = self.submit(assignment, upload=SimpleUploadedFile("fake.zip", b"not a zip at all"))
-        self.assertEqual((by_extension.status_code, by_content.status_code), (400, 400))
-        self.assertEqual(by_extension.json()["message"], "zip 파일만 제출할 수 있습니다.")
+        response = self.submit(assignment, upload=SimpleUploadedFile("보고서.pdf", b"%PDF-1.4 report"))
+        self.assertEqual(response.status_code, 201)
+        submission = AssignmentSubmission.objects.get()
+        self.assertEqual(submission.original_name, "보고서.pdf")
+        # 저장 경로에는 원본 확장자를 남기되 한글 파일명은 쓰지 않는다.
+        self.assertTrue(submission.file.name.endswith(".pdf"))
+        self.assertNotIn("보고서", submission.file.name)
+
+        self.client.force_login(self.leader)
+        download = self.client.get(reverse("submission-download", args=[submission.pk]))
+        self.assertEqual(download.status_code, 200)
+        self.assertEqual(download["Content-Type"], "application/octet-stream")
+        self.assertIn("attachment", download["Content-Disposition"])
+
+    def test_빈_파일은_거절한다(self):
+        response = self.submit(self.create_assignment(), upload=SimpleUploadedFile("empty.txt", b""))
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json()["message"], "빈 파일은 올릴 수 없습니다.")
         self.assertFalse(AssignmentSubmission.objects.exists())
 
     def test_파일을_첨부하지_않으면_거절한다(self):
@@ -444,3 +469,117 @@ class MyStudyDetailTests(StudyManageTestBase):
         response = self.client.get(reverse("my-study-detail", args=[self.study.pk]))
         self.assertEqual(response.status_code, 404)
         self.assertEqual(response.json()["message"], "참여 중인 스터디가 아닙니다.")
+
+
+class StudyPostTests(StudyManageTestBase):
+    def create_post(self, **data):
+        self.client.force_login(self.leader)
+        payload = {"kind": "notice", "title": "1주차 안내", "content": "실습 환경을 준비해주세요.", **data}
+        return self.send("post", reverse("manage-study-post-create", args=[self.study.pk]), payload)
+
+    def upload(self, post_id, name="1주차 자료.pdf", data=b"%PDF-1.4 slides"):
+        return self.client.post(
+            reverse("manage-study-post-attachment-create", args=[post_id]),
+            {"file": SimpleUploadedFile(name, data)},
+        )
+
+    def test_스터디장이_공지를_쓰고_자료를_붙인다(self):
+        response = self.create_post(kind="material", is_pinned=True)
+        self.assertEqual(response.status_code, 201)
+        post_id = response.json()["id"]
+        self.assertEqual(self.upload(post_id).status_code, 201)
+        self.assertEqual(self.upload(post_id, name="lab.tar.gz", data=b"GZ-DATA").status_code, 201)
+
+        post = StudyPost.objects.get()
+        self.assertEqual((post.kind, post.is_pinned, post.author), ("material", True, self.leader))
+        names = list(post.attachments.values_list("original_name", flat=True))
+        self.assertEqual(names, ["1주차 자료.pdf", "lab.tar.gz"])
+
+    def test_게시글은_참여자와_담당자에게만_보인다(self):
+        post_id = self.create_post().json()["id"]
+        self.upload(post_id, name="diagram.png", data=b"PNG-DATA")
+
+        self.client.force_login(self.member)
+        posts = self.client.get(reverse("my-study-detail", args=[self.study.pk])).json()["posts"]
+        self.assertEqual([post["title"] for post in posts], ["1주차 안내"])
+        self.assertTrue(posts[0]["attachments"][0]["is_image"])
+
+        self.client.force_login(self.admin)
+        posts = self.client.get(reverse("manage-study-detail", args=[self.study.pk])).json()["posts"]
+        self.assertEqual(len(posts), 1)
+
+        # 다른 스터디 참여자·외부 회원은 스터디 상세 자체를 볼 수 없다.
+        self.client.force_login(self.outsider)
+        self.assertEqual(self.client.get(reverse("my-study-detail", args=[self.study.pk])).status_code, 404)
+
+    def test_자료는_참여자와_담당자만_내려받는다(self):
+        post_id = self.create_post().json()["id"]
+        attachment_id = self.upload(post_id).json()["id"]
+        url = reverse("study-post-attachment", args=[attachment_id])
+        expected = {
+            self.member: 200,
+            self.leader: 200,
+            self.admin: 200,
+            self.other_leader: 403,
+            self.outsider: 403,
+        }
+        for member, status_code in expected.items():
+            self.client.force_login(member)
+            response = self.client.get(url)
+            self.assertEqual(response.status_code, status_code, member.name)
+            if status_code == 200:
+                self.assertEqual(b"".join(response.streaming_content), b"%PDF-1.4 slides")
+                self.assertIn("attachment", response["Content-Disposition"])
+        self.client.logout()
+        self.assertEqual(self.client.get(url).status_code, 403)
+
+    def test_사진은_바로_보이고_SVG는_내려받기로만_나간다(self):
+        post_id = self.create_post().json()["id"]
+        png_id = self.upload(post_id, name="a.png", data=b"PNG-DATA").json()["id"]
+        svg_id = self.upload(post_id, name="a.svg", data=b"<svg/>").json()["id"]
+        self.client.force_login(self.member)
+        png = self.client.get(reverse("study-post-attachment", args=[png_id]))
+        svg = self.client.get(reverse("study-post-attachment", args=[svg_id]))
+        self.assertEqual(png["Content-Type"], "image/png")
+        self.assertIn("inline", png["Content-Disposition"])
+        self.assertEqual(svg["Content-Type"], "application/octet-stream")
+        self.assertIn("attachment", svg["Content-Disposition"])
+
+    def test_참여자와_다른_스터디장은_글을_쓰거나_고칠_수_없다(self):
+        post_id = self.create_post().json()["id"]
+        create_url = reverse("manage-study-post-create", args=[self.study.pk])
+        detail_url = reverse("manage-study-post-detail", args=[post_id])
+        for member in (self.member, self.other_leader):
+            self.client.force_login(member)
+            self.assertEqual(self.send("post", create_url, {"title": "x"}).status_code, 403)
+            self.assertEqual(self.send("patch", detail_url, {"title": "x"}).status_code, 403)
+            self.assertEqual(self.upload(post_id).status_code, 403)
+        self.assertEqual(StudyPost.objects.get().title, "1주차 안내")
+        self.assertFalse(StudyPostAttachment.objects.exists())
+
+    def test_제목이_비면_거절한다(self):
+        response = self.create_post(title="   ")
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("title", response.json()["fields"])
+
+    @override_settings(STUDY_POST_ATTACHMENT_MAX_BYTES=8)
+    def test_용량을_넘는_자료는_거절한다(self):
+        post_id = self.create_post().json()["id"]
+        response = self.upload(post_id, data=b"x" * 64)
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(StudyPostAttachment.objects.exists())
+
+    def test_첨부나_글을_지우면_파일도_지워진다(self):
+        post_id = self.create_post().json()["id"]
+        first = self.upload(post_id).json()["id"]
+        self.upload(post_id, name="b.txt", data=b"memo")
+        first_path, second_path = (Path(item.file.path) for item in StudyPostAttachment.objects.order_by("id"))
+
+        response = self.client.delete(reverse("manage-study-post-attachment-detail", args=[first]))
+        self.assertEqual(response.status_code, 204)
+        self.assertFalse(first_path.exists())
+        self.assertTrue(second_path.exists())
+
+        self.assertEqual(self.client.delete(reverse("manage-study-post-detail", args=[post_id])).status_code, 204)
+        self.assertFalse(second_path.exists())
+        self.assertFalse(StudyPostAttachment.objects.exists())

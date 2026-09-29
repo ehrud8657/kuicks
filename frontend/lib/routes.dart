@@ -7,7 +7,8 @@ import 'models.dart';
 enum ManageTab {
   participants,
   attendance,
-  assignments;
+  assignments,
+  board;
 
   static ManageTab? tryParse(String? name) {
     for (final tab in values) {

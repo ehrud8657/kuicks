@@ -1,10 +1,13 @@
 import uuid
+from pathlib import Path
 
 from django.conf import settings
 from django.db import models
 from django.db.models.signals import post_delete
 from django.dispatch import receiver
 from django.utils import timezone
+
+from .files import content_type_of, is_inline_image, safe_suffix
 
 class Semester(models.Model):
     name = models.CharField("학기", max_length=20, unique=True)
@@ -124,7 +127,8 @@ def submission_upload_to(instance, filename):
     """제출 파일 저장 경로. 원본 파일명은 DB에만 두고, 경로에는 추측하기 어려운 이름을 쓴다."""
     assignment = instance.assignment
     member_id = instance.participation.member_id
-    return f"submissions/{assignment.study_id}/{assignment.pk}/{member_id}_{uuid.uuid4().hex[:12]}.zip"
+    suffix = safe_suffix(filename)
+    return f"submissions/{assignment.study_id}/{assignment.pk}/{member_id}_{uuid.uuid4().hex[:12]}{suffix}"
 
 
 class AssignmentSubmission(models.Model):
@@ -161,6 +165,71 @@ class AssignmentSubmission(models.Model):
         constraints = [
             models.UniqueConstraint(fields=("assignment", "participation"), name="unique_submission_per_assignment")
         ]
+
+
+class StudyPost(models.Model):
+    """스터디 게시판 글. 스터디장·운영진이 쓰고, 해당 스터디 참여자만 본다."""
+
+    class Kind(models.TextChoices):
+        NOTICE = "notice", "공지"
+        MATERIAL = "material", "자료"
+
+    study = models.ForeignKey(Study, on_delete=models.CASCADE, related_name="posts")
+    kind = models.CharField("분류", max_length=10, choices=Kind.choices, default=Kind.NOTICE)
+    title = models.CharField("제목", max_length=200)
+    content = models.TextField("내용", blank=True)
+    author = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
+    is_pinned = models.BooleanField("상단 고정", default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.study} · {self.title}"
+
+    class Meta:
+        ordering = ("-is_pinned", "-created_at", "-id")
+        verbose_name = "스터디 게시글"
+        verbose_name_plural = "스터디 게시글"
+
+
+def study_post_upload_to(instance, filename):
+    """자료 저장 경로. 원본 파일명은 DB에만 두고 경로에는 추측하기 어려운 이름을 쓴다."""
+    return f"study_posts/{instance.post.study_id}/{instance.post_id}/{uuid.uuid4().hex}{safe_suffix(filename)}"
+
+
+class StudyPostAttachment(models.Model):
+    """스터디 게시글 첨부. 형식은 가리지 않고, 해당 스터디 참여자와 스터디장·운영진만 받는다."""
+
+    post = models.ForeignKey(StudyPost, on_delete=models.CASCADE, related_name="attachments")
+    file = models.FileField("파일", upload_to=study_post_upload_to, max_length=255)
+    original_name = models.CharField("원본 파일명", max_length=255)
+    content_type = models.CharField("종류", max_length=120, blank=True)
+    size = models.PositiveBigIntegerField("크기(바이트)", default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    @property
+    def is_image(self):
+        return is_inline_image(self.original_name)
+
+    def save(self, *args, **kwargs):
+        # Admin에서 올릴 때도 원본 파일명·크기·종류가 채워지게 한다.
+        if not self.original_name:
+            self.original_name = Path(getattr(self.file, "name", "") or "").name[-255:]
+        if not self.size:
+            self.size = getattr(self.file, "size", 0) or 0
+        if not self.content_type:
+            self.content_type = content_type_of(self.original_name)[:120]
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.original_name
+
+    class Meta:
+        ordering = ("id",)
+        verbose_name = "스터디 게시글 첨부"
+        verbose_name_plural = "스터디 게시글 첨부"
 
 
 def sync_leader_roles(*member_ids):
@@ -200,5 +269,12 @@ def _sync_leader_role_on_study_delete(sender, instance, **kwargs):
 @receiver(post_delete, sender=AssignmentSubmission)
 def _delete_submission_file(sender, instance, **kwargs):
     # 과제·스터디가 지워져 연쇄 삭제될 때도 저장소에 파일이 남지 않게 한다.
+    if instance.file:
+        instance.file.delete(save=False)
+
+
+@receiver(post_delete, sender=StudyPostAttachment)
+def _delete_study_post_file(sender, instance, **kwargs):
+    # 글·스터디가 지워져 연쇄 삭제될 때도 저장소에 파일이 남지 않게 한다.
     if instance.file:
         instance.file.delete(save=False)

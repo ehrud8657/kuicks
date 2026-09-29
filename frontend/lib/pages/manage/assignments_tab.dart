@@ -86,7 +86,7 @@ class AssignmentsTab extends StatelessWidget {
         const SizedBox(height: 14),
         if (detail.assignments.isEmpty)
           const WideEmptyState(
-            message: '등록된 과제가 없습니다. 과제를 등록하면 참여자가 마이페이지에서 zip 파일로 제출할 수 있습니다.',
+            message: '등록된 과제가 없습니다. 과제를 등록하면 참여자가 마이페이지에서 파일로 제출할 수 있습니다.',
           )
         else
           for (final assignment in [...open, ...closed])

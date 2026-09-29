@@ -1,7 +1,17 @@
+from django.urls import reverse
 from django.utils import timezone
 from rest_framework import serializers
 
-from .models import Assignment, AssignmentSubmission, Participation, Semester, Study, StudySession
+from .models import (
+    Assignment,
+    AssignmentSubmission,
+    Participation,
+    Semester,
+    Study,
+    StudyPost,
+    StudyPostAttachment,
+    StudySession,
+)
 
 LEADER_UNASSIGNED = "미정"
 
@@ -127,3 +137,48 @@ class MyAssignmentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Assignment
         fields = ("id", "title", "description", "due_at", "is_closed", "submission")
+
+
+class StudyPostAttachmentSerializer(serializers.ModelSerializer):
+    name = serializers.CharField(source="original_name", read_only=True)
+    is_image = serializers.BooleanField(read_only=True)
+    url = serializers.SerializerMethodField()
+
+    def get_url(self, attachment):
+        # 자료는 /media/로 공개하지 않고 권한을 확인하는 API로만 내보낸다.
+        path = reverse("study-post-attachment", args=[attachment.pk])
+        request = self.context.get("request")
+        return request.build_absolute_uri(path) if request else path
+
+    class Meta:
+        model = StudyPostAttachment
+        fields = ("id", "name", "size", "content_type", "is_image", "url")
+
+
+class StudyPostSerializer(serializers.ModelSerializer):
+    """스터디 게시글. 참여자 화면과 관리 화면이 같이 쓰고, 관리 API의 입력도 받는다."""
+
+    author_name = serializers.SerializerMethodField()
+    attachments = StudyPostAttachmentSerializer(many=True, read_only=True)
+
+    def get_author_name(self, post):
+        return post.author.name if post.author else "알 수 없음"
+
+    def validate_title(self, value):
+        value = value.strip()
+        if not value:
+            raise serializers.ValidationError("제목을 입력해주세요.")
+        return value
+
+    class Meta:
+        model = StudyPost
+        fields = (
+            "id", "kind", "title", "content", "is_pinned",
+            "author_name", "created_at", "updated_at", "attachments",
+        )
+        read_only_fields = ("created_at", "updated_at")
+
+
+def study_posts_data(study, request=None):
+    posts = study.posts.select_related("author").prefetch_related("attachments")
+    return StudyPostSerializer(posts, many=True, context={"request": request}).data

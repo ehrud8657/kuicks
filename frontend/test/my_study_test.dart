@@ -6,13 +6,13 @@ import 'package:kuics_frontend/api_client.dart';
 import 'package:kuics_frontend/main.dart';
 import 'package:kuics_frontend/pages/my_study_page.dart';
 import 'package:kuics_frontend/widgets/common.dart';
-import 'package:kuics_frontend/widgets/zip_picker.dart';
+import 'package:kuics_frontend/widgets/upload_picker.dart';
 
 import 'support/fake_backend.dart';
 import 'support/fixtures.dart';
 
-/// 'PK'로 시작하는 가짜 zip 내용.
-const zipBytes = [0x50, 0x4B, 0x03, 0x04, 0x14, 0x00, 0x00];
+/// 가짜 파일 내용 (7바이트).
+const fileBytes = [0x25, 0x50, 0x44, 0x46, 0x2D, 0x31, 0x2E];
 
 void main() {
   late FakeBackend backend;
@@ -32,7 +32,7 @@ void main() {
 
   Future<void> pumpStudy(
     WidgetTester tester, {
-    PickedZip? pick,
+    PickedUpload? pick,
     Size size = const Size(1280, 2200),
   }) async {
     setScreen(tester, size);
@@ -41,7 +41,7 @@ void main() {
         MyStudyPage(
           studyId: 1,
           title: '[예시] 웹해킹 입문',
-          pickZip: () async => pick,
+          pickFile: () async => pick,
         ),
       ),
     );
@@ -73,18 +73,17 @@ void main() {
     );
   });
 
-  testWidgets('zip 파일을 골라 확인하면 multipart로 올린다', (tester) async {
+  testWidgets('zip이 아닌 파일도 골라 확인하면 multipart로 올린다', (tester) async {
     await pumpStudy(
       tester,
-      pick: const PickedZip(name: '홍길동 XSS 과제.zip', bytes: zipBytes),
+      pick: const PickedUpload(name: '홍길동 XSS 과제.pdf', bytes: fileBytes),
     );
 
     await tester.tap(
-      find.descendant(
-          of: cardOf('XSS 필터 우회'), matching: find.text('zip 파일 제출')),
+      find.descendant(of: cardOf('XSS 필터 우회'), matching: find.text('파일 제출')),
     );
     await tester.pumpAndSettle();
-    expect(textIncluding('홍길동 XSS 과제.zip (7B)'), findsOneWidget);
+    expect(textIncluding('홍길동 XSS 과제.pdf (7B)'), findsOneWidget);
     await tester.tap(find.widgetWithText(FilledButton, '제출'));
     await tester.pumpAndSettle();
 
@@ -93,7 +92,7 @@ void main() {
     expect(request.headers['X-CSRFToken'], 'test-token');
     expect(request.headers['content-type'], startsWith('multipart/form-data'));
     final body = utf8.decode(request.bodyBytes, allowMalformed: true);
-    expect(body, contains('name="file"; filename="홍길동 XSS 과제.zip"'));
+    expect(body, contains('name="file"; filename="홍길동 XSS 과제.pdf"'));
     expect(find.text('과제를 제출했습니다.'), findsOneWidget);
     // 제출 후 최신 상태를 다시 불러온다.
     expect(backend.sent('GET', '/api/me/studies/1/'), hasLength(2));
@@ -101,30 +100,43 @@ void main() {
 
   testWidgets('취소하면 아무것도 올리지 않는다', (tester) async {
     await pumpStudy(tester);
-    await tester.tap(find.text('zip 파일 제출'));
+    await tester.tap(find.text('파일 제출'));
     await tester.pumpAndSettle();
     expect(find.text('과제 제출'), findsNothing);
     expect(backend.sent('POST', '/api/assignments/32/submissions/'), isEmpty);
   });
 
-  for (final (name, bytes, message) in [
-    ('report.pdf', zipBytes, 'zip 파일만 제출할 수 있습니다.'),
-    ('fake.zip', [0x31, 0x32, 0x33], '올바른 zip 파일이 아닙니다.'),
-    ('empty.zip', <int>[], '빈 파일은 제출할 수 없습니다.'),
-  ]) {
-    testWidgets('올리기 전에 거른다: $message', (tester) async {
-      await pumpStudy(tester, pick: PickedZip(name: name, bytes: bytes));
-      await tester.tap(find.text('zip 파일 제출'));
-      await tester.pumpAndSettle();
-      expect(find.text(message), findsOneWidget);
-      expect(backend.sent('POST', '/api/assignments/32/submissions/'), isEmpty);
-    });
-  }
+  testWidgets('빈 파일은 올리기 전에 거른다', (tester) async {
+    await pumpStudy(
+      tester,
+      pick: const PickedUpload(name: 'empty.txt', bytes: <int>[]),
+    );
+    await tester.tap(find.text('파일 제출'));
+    await tester.pumpAndSettle();
+    expect(find.text('빈 파일은 올릴 수 없습니다.'), findsOneWidget);
+    expect(backend.sent('POST', '/api/assignments/32/submissions/'), isEmpty);
+  });
+
+  testWidgets('스터디 게시판의 글을 펼치면 본문과 첨부가 보인다', (tester) async {
+    await pumpStudy(tester);
+    expect(find.text('스터디 게시판 1개'), findsOneWidget);
+    expect(find.text('2주차 발표 자료'), findsOneWidget);
+    expect(find.text('자료'), findsOneWidget);
+    expect(find.text('고정'), findsOneWidget);
+    expect(find.text('week2-slides.pdf'), findsNothing);
+
+    await tester.tap(find.text('2주차 발표 자료'));
+    await tester.pumpAndSettle();
+    expect(find.text('week2-slides.pdf'), findsOneWidget);
+    expect(find.text('실습 전에 한 번 읽어오세요.'), findsOneWidget);
+    // 참여자 화면에는 수정·삭제 메뉴가 없다.
+    expect(find.byTooltip('게시글 메뉴'), findsNothing);
+  });
 
   testWidgets('기한이 지난 과제를 다시 내면 지각·교체 안내를 먼저 보여준다', (tester) async {
     await pumpStudy(
       tester,
-      pick: const PickedZip(name: '수정본.zip', bytes: zipBytes),
+      pick: const PickedUpload(name: '수정본.zip', bytes: fileBytes),
     );
     await tester.tap(
       find.descendant(
@@ -156,14 +168,14 @@ void main() {
     );
     await pumpStudy(
       tester,
-      pick: const PickedZip(name: 'big.zip', bytes: zipBytes),
+      pick: const PickedUpload(name: 'big.zip', bytes: fileBytes),
     );
-    await tester.tap(find.text('zip 파일 제출'));
+    await tester.tap(find.text('파일 제출'));
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(FilledButton, '제출'));
     await tester.pumpAndSettle();
     expect(find.text('파일 크기는 50MB 이하여야 합니다.'), findsOneWidget);
-    expect(find.text('zip 파일 제출'), findsOneWidget);
+    expect(find.text('파일 제출'), findsOneWidget);
   });
 
   testWidgets('수강 중이 아니면 제출 버튼 없이 안내만 보여준다', (tester) async {
@@ -173,7 +185,7 @@ void main() {
       (_) => myStudyDetailJson(canSubmit: false),
     );
     await pumpStudy(tester);
-    expect(find.text('zip 파일 제출'), findsNothing);
+    expect(find.text('파일 제출'), findsNothing);
     expect(find.text('다시 제출'), findsNothing);
     expect(textIncluding('수료 상태에서는 과제를 제출할 수 없습니다.'), findsOneWidget);
   });
