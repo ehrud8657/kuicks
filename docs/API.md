@@ -20,9 +20,10 @@
 | POST | `/auth/change-password/` | 회원 | 비밀번호 변경 |
 | GET | `/me/` | 회원 | 로그인 회원 정보 |
 | GET | `/me/studies/` | 회원 | 본인의 스터디 참여 이력 (마이페이지) |
-| GET | `/me/studies/{studyId}/` | 참여자 | 본인 기준 스터디 상세: 회차별 내 출석, 과제와 내 제출 상태 |
-| POST | `/assignments/{id}/submissions/` | 참여자(수강 중) | zip 과제 제출 (multipart `file`). 이미 냈으면 교체 |
+| GET | `/me/studies/{studyId}/` | 참여자 | 본인 기준 스터디 상세: 스터디 게시판, 회차별 내 출석, 과제와 내 제출 상태 |
+| POST | `/assignments/{id}/submissions/` | 참여자(수강 중) | 과제 제출 (multipart `file`, 형식 제한 없음). 이미 냈으면 교체 |
 | GET | `/submissions/{id}/download/` | 제출자 본인·담당 | 제출 파일 내려받기 |
+| GET | `/study-posts/attachments/{id}/` | 참여자·담당 | 스터디 게시판 첨부 내려받기 (사진은 바로 보기, `?download=1`이면 내려받기) |
 
 ## 스터디 관리 (스터디장·운영진)
 
@@ -40,6 +41,10 @@
 | GET/PATCH/DELETE | `/manage/assignments/{id}/` | 담당 | 과제 조회·수정·삭제 (삭제 시 제출 파일도 삭제) |
 | GET | `/manage/assignments/{id}/submissions/` | 담당 | 과제 제출 현황 (참여자 전원, 미제출은 `submission: null`) |
 | PATCH | `/manage/submissions/{id}/` | 담당 | 확인 여부·피드백 `{"review_status": "checked", "feedback": "..."}` |
+| POST | `/manage/studies/{id}/posts/` | 담당 | 스터디 게시글 쓰기 `{"kind": "notice"\|"material", "title", "content", "is_pinned"}` |
+| GET/PATCH/DELETE | `/manage/study-posts/{id}/` | 담당 | 게시글 조회·수정·삭제 (삭제 시 첨부 파일도 삭제) |
+| POST | `/manage/study-posts/{id}/attachments/` | 담당 | 게시글에 파일 하나 첨부 (multipart `file`, 형식 제한 없음) |
+| DELETE | `/manage/study-post-attachments/{id}/` | 담당 | 첨부 하나 삭제 (파일도 삭제) |
 
 ### 스터디 관리 목록 `GET /manage/studies/`
 
@@ -71,7 +76,8 @@
   "assignments": [
     {"id": 5, "title": "SQLi 실습", "description": "...", "due_at": "2026-09-20T23:59:00+09:00",
      "submitted_count": 10, "late_count": 1, "unchecked_count": 4}
-  ]
+  ],
+  "posts": [ /* 아래 '스터디 게시판'의 게시글 모양 */ ]
 }
 ```
 
@@ -138,7 +144,8 @@ PUT 요청 본문 (응답은 GET과 같음):
       "submission": {"id": 11, "original_name": "홍길동_SQLi.zip", "size": 20480, "submitted_at": "...",
                      "is_late": false, "review_status": "checked", "feedback": "좋습니다", "reviewed_at": "..."}
     }
-  ]
+  ],
+  "posts": [ /* 아래 '스터디 게시판'의 게시글 모양 */ ]
 }
 ```
 
@@ -149,16 +156,37 @@ PUT 요청 본문 (응답은 GET과 같음):
 ### 제출 `POST /assignments/{id}/submissions/`
 
 - `multipart/form-data`, 필드명 `file`
-- **zip만 허용**: 확장자 `.zip` + 실제 zip 구조 검사. 최대 `SUBMISSION_MAX_BYTES`(기본 50MB)
+- **형식 제한 없음**: 빈 파일만 거절합니다. 최대 `SUBMISSION_MAX_BYTES`(기본 50MB)
+- 내려받을 때는 형식과 관계없이 항상 `application/octet-stream` 첨부로 내보내 브라우저가 열지 않게 합니다.
 - 처음 제출하면 `201`, 다시 제출하면 기존 파일을 교체하고 `200`. 다시 제출하면 확인 상태가 `pending`으로 돌아가며 피드백은 남습니다.
 - 기한이 지나도 제출할 수 있고 `is_late: true`로 표시됩니다.
 - 수강 중(`active`)이 아닌 참여자·비참여자는 `403`.
 
 ### 파일 보관
 
-- 파일은 `MEDIA_ROOT/submissions/{스터디}/{과제}/{학번}_{임의값}.zip`에 저장되며, 원본 파일명은 DB에만 둡니다.
+- 파일은 `MEDIA_ROOT/submissions/{스터디}/{과제}/{회원id}_{임의값}{원래 확장자}`에 저장되며, 원본 파일명은 DB에만 둡니다.
 - 제출물은 `/media/`로 공개하지 않고 `GET /submissions/{id}/download/`(권한 검사)로만 내려받습니다.
 - 과제·스터디·참여 기록을 지우면 파일도 함께 지워집니다.
+
+## 스터디 게시판
+
+스터디마다 있는 공지·자료 게시판입니다. **해당 스터디 참여자와 스터디장·운영진만** 봅니다. 글은 스터디장·운영진이 관리 화면(또는 Admin)에서 씁니다. 목록은 따로 부르지 않고 `GET /me/studies/{id}/`(참여자)와 `GET /manage/studies/{id}/`(담당)의 `posts`로 함께 내려갑니다.
+
+```json
+{
+  "id": 51, "kind": "material", "title": "2주차 발표 자료", "content": "...", "is_pinned": true,
+  "author_name": "김스터디장", "created_at": "...", "updated_at": "...",
+  "attachments": [
+    {"id": 61, "name": "week2-slides.pdf", "size": 2048, "content_type": "application/pdf",
+     "is_image": false, "url": "https://.../api/study-posts/attachments/61/"}
+  ]
+}
+```
+
+- `kind`: `notice`(공지) 또는 `material`(자료). 고정 글이 먼저, 그다음 최신 글 순입니다.
+- 첨부는 글을 저장한 뒤 **한 파일씩** 올립니다. 요청 하나가 nginx 제한(`client_max_body_size`)을 넘지 않게 하기 위함입니다. 파일 하나 최대 `STUDY_POST_ATTACHMENT_MAX_BYTES`(기본 50MB).
+- 형식은 가리지 않습니다. jpg·png·gif·webp만 `is_image: true`로 화면에 바로 보이고, 나머지(SVG 포함)는 항상 내려받기로 나갑니다. SVG는 스크립트를 품을 수 있어 같은 도메인에서 열지 않습니다.
+- 파일은 `MEDIA_ROOT/study_posts/{스터디}/{글}/{임의값}{원래 확장자}`에 저장되며 `/media/`로 공개하지 않습니다.
 
 ## 스터디 응답 (공개)
 

@@ -342,7 +342,9 @@ class _AttachmentRow extends StatelessWidget {
             child: Row(
               children: [
                 Icon(
-                  failed ? Icons.broken_image_outlined : Icons.description_outlined,
+                  failed
+                      ? Icons.broken_image_outlined
+                      : Icons.description_outlined,
                   size: 20,
                   color: AppColors.textMuted,
                 ),

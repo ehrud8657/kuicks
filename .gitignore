@@ -13,3 +13,4 @@ build/
 .vscode/
 .dart-appdata/
 backend/members*.csv
+backups/

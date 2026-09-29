@@ -180,6 +180,7 @@ GoRouter createRouter({
                   ),
                 ],
               ),
+              manageTabRoute(ManageTab.board),
               manageTabRoute(
                 ManageTab.assignments,
                 routes: [

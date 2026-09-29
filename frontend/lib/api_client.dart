@@ -419,23 +419,99 @@ class ApiClient {
         ),
       );
 
-  /// zip 파일로 과제를 제출한다. 이미 냈으면 서버가 파일을 교체한다.
-  Future<Submission> submitAssignment(
-    int assignmentId, {
+  /// 파일 하나를 `file` 필드로 올린다.
+  Future<dynamic> _upload(
+    String path, {
     required List<int> bytes,
     required String filename,
+    required String fallback,
   }) async {
     final token = await _fetchCsrfToken();
-    final request = http.MultipartRequest(
-      'POST',
-      _uri('/assignments/$assignmentId/submissions/'),
-    )
+    final request = http.MultipartRequest('POST', _uri(path))
       ..headers['X-CSRFToken'] = token
       ..files.add(
         http.MultipartFile.fromBytes('file', bytes, filename: filename),
       );
-    return Submission.fromJson(
-      _map(await _finish(await _client.send(request), '과제를 제출하지 못했습니다.')),
-    );
+    return _finish(await _client.send(request), fallback);
   }
+
+  /// 파일 하나로 과제를 제출한다. 형식은 가리지 않고, 이미 냈으면 서버가 파일을 교체한다.
+  Future<Submission> submitAssignment(
+    int assignmentId, {
+    required List<int> bytes,
+    required String filename,
+  }) async =>
+      Submission.fromJson(
+        _map(
+          await _upload(
+            '/assignments/$assignmentId/submissions/',
+            bytes: bytes,
+            filename: filename,
+            fallback: '과제를 제출하지 못했습니다.',
+          ),
+        ),
+      );
+
+  // ── 스터디 게시판 (스터디장·운영진) ───────────────────────────
+
+  /// 게시글을 쓰거나([postId]가 없을 때) 고친다. 첨부는 따로 올린다.
+  Future<StudyPost> saveStudyPost({
+    required int studyId,
+    int? postId,
+    required StudyPostKind kind,
+    required String title,
+    required String content,
+    required bool isPinned,
+  }) async {
+    final body = {
+      'kind': kind.name,
+      'title': title,
+      'content': content,
+      'is_pinned': isPinned,
+    };
+    const fallback = '게시글을 저장하지 못했습니다.';
+    final result = postId == null
+        ? await _send(
+            'POST',
+            '/manage/studies/$studyId/posts/',
+            body: body,
+            fallback: fallback,
+          )
+        : await _send(
+            'PATCH',
+            '/manage/study-posts/$postId/',
+            body: body,
+            fallback: fallback,
+          );
+    return StudyPost.fromJson(_map(result));
+  }
+
+  Future<void> deleteStudyPost(int postId) => _send(
+        'DELETE',
+        '/manage/study-posts/$postId/',
+        fallback: '게시글을 삭제하지 못했습니다.',
+      );
+
+  /// 게시글에 파일 하나를 붙인다. 요청 하나가 너무 커지지 않게 한 파일씩 올린다.
+  Future<PostAttachment> uploadStudyPostFile(
+    int postId, {
+    required List<int> bytes,
+    required String filename,
+  }) async =>
+      PostAttachment.fromJson(
+        _map(
+          await _upload(
+            '/manage/study-posts/$postId/attachments/',
+            bytes: bytes,
+            filename: filename,
+            fallback: '$filename 파일을 올리지 못했습니다.',
+          ),
+        ),
+      );
+
+  Future<void> deleteStudyPostFile(int attachmentId) => _send(
+        'DELETE',
+        '/manage/study-post-attachments/$attachmentId/',
+        fallback: '첨부를 삭제하지 못했습니다.',
+      );
 }

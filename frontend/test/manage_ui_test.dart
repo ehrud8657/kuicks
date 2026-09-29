@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kuics_frontend/api_client.dart';
 import 'package:kuics_frontend/main.dart';
+import 'package:kuics_frontend/models.dart';
 import 'package:kuics_frontend/pages/manage/attendance_page.dart';
+import 'package:kuics_frontend/pages/manage/board_tab.dart';
 import 'package:kuics_frontend/pages/manage/forms.dart';
 import 'package:kuics_frontend/pages/manage/study_manage_page.dart';
 import 'package:kuics_frontend/pages/manage/submissions_page.dart';
+import 'package:kuics_frontend/widgets/upload_picker.dart';
 
 import 'support/fake_backend.dart';
 import 'support/fixtures.dart';
@@ -272,6 +275,87 @@ void main() {
         hasLength(2));
   });
 
+  testWidgets('게시판 탭에서 글을 쓰고 파일을 한 개씩 올린다', (tester) async {
+    setScreen(tester, const Size(1280, 1100));
+    backend
+      ..on(
+        'POST',
+        '/api/manage/studies/1/posts/',
+        (request) => <String, dynamic>{
+          'id': 70,
+          ...decodeBody(request),
+          'author_name': '김스터디장',
+          'created_at': '2099-03-10T10:00:00+09:00',
+          'updated_at': '2099-03-10T10:00:00+09:00',
+          'attachments': <Object>[],
+        },
+        status: 201,
+      )
+      ..on(
+        'POST',
+        '/api/manage/study-posts/70/attachments/',
+        (_) => <String, dynamic>{
+          'id': 80,
+          'name': 'lab.tar.gz',
+          'size': 3,
+          'content_type': 'application/gzip',
+          'is_image': false,
+          'url': '/api/study-posts/attachments/80/',
+        },
+        status: 201,
+      );
+    var changed = 0;
+    await tester.pumpWidget(
+      testApp(
+        Scaffold(
+          body: BoardTab(
+            detail: ManagedStudyDetail.fromJson(studyDetailJson()),
+            onChanged: () => changed++,
+            pickFiles: () async => const [
+              PickedUpload(name: 'lab.tar.gz', bytes: [1, 2, 3]),
+              PickedUpload(name: 'notes.md', bytes: [4, 5]),
+            ],
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('게시글 0개'), findsOneWidget);
+
+    await tester.tap(find.text('글쓰기'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('자료'));
+    await tester.enterText(
+      find.widgetWithText(TextFormField, '제목'),
+      '3주차 실습 파일',
+    );
+    await tester.tap(find.text('파일 첨부'));
+    await tester.pumpAndSettle();
+    expect(find.text('lab.tar.gz'), findsOneWidget);
+    expect(find.text('notes.md'), findsOneWidget);
+    // 올리기 전에 하나는 뺀다.
+    await tester.tap(find.byTooltip('첨부 빼기').last);
+    await tester.pumpAndSettle();
+    expect(find.text('notes.md'), findsNothing);
+
+    await tester.tap(find.text('저장'));
+    await tester.pumpAndSettle();
+
+    final sent = backend.lastJson('POST', '/api/manage/studies/1/posts/');
+    expect(sent['kind'], 'material');
+    expect(sent['title'], '3주차 실습 파일');
+    final uploads =
+        backend.sent('POST', '/api/manage/study-posts/70/attachments/');
+    expect(uploads, hasLength(1));
+    expect(
+      String.fromCharCodes(uploads.single.bodyBytes),
+      contains('filename="lab.tar.gz"'),
+    );
+    expect(find.byType(StudyPostFormDialog), findsNothing);
+    expect(find.text('게시글을 올렸습니다.'), findsOneWidget);
+    expect(changed, 1);
+  });
+
   testWidgets('휴대폰 폭(360)에서도 관리 화면들이 넘치지 않는다', (tester) async {
     setScreen(tester, const Size(360, 740));
 
@@ -279,7 +363,7 @@ void main() {
       testApp(const StudyManagePage(studyId: 1, title: '[예시] 웹해킹 입문')),
     );
     await tester.pumpAndSettle();
-    for (final tab in ['출석', '과제', '참여자']) {
+    for (final tab in ['출석', '과제', '게시판', '참여자']) {
       await tester.tap(find.text(tab));
       await tester.pumpAndSettle();
     }

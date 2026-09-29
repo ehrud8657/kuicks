@@ -79,6 +79,7 @@ Map<String, dynamic> pastAssignmentJson() => <String, dynamic>{
     };
 
 Map<String, dynamic> studyDetailJson() => <String, dynamic>{
+      'posts': <Object>[],
       'id': 1,
       'title': '[예시] 웹해킹 입문',
       'semester': '2099-1',
@@ -306,6 +307,28 @@ Map<String, dynamic> myStudyDetailJson({bool canSubmit = true}) =>
           'due_at': '2099-03-20T23:59:00+09:00',
           'is_closed': false,
           'submission': null,
+        },
+      ],
+      'posts': [
+        <String, dynamic>{
+          'id': 51,
+          'kind': 'material',
+          'title': '2주차 발표 자료',
+          'content': '실습 전에 한 번 읽어오세요.',
+          'is_pinned': true,
+          'author_name': '김스터디장',
+          'created_at': '2099-03-08T21:00:00+09:00',
+          'updated_at': '2099-03-08T21:00:00+09:00',
+          'attachments': [
+            <String, dynamic>{
+              'id': 61,
+              'name': 'week2-slides.pdf',
+              'size': 2048,
+              'content_type': 'application/pdf',
+              'is_image': false,
+              'url': 'http://localhost:8000/api/study-posts/attachments/61/',
+            },
+          ],
         },
       ],
     };

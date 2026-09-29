@@ -12,6 +12,13 @@ def can_manage_study(user, study):
     return user.is_authenticated and (user.role == Member.Role.ADMIN or study.leader_id == user.pk)
 
 
+def can_view_study_board(user, study):
+    """스터디 게시판은 해당 스터디 참여자와 스터디장·운영진만 본다."""
+    if can_manage_study(user, study):
+        return True
+    return user.is_authenticated and study.participations.filter(member_id=user.pk).exists()
+
+
 def managed_studies(user):
     """관리할 수 있는 스터디 목록."""
     from .models import Study
@@ -21,7 +28,7 @@ def managed_studies(user):
 
 
 def study_of(obj):
-    """관리 대상 객체(스터디·참여·회차·과제·제출)가 속한 스터디."""
+    """관리 대상 객체(스터디·참여·회차·과제·제출·게시글·첨부)가 속한 스터디."""
     from .models import Study
 
     if isinstance(obj, Study):
@@ -30,6 +37,8 @@ def study_of(obj):
         return obj.study
     if hasattr(obj, "assignment"):
         return obj.assignment.study
+    if hasattr(obj, "post"):
+        return obj.post.study
     return obj.session.study
 
 

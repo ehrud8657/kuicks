@@ -343,7 +343,7 @@ class _SubmissionCard extends StatelessWidget {
                     child: Row(
                       children: [
                         const Icon(
-                          Icons.folder_zip_outlined,
+                          Icons.insert_drive_file_outlined,
                           color: AppColors.crimson,
                         ),
                         const SizedBox(width: 10),

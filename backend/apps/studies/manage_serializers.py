@@ -2,7 +2,7 @@ from django.db.models import Count, F, Q
 from rest_framework import serializers
 
 from .models import Assignment, AssignmentSubmission, Attendance, Participation, Study, StudySession
-from .serializers import leader_name
+from .serializers import leader_name, study_posts_data
 
 PENDING = AssignmentSubmission.ReviewStatus.PENDING
 # 미제출자·참여자 수를 셀 때 대상이 되는 참여 상태 (중도 포기 제외)
@@ -136,9 +136,13 @@ class ManageStudyDetailSerializer(serializers.ModelSerializer):
     participants = serializers.SerializerMethodField()
     sessions = serializers.SerializerMethodField()
     assignments = serializers.SerializerMethodField()
+    posts = serializers.SerializerMethodField()
 
     def get_leader_name(self, study):
         return leader_name(study)
+
+    def get_posts(self, study):
+        return study_posts_data(study, self.context.get("request"))
 
     def get_participants(self, study):
         rows = with_participant_counts(study.participations.select_related("member")).order_by(
@@ -157,7 +161,10 @@ class ManageStudyDetailSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Study
-        fields = ("id", "title", "semester", "leader_name", "description", "participants", "sessions", "assignments")
+        fields = (
+            "id", "title", "semester", "leader_name", "description",
+            "participants", "sessions", "assignments", "posts",
+        )
 
 
 class AttendanceRecordInputSerializer(serializers.Serializer):

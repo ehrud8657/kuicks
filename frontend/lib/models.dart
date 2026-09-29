@@ -250,7 +250,64 @@ class Post {
         publishedAt: DateTime.tryParse(json['published_at'] as String? ?? ''),
         // 서버가 아직 첨부를 내려주지 않는 경우에도 깨지지 않게 기본값을 둔다.
         attachments: (json['attachments'] as List<dynamic>? ?? const [])
-            .map((item) => PostAttachment.fromJson(item as Map<String, dynamic>))
+            .map(
+                (item) => PostAttachment.fromJson(item as Map<String, dynamic>))
+            .toList(),
+      );
+}
+
+/// 스터디 게시판 글의 분류.
+enum StudyPostKind {
+  notice('공지'),
+  material('자료');
+
+  const StudyPostKind(this.label);
+  final String label;
+
+  static StudyPostKind parse(Object? name) =>
+      name == material.name ? material : notice;
+}
+
+/// 스터디 게시판 글. 해당 스터디 참여자와 스터디장·운영진만 본다.
+/// 첨부는 공지사항 첨부와 같은 모양으로 내려오므로 [PostAttachment]를 그대로 쓴다.
+class StudyPost {
+  const StudyPost({
+    required this.id,
+    required this.kind,
+    required this.title,
+    required this.content,
+    required this.isPinned,
+    required this.authorName,
+    required this.createdAt,
+    this.attachments = const [],
+  });
+
+  final int id;
+  final StudyPostKind kind;
+  final String title;
+  final String content;
+  final bool isPinned;
+  final String authorName;
+  final DateTime createdAt;
+  final List<PostAttachment> attachments;
+
+  List<PostAttachment> get images =>
+      attachments.where((item) => item.isImage).toList();
+
+  List<PostAttachment> get files =>
+      attachments.where((item) => !item.isImage).toList();
+
+  factory StudyPost.fromJson(Map<String, dynamic> json) => StudyPost(
+        id: json['id'] as int,
+        kind: StudyPostKind.parse(json['kind']),
+        title: json['title'] as String? ?? '',
+        content: json['content'] as String? ?? '',
+        isPinned: json['is_pinned'] as bool? ?? false,
+        authorName: json['author_name'] as String? ?? '',
+        createdAt: DateTime.parse(json['created_at'] as String),
+        attachments: (json['attachments'] as List<dynamic>? ?? const [])
+            .map(
+                (item) => PostAttachment.fromJson(item as Map<String, dynamic>))
             .toList(),
       );
 }
@@ -476,6 +533,7 @@ class ManagedStudyDetail {
     required this.participants,
     required this.sessions,
     required this.assignments,
+    this.posts = const [],
   });
 
   final int id;
@@ -486,6 +544,7 @@ class ManagedStudyDetail {
   final List<ManagedParticipant> participants;
   final List<StudySessionInfo> sessions;
   final List<AssignmentInfo> assignments;
+  final List<StudyPost> posts;
 
   /// 중도 포기자를 뺀 참여자 수.
   int get rosterCount => participants
@@ -504,6 +563,7 @@ class ManagedStudyDetail {
             _parseList(json['participants'], ManagedParticipant.fromJson),
         sessions: _parseList(json['sessions'], StudySessionInfo.fromJson),
         assignments: _parseList(json['assignments'], AssignmentInfo.fromJson),
+        posts: _parseList(json['posts'], StudyPost.fromJson),
       );
 }
 
@@ -761,6 +821,7 @@ class MyStudyDetail {
     required this.canSubmit,
     required this.sessions,
     required this.assignments,
+    this.posts = const [],
   });
 
   final int studyId;
@@ -774,6 +835,7 @@ class MyStudyDetail {
   final bool canSubmit;
   final List<MySession> sessions;
   final List<MyAssignment> assignments;
+  final List<StudyPost> posts;
 
   factory MyStudyDetail.fromJson(Map<String, dynamic> json) {
     final study = json['study'] as Map<String, dynamic>;
@@ -788,6 +850,7 @@ class MyStudyDetail {
       canSubmit: json['can_submit'] as bool? ?? false,
       sessions: _parseList(json['sessions'], MySession.fromJson),
       assignments: _parseList(json['assignments'], MyAssignment.fromJson),
+      posts: _parseList(json['posts'], StudyPost.fromJson),
     );
   }
 }

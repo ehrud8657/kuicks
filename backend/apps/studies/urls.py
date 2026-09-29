@@ -9,6 +9,7 @@ from .views import (
     SemesterListView,
     SemesterStudyListView,
     StudyDetailView,
+    StudyPostAttachmentDownloadView,
     SubmissionDownloadView,
 )
 
@@ -21,6 +22,11 @@ urlpatterns = [
     path("studies/<int:study_id>/participations/<int:pk>/", ParticipationUpdateView.as_view(), name="participation-update"),
     path("assignments/<int:pk>/submissions/", AssignmentSubmitView.as_view(), name="assignment-submit"),
     path("submissions/<int:pk>/download/", SubmissionDownloadView.as_view(), name="submission-download"),
+    path(
+        "study-posts/attachments/<int:pk>/",
+        StudyPostAttachmentDownloadView.as_view(),
+        name="study-post-attachment",
+    ),
     # 스터디장·운영진용
     path("manage/studies/", manage_views.ManageStudyListView.as_view(), name="manage-study-list"),
     path("manage/studies/<int:pk>/", manage_views.ManageStudyDetailView.as_view(), name="manage-study-detail"),
@@ -59,5 +65,25 @@ urlpatterns = [
         "manage/submissions/<int:pk>/",
         manage_views.ManageSubmissionReviewView.as_view(),
         name="manage-submission-review",
+    ),
+    path(
+        "manage/studies/<int:study_id>/posts/",
+        manage_views.ManageStudyPostCreateView.as_view(),
+        name="manage-study-post-create",
+    ),
+    path(
+        "manage/study-posts/<int:pk>/",
+        manage_views.ManageStudyPostDetailView.as_view(),
+        name="manage-study-post-detail",
+    ),
+    path(
+        "manage/study-posts/<int:pk>/attachments/",
+        manage_views.ManageStudyPostAttachmentCreateView.as_view(),
+        name="manage-study-post-attachment-create",
+    ),
+    path(
+        "manage/study-post-attachments/<int:pk>/",
+        manage_views.ManageStudyPostAttachmentDetailView.as_view(),
+        name="manage-study-post-attachment-detail",
     ),
 ]
