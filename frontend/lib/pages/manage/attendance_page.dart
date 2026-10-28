@@ -103,15 +103,35 @@ class _AttendancePageState extends State<AttendancePage> {
     }
   }
 
-  /// 아직 표시하지 않은 사람만 출석으로 채운다. 지각·결석 표시는 그대로 둔다.
-  void _fillPresent() => setState(() {
-        for (final record in sheet!.records) {
-          if (statuses[record.participationId] == null &&
-              record.participationStatus != ParticipationStatus.withdrawn) {
-            statuses[record.participationId] = AttendanceStatus.present;
-          }
-        }
-      });
+  /// 중도 포기자를 뺀 모두를 [status]로 표시한다. 저장을 눌러야 반영된다.
+  ///
+  /// 이미 다른 상태(지각·공결 등)로 표시한 사람이 있으면 덮어쓰기 전에 확인을 받는다.
+  Future<void> _fillAll(AttendanceStatus status) async {
+    final targets = [
+      for (final record in sheet!.records)
+        if (record.participationStatus != ParticipationStatus.withdrawn)
+          record.participationId,
+    ];
+    final overwritten = targets.where((id) {
+      final current = statuses[id];
+      return current != null && current != status;
+    }).length;
+    if (overwritten > 0) {
+      final confirmed = await confirmAction(
+        context,
+        title: '모두 ${status.label}',
+        message: '이미 다른 상태로 표시한 $overwritten명도 ${status.label}(으)로 바뀝니다. '
+            '저장하기 전까지는 서버에 반영되지 않습니다.',
+        confirmLabel: '모두 ${status.label}',
+      );
+      if (!confirmed || !mounted) return;
+    }
+    setState(() {
+      for (final id in targets) {
+        statuses[id] = status;
+      }
+    });
+  }
 
   Future<void> _save() async {
     final current = sheet;
@@ -247,12 +267,17 @@ class _AttendancePageState extends State<AttendancePage> {
                 style: const TextStyle(fontWeight: FontWeight.w700),
               ),
             ),
-            TextButton.icon(
-              onPressed:
-                  saving || current.records.isEmpty ? null : _fillPresent,
-              icon: const Icon(Icons.done_all, size: 18),
-              label: const Text('미기록 모두 출석'),
-            ),
+            for (final (status, icon) in [
+              (AttendanceStatus.present, Icons.done_all),
+              (AttendanceStatus.absent, Icons.remove_done),
+            ])
+              TextButton.icon(
+                onPressed: saving || current.records.isEmpty
+                    ? null
+                    : () => _fillAll(status),
+                icon: Icon(icon, size: 18),
+                label: Text('모두 ${status.label}'),
+              ),
           ],
         ),
         const SizedBox(height: 8),
