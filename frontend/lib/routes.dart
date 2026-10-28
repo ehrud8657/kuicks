@@ -42,6 +42,26 @@ class AppRoutes {
   static String boardOf(PostCategory? category) =>
       category == null ? board : '$board?category=${category.name}';
 
+  /// 활동 목록의 종류·학기·태그 선택을 주소에 남긴다. 예: /activity?kind=project&semester=2026-2
+  static String activityOf({
+    ActivityKind? kind,
+    String? semester,
+    String? tag,
+  }) {
+    final query = {
+      if (kind != null) 'kind': kind.name,
+      if (semester != null) 'semester': semester,
+      if (tag != null) 'tag': tag,
+    };
+    return query.isEmpty
+        ? activity
+        : Uri(path: activity, queryParameters: query).toString();
+  }
+
+  /// 활동 상세. 주소가 바뀌지 않아 외부에 링크로 걸어둘 수 있다. 예: /activity/projects/12
+  static String activityDetail(ActivityKind kind, int activityId) =>
+      '$activity/${kind.path}/$activityId';
+
   /// 참여자 본인의 스터디 상세.
   static String myStudy(int studyId) => '$me/studies/$studyId';
 

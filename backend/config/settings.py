@@ -81,6 +81,8 @@ SUBMISSION_MAX_BYTES = int(os.getenv("SUBMISSION_MAX_BYTES", str(50 * 1024 * 102
 BOARD_ATTACHMENT_MAX_BYTES = int(os.getenv("BOARD_ATTACHMENT_MAX_BYTES", str(20 * 1024 * 1024)))
 # 스터디 게시판 자료 한 개의 최대 크기(바이트). 한 번에 한 파일씩 올리므로 nginx 제한보다 작으면 된다.
 STUDY_POST_ATTACHMENT_MAX_BYTES = int(os.getenv("STUDY_POST_ATTACHMENT_MAX_BYTES", str(50 * 1024 * 1024)))
+# 활동 자료 파일 한 개의 최대 크기(바이트). 코드·영상처럼 큰 결과물은 GitHub·영상 링크로 받는다.
+ACTIVITY_FILE_MAX_BYTES = int(os.getenv("ACTIVITY_FILE_MAX_BYTES", str(50 * 1024 * 1024)))
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 AUTH_USER_MODEL = "accounts.Member"
 

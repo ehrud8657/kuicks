@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'app_shell.dart';
 import 'models.dart';
 import 'pages/about_page.dart';
+import 'pages/activity_detail_page.dart';
+import 'pages/activity_page.dart';
 import 'pages/board_page.dart';
 import 'pages/contact_page.dart';
 import 'pages/home_page.dart';
@@ -13,7 +15,6 @@ import 'pages/manage/study_manage_page.dart';
 import 'pages/manage/submissions_page.dart';
 import 'pages/my_page.dart';
 import 'pages/my_study_page.dart';
-import 'pages/placeholder_page.dart';
 import 'pages/study_page.dart';
 import 'routes.dart';
 import 'widgets/route_guards.dart';
@@ -95,8 +96,38 @@ GoRouter createRouter({
           ),
           GoRoute(
             path: AppRoutes.activity,
-            pageBuilder: (context, state) =>
-                shellPage(state, const PlaceholderPage.activity()),
+            pageBuilder: (context, state) {
+              final query = state.uri.queryParameters;
+              return shellPage(
+                state,
+                ActivityPage(
+                  kind: ActivityKind.tryParse(query['kind']),
+                  semester: query['semester'],
+                  tag: query['tag'],
+                ),
+              );
+            },
+            routes: [
+              // 상단 메뉴를 그대로 두는 공개 화면이라 셸 안에 쌓는다.
+              // 예: /activity/projects/12 — 외부에 링크로 걸어둘 수 있는 고정 주소.
+              GoRoute(
+                path: ':kind/:activityId',
+                pageBuilder: (context, state) {
+                  final kind =
+                      ActivityKind.fromPath(state.pathParameters['kind']);
+                  final activityId = idOf(state, 'activityId');
+                  return shellPage(
+                    state,
+                    kind == null || activityId == null
+                        ? NotFoundPage(location: state.uri.toString())
+                        : ActivityDetailPage(
+                            kind: kind,
+                            activityId: activityId,
+                          ),
+                  );
+                },
+              ),
+            ],
           ),
           GoRoute(
             path: AppRoutes.board,

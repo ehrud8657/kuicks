@@ -14,10 +14,16 @@ import '../widgets/tap_sequence.dart';
 
 /// KUICS NOW 카드에 채울 실제 데이터.
 class _HomeNow {
-  const _HomeNow({this.notice, this.semester, this.studies = const []});
+  const _HomeNow({
+    this.notice,
+    this.semester,
+    this.studies = const [],
+    this.activity,
+  });
   final Post? notice;
   final Semester? semester;
   final List<Study> studies;
+  final Activity? activity;
 }
 
 class HomePage extends StatefulWidget {
@@ -53,20 +59,30 @@ class _HomePageState extends State<HomePage> {
 
   Future<_HomeNow> _load() async {
     final client = ApiClient.instance;
-    // 두 요청을 병렬로 보내 첫 화면 지연을 줄인다.
+    // 요청을 병렬로 보내 첫 화면 지연을 줄인다.
     final results = await Future.wait<Object>([
       client.fetchPosts(category: PostCategory.notice),
       client.fetchSemesters(),
+      client.fetchActivities(),
     ]);
     final notices = (results[0] as PostPage).posts;
     final semesters = results[1] as List<Semester>;
+    final activities = (results[2] as ActivityListPage).activities;
     // 학기는 최신순으로 내려오므로 첫 항목이 이번 학기다.
     final semester = semesters.isEmpty ? null : semesters.first;
     return _HomeNow(
       notice: notices.isEmpty ? null : notices.first,
       semester: semester,
       studies: semester?.studies ?? const [],
+      // 최신 학기의 가장 최근 활동이 맨 앞에 온다.
+      activity: activities.isEmpty ? null : activities.first,
     );
+  }
+
+  String _activitySummary(_HomeNow data) {
+    final activity = data.activity;
+    if (activity == null) return '등록된 활동이 없습니다.';
+    return '${activity.kind.label} · ${activity.title}';
   }
 
   String _studySummary(_HomeNow data) {
@@ -142,12 +158,12 @@ class _HomePageState extends State<HomePage> {
                           body: body(_studySummary),
                           onTap: () => context.go(AppRoutes.study),
                         ),
-                        // activities API가 아직 없어 채울 데이터가 없다.
                         _InfoCard(
                           width: width,
                           icon: Icons.emoji_events_outlined,
                           title: '최근 활동',
-                          body: '준비 중입니다.',
+                          body: body(_activitySummary),
+                          onTap: () => context.go(AppRoutes.activity),
                         ),
                       ],
                     );

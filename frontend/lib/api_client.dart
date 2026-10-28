@@ -514,4 +514,110 @@ class ApiClient {
         '/manage/study-post-attachments/$attachmentId/',
         fallback: '첨부를 삭제하지 못했습니다.',
       );
+
+  // ── 활동 아카이브 ─────────────────────────────────────────
+
+  /// 활동 목록. 서버가 20개 단위로 페이지네이션하므로 [page]로 이어서 받는다.
+  Future<ActivityListPage> fetchActivities({
+    ActivityKind? kind,
+    String? semester,
+    String? tag,
+    int page = 1,
+  }) async {
+    final body = await _get(
+      '/activities/',
+      query: {
+        if (kind != null) 'kind': kind.name,
+        if (semester != null) 'semester': semester,
+        if (tag != null) 'tag': tag,
+        if (page > 1) 'page': '$page',
+      },
+      fallback: '활동 목록을 불러오지 못했습니다.',
+    );
+    return ActivityListPage(
+      activities: _items(body)
+          .map((item) => Activity.fromJson(item as Map<String, dynamic>))
+          .toList(),
+      hasMore: body is Map<String, dynamic> && body['next'] != null,
+    );
+  }
+
+  Future<ActivityFilters> fetchActivityFilters() async =>
+      ActivityFilters.fromJson(
+        _map(
+          await _get(
+            '/activities/filters/',
+            fallback: '활동 목록을 불러오지 못했습니다.',
+          ),
+        ),
+      );
+
+  Future<ActivityDetail> fetchActivity(int activityId) async =>
+      ActivityDetail.fromJson(
+        _map(
+          await _get(
+            '/activities/$activityId/',
+            fallback: '활동 정보를 불러오지 못했습니다.',
+          ),
+        ),
+      );
+
+  /// 자료를 올리거나([materialId]가 없을 때) 고친다. 파일은 따로 올린다.
+  Future<ActivityMaterial> saveMaterial({
+    required int activityId,
+    int? materialId,
+    required MaterialStage stage,
+    required String title,
+    required String description,
+  }) async {
+    final body = {
+      'stage': stage.apiName,
+      'title': title,
+      'description': description,
+    };
+    const fallback = '자료를 저장하지 못했습니다.';
+    final result = materialId == null
+        ? await _send(
+            'POST',
+            '/activities/$activityId/materials/',
+            body: body,
+            fallback: fallback,
+          )
+        : await _send(
+            'PATCH',
+            '/activities/materials/$materialId/',
+            body: body,
+            fallback: fallback,
+          );
+    return ActivityMaterial.fromJson(_map(result));
+  }
+
+  Future<void> deleteMaterial(int materialId) => _send(
+        'DELETE',
+        '/activities/materials/$materialId/',
+        fallback: '자료를 삭제하지 못했습니다.',
+      );
+
+  /// 자료에 파일 하나를 붙인다. 요청 하나가 너무 커지지 않게 한 파일씩 올린다.
+  Future<PostAttachment> uploadMaterialFile(
+    int materialId, {
+    required List<int> bytes,
+    required String filename,
+  }) async =>
+      PostAttachment.fromJson(
+        _map(
+          await _upload(
+            '/activities/materials/$materialId/files/',
+            bytes: bytes,
+            filename: filename,
+            fallback: '$filename 파일을 올리지 못했습니다.',
+          ),
+        ),
+      );
+
+  Future<void> deleteMaterialFile(int fileId) => _send(
+        'DELETE',
+        '/activities/files/$fileId/',
+        fallback: '첨부를 삭제하지 못했습니다.',
+      );
 }

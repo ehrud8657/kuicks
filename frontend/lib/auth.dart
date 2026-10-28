@@ -159,4 +159,8 @@ class AuthScope extends InheritedNotifier<AuthController> {
 
   static AuthController of(BuildContext context) =>
       context.dependOnInheritedWidgetOfExactType<AuthScope>()!.notifier!;
+
+  /// 로그인 상태를 몰라도 그릴 수 있는 화면용. 위젯 테스트처럼 AuthScope가 없으면 null.
+  static AuthController? maybeOf(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<AuthScope>()?.notifier;
 }

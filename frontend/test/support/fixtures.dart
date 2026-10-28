@@ -209,7 +209,22 @@ void _registerPublicRoutes(FakeBackend backend) {
         'results': <Object>[],
       },
     )
-    ..on('GET', '/api/semesters/', (_) => <Object>[]);
+    ..on('GET', '/api/semesters/', (_) => <Object>[])
+    ..on(
+      'GET',
+      '/api/activities/',
+      (_) => <String, dynamic>{
+        'count': 0,
+        'next': null,
+        'previous': null,
+        'results': <Object>[],
+      },
+    )
+    ..on(
+      'GET',
+      '/api/activities/filters/',
+      (_) => <String, dynamic>{'semesters': <Object>[], 'tags': <Object>[]},
+    );
 }
 
 List<Map<String, dynamic>> myStudiesJson() => [
