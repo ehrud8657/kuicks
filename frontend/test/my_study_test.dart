@@ -203,6 +203,8 @@ void main() {
     expect(find.text('제출할 과제 1개'), findsOneWidget);
     expect(find.text('스터디 관리'), findsNothing);
 
+    // 홈의 수강 중인 스터디 패널도 같은 목록을 부르므로, 들어가기 전 횟수를 기준으로 센다.
+    final before = backend.sent('GET', '/api/me/studies/').length;
     await tester.tap(find.text('[예시] 웹해킹 입문 · 2099-1'));
     await tester.pumpAndSettle();
     expect(find.text('XSS 필터 우회'), findsOneWidget);
@@ -211,7 +213,7 @@ void main() {
     await tester.tap(find.byType(BackButton));
     await tester.pumpAndSettle();
     // 돌아오면 남은 과제 수를 다시 불러온다.
-    expect(backend.sent('GET', '/api/me/studies/'), hasLength(2));
+    expect(backend.sent('GET', '/api/me/studies/'), hasLength(before + 1));
   });
 
   testWidgets('휴대폰 폭(360)에서 마이페이지와 스터디 상세가 넘치지 않는다', (tester) async {

@@ -8,6 +8,7 @@ import 'package:kuics_frontend/pages/manage/board_tab.dart';
 import 'package:kuics_frontend/pages/manage/forms.dart';
 import 'package:kuics_frontend/pages/manage/study_manage_page.dart';
 import 'package:kuics_frontend/pages/manage/submissions_page.dart';
+import 'package:kuics_frontend/widgets/common.dart';
 import 'package:kuics_frontend/widgets/upload_picker.dart';
 
 import 'support/fake_backend.dart';
@@ -135,7 +136,35 @@ void main() {
       expect(find.text('변경 사항이 모두 저장되었습니다.'), findsOneWidget);
     });
 
-    testWidgets('미기록 모두 출석은 이미 고른 상태를 덮어쓰지 않는다', (tester) async {
+    Future<Map<Object?, Object?>> savedStatuses(WidgetTester tester) async {
+      await tester.tap(find.text('저장'));
+      await tester.pumpAndSettle();
+      return {
+        for (final record in backend.lastJson(
+            'PUT', '/api/manage/sessions/22/attendance/')['records'] as List)
+          (record as Map<String, dynamic>)['participation_id']:
+              record['status'],
+      };
+    }
+
+    testWidgets('모두 출석은 미기록이면 바로 채운다', (tester) async {
+      setScreen(tester, const Size(1280, 900));
+      await tester.pumpWidget(
+        testApp(const AttendancePage(sessionId: 22, title: '2회차 출석 체크')),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('모두 출석'));
+      await tester.pumpAndSettle();
+      // 덮어쓸 표시가 없으면 확인 창 없이 바로 채운다.
+      expect(find.text('모두 출석'), findsOneWidget);
+      expect(
+        await savedStatuses(tester),
+        {11: 'present', 12: 'present', 13: 'present'},
+      );
+    });
+
+    testWidgets('모두 결석은 이미 다른 상태로 고른 사람이 있으면 확인을 받는다', (tester) async {
       setScreen(tester, const Size(1280, 900));
       await tester.pumpWidget(
         testApp(const AttendancePage(sessionId: 22, title: '2회차 출석 체크')),
@@ -143,20 +172,32 @@ void main() {
       await tester.pumpAndSettle();
 
       await tester.tap(
-        find.descendant(of: cardOf('홍길동'), matching: find.text('결석')),
+        find.descendant(of: cardOf('홍길동'), matching: find.text('지각')),
       );
-      await tester.tap(find.text('미기록 모두 출석'));
-      await tester.pump();
-      await tester.tap(find.text('저장'));
+      await tester.tap(find.text('모두 결석'));
       await tester.pumpAndSettle();
+      // 확인 문구는 KeepAllText라 글자 사이에 줄바꿈 금지 문자가 들어가므로 원문으로 찾는다.
+      expect(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is KeepAllText && widget.data.contains('이미 다른 상태로 표시한 1명'),
+        ),
+        findsOneWidget,
+      );
 
-      final statuses = {
-        for (final record in backend.lastJson(
-            'PUT', '/api/manage/sessions/22/attendance/')['records'] as List)
-          (record as Map<String, dynamic>)['participation_id']:
-              record['status'],
-      };
-      expect(statuses, {11: 'absent', 12: 'present', 13: 'present'});
+      // 취소하면 아무것도 바뀌지 않는다.
+      await tester.tap(find.text('취소'));
+      await tester.pumpAndSettle();
+      expect(find.text('미기록 2'), findsOneWidget);
+
+      await tester.tap(find.text('모두 결석'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(FilledButton, '모두 결석'));
+      await tester.pumpAndSettle();
+      expect(
+        await savedStatuses(tester),
+        {11: 'absent', 12: 'absent', 13: 'absent'},
+      );
     });
 
     testWidgets('저장하지 않고 뒤로 가면 확인을 받는다', (tester) async {

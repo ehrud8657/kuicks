@@ -45,7 +45,7 @@ void main() {
 
   testWidgets('출석 체크 주소로 바로 들어와도 ← 버튼이 출석 탭 → 관리 목록으로 돌아간다', (tester) async {
     await open(tester, '/manage/studies/1/attendance/22');
-    expect(find.text('미기록 모두 출석'), findsOneWidget);
+    expect(find.text('모두 출석'), findsOneWidget);
     expect(find.text('2회차 출석 체크'), findsOneWidget);
 
     await back(tester);

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 
 import '../api_client.dart';
+import '../auth.dart';
 import '../models.dart';
 import '../routes.dart';
 import '../theme.dart';
 import '../widgets/common.dart';
+import '../widgets/my_studies_panel.dart';
 
 class StudyPage extends StatefulWidget {
   const StudyPage({super.key, this.semester});
@@ -57,6 +59,14 @@ class _StudyPageState extends State<StudyPage> {
               subtitle: '학기를 선택하고 스터디별 커리큘럼과 수료자를 확인하세요.',
             ),
             const SizedBox(height: 28),
+            if (AuthScope.maybeOf(context) case final auth?)
+              if (auth.member case final member?)
+                MyStudiesPanel(
+                  // 초기 비밀번호를 바꾸면 수강 중인 스터디를 다시 불러온다.
+                  key: ValueKey(
+                      'my-studies-${member.studentId}#${auth.passwordVersion}'),
+                  margin: const EdgeInsets.only(bottom: 24),
+                ),
             FutureBuilder<List<Semester>>(
               future: semesters,
               builder: (context, snapshot) {

@@ -10,6 +10,7 @@ import '../theme.dart';
 import '../widgets/common.dart';
 import '../widgets/manager_panel.dart';
 import '../widgets/meteor_shower.dart';
+import '../widgets/my_studies_panel.dart';
 import '../widgets/tap_sequence.dart';
 
 /// KUICS NOW 카드에 채울 실제 데이터.
@@ -111,6 +112,15 @@ class _HomePageState extends State<HomePage> {
                 ),
                 member: member,
                 onManage: () => context.go(AppRoutes.manage),
+              ),
+            ],
+            if (AuthScope.of(context).member case final member?) ...[
+              MyStudiesPanel(
+                // 초기 비밀번호를 바꾸면 수강 중인 스터디를 다시 불러온다.
+                key: ValueKey(
+                  'my-studies-${member.studentId}#${AuthScope.of(context).passwordVersion}',
+                ),
+                margin: const EdgeInsets.only(top: 24),
               ),
             ],
             const SizedBox(height: 44),
