@@ -854,3 +854,236 @@ class MyStudyDetail {
     );
   }
 }
+
+// ── 활동 아카이브 ────────────────────────────────────────────
+
+/// 활동 종류. [path]가 상세 주소 조각이 된다. 예: /activity/projects/12
+enum ActivityKind {
+  project('프로젝트', 'projects'),
+  contest('대회', 'contests'),
+  event('행사', 'events');
+
+  const ActivityKind(this.label, this.path);
+  final String label;
+  final String path;
+
+  static ActivityKind? tryParse(Object? name) {
+    for (final kind in values) {
+      if (kind.name == name) return kind;
+    }
+    return null;
+  }
+
+  static ActivityKind? fromPath(String? path) {
+    for (final kind in values) {
+      if (kind.path == path) return kind;
+    }
+    return null;
+  }
+}
+
+enum ActivityStatus {
+  planning('준비 중'),
+  ongoing('진행 중'),
+  done('완료'),
+  archived('보관됨');
+
+  const ActivityStatus(this.label);
+  final String label;
+
+  static ActivityStatus parse(Object? name) =>
+      values.firstWhere((value) => value.name == name, orElse: () => planning);
+}
+
+/// 자료 단계. 프로젝트는 제안 → 중간 → 최종 순으로 쌓인다.
+enum MaterialStage {
+  proposal('제안'),
+  interim('중간'),
+  finalReport('최종', apiName: 'final'),
+  other('기타');
+
+  const MaterialStage(this.label, {String? apiName}) : _apiName = apiName;
+  final String label;
+  final String? _apiName;
+
+  /// 서버가 쓰는 값. `final`은 Dart 예약어라 이름을 따로 둔다.
+  String get apiName => _apiName ?? name;
+
+  static MaterialStage parse(Object? name) =>
+      values.firstWhere((value) => value.apiName == name, orElse: () => other);
+}
+
+class ActivityMemberInfo {
+  const ActivityMemberInfo({required this.name, required this.isLeader});
+  final String name;
+  final bool isLeader;
+
+  factory ActivityMemberInfo.fromJson(Map<String, dynamic> json) =>
+      ActivityMemberInfo(
+        name: json['name'] as String? ?? '',
+        isLeader: json['role'] == 'leader',
+      );
+}
+
+/// 활동 자료(제안서·중간 발표·최종 보고서·write-up 등). 첨부는 [PostAttachment] 모양으로 내려온다.
+class ActivityMaterial {
+  const ActivityMaterial({
+    required this.id,
+    required this.stage,
+    required this.title,
+    required this.description,
+    required this.date,
+    required this.authorName,
+    this.files = const [],
+    this.canEdit = false,
+  });
+
+  final int id;
+  final MaterialStage stage;
+  final String title;
+  final String description;
+  final DateTime? date;
+  final String authorName;
+  final List<PostAttachment> files;
+
+  /// 올린 본인·운영진이면 수정·삭제 메뉴를 보여준다. 실제 권한은 서버가 다시 검사한다.
+  final bool canEdit;
+
+  List<PostAttachment> get images =>
+      files.where((item) => item.isImage).toList();
+
+  List<PostAttachment> get documents =>
+      files.where((item) => !item.isImage).toList();
+
+  factory ActivityMaterial.fromJson(Map<String, dynamic> json) =>
+      ActivityMaterial(
+        id: json['id'] as int,
+        stage: MaterialStage.parse(json['stage']),
+        title: json['title'] as String? ?? '',
+        description: json['description'] as String? ?? '',
+        date: DateTime.tryParse(json['date'] as String? ?? ''),
+        authorName: json['author_name'] as String? ?? '',
+        files: _parseList(json['files'], PostAttachment.fromJson),
+        canEdit: json['can_edit'] as bool? ?? false,
+      );
+}
+
+/// 목록에 보이는 활동 요약. 상세 응답도 같은 필드를 포함한다.
+class Activity {
+  const Activity({
+    required this.id,
+    required this.kind,
+    required this.semester,
+    required this.title,
+    this.topic = '',
+    this.summary = '',
+    this.status = ActivityStatus.planning,
+    this.startDate,
+    this.endDate,
+    this.result = '',
+    this.tags = const [],
+    this.members = const [],
+    this.materialCount = 0,
+    this.stages = const [],
+  });
+
+  final int id;
+  final ActivityKind kind;
+  final String semester;
+  final String title;
+
+  /// 프로젝트 주제. 비어 있으면 아직 정하지 않은 것이다.
+  final String topic;
+  final String summary;
+  final ActivityStatus status;
+  final DateTime? startDate;
+  final DateTime? endDate;
+
+  /// 대회 순위·수상.
+  final String result;
+  final List<String> tags;
+  final List<ActivityMemberInfo> members;
+  final int materialCount;
+
+  /// 자료가 하나라도 있는 단계.
+  final List<MaterialStage> stages;
+
+  List<String> get leaderNames => [
+        for (final member in members)
+          if (member.isLeader) member.name
+      ];
+
+  factory Activity.fromJson(Map<String, dynamic> json) => Activity(
+        id: json['id'] as int,
+        kind: ActivityKind.tryParse(json['kind']) ?? ActivityKind.project,
+        semester: json['semester'] as String? ?? '',
+        title: json['title'] as String? ?? '',
+        topic: json['topic'] as String? ?? '',
+        summary: json['summary'] as String? ?? '',
+        status: ActivityStatus.parse(json['status']),
+        startDate: DateTime.tryParse(json['start_date'] as String? ?? ''),
+        endDate: DateTime.tryParse(json['end_date'] as String? ?? ''),
+        result: json['result'] as String? ?? '',
+        tags: [for (final tag in json['tags'] as List? ?? const []) '$tag'],
+        members: _parseList(json['members'], ActivityMemberInfo.fromJson),
+        materialCount: json['material_count'] as int? ?? 0,
+        stages: [
+          for (final stage in json['stages'] as List? ?? const [])
+            MaterialStage.parse(stage),
+        ],
+      );
+}
+
+class ActivityDetail {
+  const ActivityDetail({
+    required this.activity,
+    this.description = '',
+    this.teamName = '',
+    this.location = '',
+    this.materials = const [],
+    this.canContribute = false,
+  });
+
+  final Activity activity;
+  final String description;
+
+  /// 대회에 나간 팀 이름.
+  final String teamName;
+
+  /// 행사 장소.
+  final String location;
+  final List<ActivityMaterial> materials;
+
+  /// 이 활동에 자료를 올릴 수 있는지(참여자 중 정회원 이상·운영진).
+  final bool canContribute;
+
+  factory ActivityDetail.fromJson(Map<String, dynamic> json) => ActivityDetail(
+        activity: Activity.fromJson(json),
+        description: json['description'] as String? ?? '',
+        teamName: json['team_name'] as String? ?? '',
+        location: json['location'] as String? ?? '',
+        materials: _parseList(json['materials'], ActivityMaterial.fromJson),
+        canContribute: json['can_contribute'] as bool? ?? false,
+      );
+}
+
+class ActivityListPage {
+  const ActivityListPage({required this.activities, required this.hasMore});
+  final List<Activity> activities;
+  final bool hasMore;
+}
+
+/// 목록 화면의 거르기 선택지. 공개된 활동이 있는 학기(최신순)와 쓰이는 태그만 담긴다.
+class ActivityFilters {
+  const ActivityFilters({this.semesters = const [], this.tags = const []});
+  final List<String> semesters;
+  final List<String> tags;
+
+  factory ActivityFilters.fromJson(Map<String, dynamic> json) =>
+      ActivityFilters(
+        semesters: [
+          for (final s in json['semesters'] as List? ?? const []) '$s'
+        ],
+        tags: [for (final t in json['tags'] as List? ?? const []) '$t'],
+      );
+}

@@ -2,7 +2,7 @@
 
 기본 경로: `/api`
 
-인증 표기: **공개** = 누구나 · **회원** = 로그인 · **참여자** = 해당 스터디 참여 기록이 있는 회원 · **담당** = 해당 스터디의 스터디장 또는 운영진 · **관리자** = 담당 스터디가 하나라도 있는 스터디장 또는 운영진
+인증 표기: **공개** = 누구나 · **회원** = 로그인 · **참여자** = 해당 스터디 참여 기록이 있는 회원 · **담당** = 해당 스터디의 스터디장 또는 운영진 · **관리자** = 담당 스터디가 하나라도 있는 스터디장 또는 운영진 · **기여자** = 해당 활동의 참여자로 계정이 연결된 정회원 이상 또는 운영진
 
 ## 공개·회원
 
@@ -187,6 +187,44 @@ PUT 요청 본문 (응답은 GET과 같음):
 - 첨부는 글을 저장한 뒤 **한 파일씩** 올립니다. 요청 하나가 nginx 제한(`client_max_body_size`)을 넘지 않게 하기 위함입니다. 파일 하나 최대 `STUDY_POST_ATTACHMENT_MAX_BYTES`(기본 50MB).
 - 형식은 가리지 않습니다. jpg·png·gif·webp만 `is_image: true`로 화면에 바로 보이고, 나머지(SVG 포함)는 항상 내려받기로 나갑니다. SVG는 스크립트를 품을 수 있어 같은 도메인에서 열지 않습니다.
 - 파일은 `MEDIA_ROOT/study_posts/{스터디}/{글}/{임의값}{원래 확장자}`에 저장되며 `/media/`로 공개하지 않습니다.
+
+## 활동 아카이브
+
+프로젝트·대회·행사 기록과 그 자료(제안·중간·최종 결과물, write-up, 사진 등)입니다. **열람은 누구나** 할 수 있습니다. 활동과 참여자는 운영진이 Admin에서 등록하고, 자료는 기여자가 사이트에서 올립니다.
+
+| Method | Path | 인증 | 설명 |
+|---|---|---|---|
+| GET | `/activities/` | 공개 | 활동 목록 (`?kind=project\|contest\|event`, `?semester=2026-2`, `?tag=web`, `?page=2`, 20개 단위) |
+| GET | `/activities/filters/` | 공개 | 공개된 활동이 있는 학기(최신순)와 쓰이는 태그 `{"semesters": [...], "tags": [...]}` |
+| GET | `/activities/{id}/` | 공개 | 활동 상세(참여자, 자료, `can_contribute`) |
+| POST | `/activities/{id}/materials/` | 기여자 | 자료 작성 `{"stage", "title", "description"}`. 날짜는 올린 날로 들어감 |
+| PATCH·DELETE | `/activities/materials/{id}/` | 올린 본인·운영진 | 자료 수정·삭제 |
+| POST | `/activities/materials/{id}/files/` | 올린 본인·운영진 | 파일 하나 첨부 (multipart `file`, 형식 무관) |
+| GET | `/activities/files/{id}/` | 공개 | 첨부 내려받기 (사진은 바로 보기, `?download=1`이면 내려받기) |
+| DELETE | `/activities/files/{id}/` | 올린 본인·운영진 | 첨부 삭제 |
+
+```json
+{
+  "id": 12, "kind": "project", "semester": "2026-2", "title": "Team B", "topic": "웹 퍼징 도구",
+  "summary": "...", "status": "ongoing", "start_date": "2026-09-01", "end_date": null, "result": "",
+  "tags": ["web"], "members": [{"name": "김팀장", "role": "leader"}],
+  "material_count": 1, "stages": ["interim"],
+  "description": "...", "team_name": "", "location": "", "can_contribute": false,
+  "materials": [
+    {"id": 31, "stage": "interim", "title": "중간 발표", "description": "...", "date": "2026-11-10",
+     "author_name": "김팀장", "created_at": "...", "updated_at": "...", "can_edit": false,
+     "files": [{"id": 41, "name": "중간발표.pdf", "size": 2048, "content_type": "application/pdf",
+                "is_image": false, "url": "https://.../api/activities/files/41/"}]}
+  ]
+}
+```
+
+- 목록 응답은 상세에서 `description`·`team_name`·`location`·`materials`·`can_contribute`를 뺀 모양입니다. `stages`는 자료가 있는 단계(`proposal`·`interim`·`final`·`other` 순)입니다.
+- `status`: `planning`(준비 중)·`ongoing`·`done`·`archived`(보관됨). **보관된 활동은 운영진만** 자료를 올리거나 고칠 수 있습니다.
+- 참여자는 계정이 지워져도 이름이 남고, 자료의 `author_name`도 올릴 때의 이름으로 남습니다. 공개 응답이라 학번은 내려보내지 않습니다.
+- `is_published`를 끈 활동은 목록·상세·첨부 모두 `404`입니다.
+- 첨부는 자료를 저장한 뒤 **한 파일씩** 올립니다. 파일 하나 최대 `ACTIVITY_FILE_MAX_BYTES`(기본 50MB). jpg·png·gif·webp만 바로 보이고 나머지(SVG·HTML 포함)는 항상 내려받기로 나갑니다.
+- 파일은 `MEDIA_ROOT/activities/{활동}/{자료}/{임의값}{원래 확장자}`에 저장되며 `/media/`로 공개하지 않습니다. 자료·활동을 지우면 파일도 지워집니다.
 
 ## 스터디 응답 (공개)
 

@@ -23,6 +23,9 @@ const maxSubmissionBytes = 50 * 1024 * 1024;
 /// 서버 기본 제한(STUDY_POST_ATTACHMENT_MAX_BYTES=50MB)과 맞춘다.
 const maxStudyPostFileBytes = 50 * 1024 * 1024;
 
+/// 서버 기본 제한(ACTIVITY_FILE_MAX_BYTES=50MB)과 맞춘다.
+const maxActivityFileBytes = 50 * 1024 * 1024;
+
 Future<PickedUpload?> pickOneFile() async {
   final file = await FilePicker.pickFile();
   if (file == null) return null;

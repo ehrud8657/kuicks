@@ -11,7 +11,7 @@ kuics/
 │  ├─ apps/accounts/    학번 로그인, 회원, CSV 일괄 생성
 │  ├─ apps/studies/     학기, 스터디, 참여, 회차·출석, 과제 제출, 스터디 게시판, 스터디장 관리 API
 │  ├─ apps/boards/      공지사항 및 모집공고
-│  └─ apps/activities/  행사 및 참여 골격
+│  └─ apps/activities/  활동 아카이브(프로젝트·대회·행사, 참여자, 자료·첨부)
 ├─ docs/                설계 및 API 문서
 └─ docker-compose.yml   PostgreSQL + backend + frontend(nginx) 전체 스택
 ```
@@ -35,7 +35,7 @@ kuics/
 | 회원·로그인·권한 | `backend/apps/accounts/` |
 | 학기·스터디·참여 | `backend/apps/studies/` |
 | 공지·모집 게시판 | `backend/apps/boards/` |
-| 행사 | `backend/apps/activities/` |
+| 활동 아카이브 | `backend/apps/activities/` |
 | Django 설정 및 URL | `backend/config/` |
 | API 계약 | `docs/API.md` |
 
@@ -116,6 +116,8 @@ flutter build web --dart-define=API_BASE_URL=https://새도메인.example/api
 |---|---|
 | `/`, `/about`, `/activity`, `/contact` | 홈 · 소개 · 활동 · 문의 |
 | `/study?semester=2026-1` | 스터디 (학기 선택이 주소에 남음) |
+| `/activity?kind=project&semester=2026-2&tag=web` | 활동 목록 (종류·학기·태그 선택이 주소에 남음) |
+| `/activity/projects/:id` · `contests/:id` · `events/:id` | 활동 상세(자료 열람, 참여자는 자료 올리기) |
 | `/board?category=notice` · `recruit` | 게시판 분류 |
 | `/me` · `/me/studies/:id` | 마이페이지 · 내 스터디 상세(과제 제출) — 로그인 필요 |
 | `/manage` · `/manage/studies/:id/{participants,attendance,assignments,board}` | 스터디 관리 목록 · 관리 탭 — 스터디장·운영진 |
@@ -281,6 +283,6 @@ docker compose -f docker-compose.prod.yml exec -T backend tar xzf - -C /app < ba
 - 화면별 주소(새로고침·링크 공유·브라우저 뒤로/앞으로), 로그인·권한 안내 화면, 없는 주소 안내
 - API 로딩·빈 결과·오류 UI
 
-DMOJ 연동, 행사(Activity) 기능, 외부 파일 저장소, 운영 배포 자동화는 후속 범위입니다. 진행 상황과 결정이 필요한 사항은 [docs/reports](./docs/reports/)를 참고하세요.
+DMOJ 연동, 외부 파일 저장소, 운영 배포 자동화는 후속 범위입니다. 진행 상황과 결정이 필요한 사항은 [docs/reports](./docs/reports/)를 참고하세요.
 
 자세한 규칙과 API는 [DEVELOPMENT_GUIDE.md](./DEVELOPMENT_GUIDE.md) 및 [docs/API.md](./docs/API.md)를 참고하세요.
