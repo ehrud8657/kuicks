@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:kuics_frontend/models.dart';
 import 'package:kuics_frontend/pages/activity_detail_page.dart';
 import 'package:kuics_frontend/pages/activity_page.dart';
+import 'package:kuics_frontend/widgets/common.dart';
 import 'package:kuics_frontend/widgets/upload_picker.dart';
 
 import 'support/fake_backend.dart';
@@ -12,7 +13,8 @@ Map<String, dynamic> activityJson({
   String kind = 'project',
   String semester = '2026-2',
   String title = 'Team B',
-  String topic = '웹 퍼징 도구',
+  String teamName = 'Null Pointer',
+  String mentor = '김교수',
   List<String> stages = const ['interim'],
 }) =>
     {
@@ -20,7 +22,8 @@ Map<String, dynamic> activityJson({
       'kind': kind,
       'semester': semester,
       'title': title,
-      'topic': topic,
+      'team_name': kind == 'event' ? '' : teamName,
+      'mentor': kind == 'project' ? mentor : '',
       'summary': '',
       'status': 'ongoing',
       'start_date': null,
@@ -64,7 +67,6 @@ Map<String, dynamic> detailJson({
     {
       ...activityJson(),
       'description': '',
-      'team_name': '',
       'location': '',
       'materials': materials ?? [materialJson()],
       'can_contribute': canContribute,
@@ -111,7 +113,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Team B'), findsOneWidget);
-    expect(find.text('웹 퍼징 도구'), findsOneWidget);
+    // 프로젝트는 이름 아래에 팀명·멘토.
+    expect(find.text('팀 Null Pointer · 멘토 김교수'), findsOneWidget);
     expect(find.text('DEFCON Quals'), findsOneWidget);
     expect(find.text('32위'), findsOneWidget);
     // 학기 제목(목록)과 학기 선택 칩에 각각 나온다.
@@ -145,12 +148,31 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Team B'), findsOneWidget);
+    // 제목 아래 줄은 KeepAllText라 한글 사이에 줄바꿈 금지 문자가 들어 있다.
+    expect(find.text(keepAll('팀 Null Pointer · 멘토 김교수')), findsOneWidget);
+    expect(find.text('참가 팀'), findsNothing);
     expect(find.text('김팀장 · 팀장'), findsOneWidget);
     expect(find.text('자료 1개'), findsOneWidget);
     expect(find.text('중간 발표'), findsOneWidget);
     expect(find.text('중간발표.pdf'), findsOneWidget);
     expect(find.text('자료 올리기'), findsNothing);
     expect(find.byTooltip('자료 메뉴'), findsNothing);
+  });
+
+  testWidgets('대회 상세는 참가 팀명을 따로 한 줄로 보여준다', (tester) async {
+    backend.on(
+      'GET',
+      '/api/activities/5/',
+      (_) => {...detailJson(), ...activityJson(id: 5, kind: 'contest')},
+    );
+    await tester.pumpWidget(testApp(const Scaffold(
+      body: ActivityDetailPage(kind: ActivityKind.contest, activityId: 5),
+    )));
+    await tester.pumpAndSettle();
+
+    expect(find.text('참가 팀'), findsOneWidget);
+    expect(find.text('Null Pointer'), findsOneWidget);
+    expect(find.textContaining('멘토'), findsNothing);
   });
 
   testWidgets('없거나 비공개인 활동은 안내 문구를 보여준다', (tester) async {

@@ -205,11 +205,11 @@ PUT 요청 본문 (응답은 GET과 같음):
 
 ```json
 {
-  "id": 12, "kind": "project", "semester": "2026-2", "title": "Team B", "topic": "웹 퍼징 도구",
+  "id": 12, "kind": "project", "semester": "2026-2", "title": "웹 퍼징 도구", "team_name": "Team B", "mentor": "김교수",
   "summary": "...", "status": "ongoing", "start_date": "2026-09-01", "end_date": null, "result": "",
   "tags": ["web"], "members": [{"name": "김팀장", "role": "leader"}],
   "material_count": 1, "stages": ["interim"],
-  "description": "...", "team_name": "", "location": "", "can_contribute": false,
+  "description": "...", "location": "", "can_contribute": false,
   "materials": [
     {"id": 31, "stage": "interim", "title": "중간 발표", "description": "...", "date": "2026-11-10",
      "author_name": "김팀장", "created_at": "...", "updated_at": "...", "can_edit": false,
@@ -219,7 +219,8 @@ PUT 요청 본문 (응답은 GET과 같음):
 }
 ```
 
-- 목록 응답은 상세에서 `description`·`team_name`·`location`·`materials`·`can_contribute`를 뺀 모양입니다. `stages`는 자료가 있는 단계(`proposal`·`interim`·`final`·`other` 순)입니다.
+- 목록 응답은 상세에서 `description`·`location`·`materials`·`can_contribute`를 뺀 모양입니다.
+- `title`은 프로젝트면 프로젝트명, 대회·행사면 그 이름입니다. `team_name`은 프로젝트 팀이 정한 이름 또는 대회 참가 팀명, `mentor`는 지도하는 교수·선배 등(여러 명이면 쉼표로 이어 적은 한 줄)입니다. 셋 다 운영진이 Admin에서 입력합니다. `stages`는 자료가 있는 단계(`proposal`·`interim`·`final`·`other` 순)입니다.
 - `status`: `planning`(준비 중)·`ongoing`·`done`·`archived`(보관됨). **보관된 활동은 운영진만** 자료를 올리거나 고칠 수 있습니다.
 - 참여자는 계정이 지워져도 이름이 남고, 자료의 `author_name`도 올릴 때의 이름으로 남습니다. 공개 응답이라 학번은 내려보내지 않습니다.
 - `is_published`를 끈 활동은 목록·상세·첨부 모두 `404`입니다.
