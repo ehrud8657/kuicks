@@ -273,13 +273,16 @@ BadgeTone activityStatusTone(ActivityStatus status) => switch (status) {
       ActivityStatus.archived => BadgeTone.neutral,
     };
 
-/// 이름 아래에 붙는 한 줄. 프로젝트는 주제, 대회는 결과.
-String activityHeadline(Activity activity) => switch (activity.kind) {
-      ActivityKind.project =>
-        activity.topic.isEmpty ? '주제 선정 중' : activity.topic,
-      ActivityKind.contest => activity.result,
-      ActivityKind.event => '',
-    };
+/// 이름 아래에 붙는 한 줄. 프로젝트는 '팀 ○○ · 멘토 ○○', 대회는 결과.
+///
+/// 대회 참가 팀명은 상세의 '참가 팀' 줄에 따로 보여준다.
+String activityHeadline(Activity activity) => [
+      if (activity.kind == ActivityKind.project && activity.teamName.isNotEmpty)
+        '팀 ${activity.teamName}',
+      if (activity.kind == ActivityKind.contest && activity.result.isNotEmpty)
+        activity.result,
+      if (activity.mentor.isNotEmpty) '멘토 ${activity.mentor}',
+    ].join(' · ');
 
 /// 기간. 예: 2026.09.01 – 2026.12.15
 String? activityPeriod(Activity activity) {

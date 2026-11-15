@@ -43,15 +43,22 @@ class MaterialInline(admin.TabularInline):
 
 @admin.register(Activity)
 class ActivityAdmin(admin.ModelAdmin):
-    list_display = ("title", "kind", "semester", "status", "is_published", "material_count")
+    list_display = ("title", "team_name", "kind", "semester", "status", "is_published", "material_count")
     list_filter = ("kind", "semester", "status", "is_published", "tags")
-    search_fields = ("title", "topic", "summary")
+    search_fields = ("title", "team_name", "mentor", "summary")
     filter_horizontal = ("tags",)
     inlines = (ActivityMemberInline, MaterialInline)
     fieldsets = (
         (None, {"fields": ("kind", "semester", "title", "status", "is_published")}),
-        ("소개", {"fields": ("topic", "summary", "description", "tags", "start_date", "end_date")}),
-        ("대회·행사일 때만", {"fields": ("result", "team_name", "location")}),
+        (
+            "팀",
+            {
+                "fields": ("team_name", "mentor"),
+                "description": "팀원(팀장·참여자)은 아래 참여자 목록에서 등록합니다.",
+            },
+        ),
+        ("소개", {"fields": ("summary", "description", "tags", "start_date", "end_date")}),
+        ("대회·행사일 때만", {"fields": ("result", "location")}),
     )
 
     def get_queryset(self, request):

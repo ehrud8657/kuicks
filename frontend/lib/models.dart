@@ -975,7 +975,8 @@ class Activity {
     required this.kind,
     required this.semester,
     required this.title,
-    this.topic = '',
+    this.teamName = '',
+    this.mentor = '',
     this.summary = '',
     this.status = ActivityStatus.planning,
     this.startDate,
@@ -990,10 +991,15 @@ class Activity {
   final int id;
   final ActivityKind kind;
   final String semester;
+
+  /// 프로젝트는 프로젝트명, 대회·행사는 그 이름.
   final String title;
 
-  /// 프로젝트 주제. 비어 있으면 아직 정하지 않은 것이다.
-  final String topic;
+  /// 프로젝트 팀이 정한 이름, 또는 대회에 나간 팀 이름.
+  final String teamName;
+
+  /// 프로젝트를 지도하는 교수·선배 등. 여러 명이면 쉼표로 적혀 있다.
+  final String mentor;
   final String summary;
   final ActivityStatus status;
   final DateTime? startDate;
@@ -1018,7 +1024,8 @@ class Activity {
         kind: ActivityKind.tryParse(json['kind']) ?? ActivityKind.project,
         semester: json['semester'] as String? ?? '',
         title: json['title'] as String? ?? '',
-        topic: json['topic'] as String? ?? '',
+        teamName: json['team_name'] as String? ?? '',
+        mentor: json['mentor'] as String? ?? '',
         summary: json['summary'] as String? ?? '',
         status: ActivityStatus.parse(json['status']),
         startDate: DateTime.tryParse(json['start_date'] as String? ?? ''),
@@ -1038,7 +1045,6 @@ class ActivityDetail {
   const ActivityDetail({
     required this.activity,
     this.description = '',
-    this.teamName = '',
     this.location = '',
     this.materials = const [],
     this.canContribute = false,
@@ -1046,9 +1052,6 @@ class ActivityDetail {
 
   final Activity activity;
   final String description;
-
-  /// 대회에 나간 팀 이름.
-  final String teamName;
 
   /// 행사 장소.
   final String location;
@@ -1060,7 +1063,6 @@ class ActivityDetail {
   factory ActivityDetail.fromJson(Map<String, dynamic> json) => ActivityDetail(
         activity: Activity.fromJson(json),
         description: json['description'] as String? ?? '',
-        teamName: json['team_name'] as String? ?? '',
         location: json['location'] as String? ?? '',
         materials: _parseList(json['materials'], ActivityMaterial.fromJson),
         canContribute: json['can_contribute'] as bool? ?? false,

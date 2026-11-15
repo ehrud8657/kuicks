@@ -215,7 +215,9 @@ class _Overview extends StatelessWidget {
     final period = activityPeriod(activity);
     final rows = <(String, String)>[
       if (period != null) ('기간', period),
-      if (detail.teamName.isNotEmpty) ('참가 팀', detail.teamName),
+      // 프로젝트 팀명은 제목 아래 한 줄(activityHeadline)에 이미 나온다.
+      if (activity.kind == ActivityKind.contest && activity.teamName.isNotEmpty)
+        ('참가 팀', activity.teamName),
       if (activity.kind == ActivityKind.contest && activity.result.isNotEmpty)
         ('결과', activity.result),
       if (detail.location.isNotEmpty) ('장소', detail.location),
