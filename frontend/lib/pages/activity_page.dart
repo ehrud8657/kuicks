@@ -159,34 +159,35 @@ class _ActivityPageState extends State<ActivityPage> {
 
   /// 학기가 바뀌는 곳마다 학기 제목을 끼워 넣는다. 서버가 최신 학기부터 준다.
   List<Widget> _grouped() {
-    final children = <Widget>[];
-    String? current;
+    final groups = <List<Activity>>[];
     for (final activity in activities) {
-      if (activity.semester != current) {
-        current = activity.semester;
-        children.add(
-          Padding(
-            padding:
-                EdgeInsets.only(top: children.isEmpty ? 0 : 16, bottom: 10),
-            child: Text(
-              current,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-                color: AppColors.textBody,
-              ),
+      if (groups.isEmpty || groups.last.first.semester != activity.semester) {
+        groups.add([]);
+      }
+      groups.last.add(activity);
+    }
+    return [
+      for (final (index, group) in groups.indexed) ...[
+        Padding(
+          padding: EdgeInsets.only(top: index == 0 ? 0 : 20, bottom: 10),
+          child: Text(
+            group.first.semester,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+              color: AppColors.textBody,
             ),
           ),
-        );
-      }
-      children.add(
-        Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: ActivityCard(activity: activity, showKind: kind == null),
         ),
-      );
-    }
-    return children;
+        ActivityGrid(
+          children: [
+            for (final activity in group)
+              ActivityCard(activity: activity, showKind: kind == null),
+          ],
+        ),
+      ],
+      const SizedBox(height: 12),
+    ];
   }
 
   @override
@@ -228,6 +229,7 @@ class _ActivityPageState extends State<ActivityPage> {
                 for (final value in filters.tags)
                   FilterChip(
                     label: Text('#$value'),
+                    labelStyle: selectedChipLabelStyle(context, tag == value),
                     selected: tag == value,
                     // 같은 태그를 다시 누르면 거르기를 푼다.
                     onSelected: (selected) => _select(
@@ -287,6 +289,54 @@ String? activityPeriod(Activity activity) {
   if (start == null) return formatDate(end!);
   if (end == null || end == start) return formatDate(start);
   return '${formatDate(start)} – ${formatDate(end)}';
+}
+
+/// 활동 카드를 같은 너비의 칸으로 나열한다. 넓은 화면은 3칸, 중간은 2칸, 휴대폰은 1칸.
+///
+/// 카드마다 내용 길이가 달라도 한 줄 안에서는 높이를 맞춰 격자가 흐트러지지 않게 한다.
+class ActivityGrid extends StatelessWidget {
+  const ActivityGrid({super.key, required this.children});
+
+  final List<Widget> children;
+
+  static const _gap = 16.0;
+
+  static int columnsFor(double width) => width >= 900
+      ? 3
+      : width >= 600
+          ? 2
+          : 1;
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+        builder: (context, constraints) {
+          final columns = columnsFor(constraints.maxWidth);
+          return Column(
+            children: [
+              for (var start = 0; start < children.length; start += columns)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: _gap),
+                  child: IntrinsicHeight(
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        for (var i = start; i < start + columns; i++) ...[
+                          if (i > start) const SizedBox(width: _gap),
+                          // 마지막 줄이 덜 차도 칸 너비는 그대로 둔다.
+                          Expanded(
+                            child: i < children.length
+                                ? children[i]
+                                : const SizedBox.shrink(),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+            ],
+          );
+        },
+      );
 }
 
 class ActivityCard extends StatelessWidget {

@@ -137,6 +137,63 @@ void main() {
         {'kind': 'contest', 'tag': 'web'});
   });
 
+  testWidgets('선택한 태그 칩은 빨간 바탕에 흰 글자로 보인다', (tester) async {
+    await tester
+        .pumpWidget(testApp(const Scaffold(body: ActivityPage(tag: 'web'))));
+    await tester.pumpAndSettle();
+
+    final label = tester.widget<DefaultTextStyle>(find
+        .ancestor(
+            of: find.text('#web'), matching: find.byType(DefaultTextStyle))
+        .first);
+    expect(label.style.color, Colors.white);
+  });
+
+  group('카드 격자', () {
+    setUp(() {
+      backend.on(
+        'GET',
+        '/api/activities/',
+        (_) => pageOf([
+          activityJson(id: 1, title: '짧은 이름'),
+          activityJson(id: 2, kind: 'contest', title: '이름이 아주 긴 대회 기록 카드'),
+          activityJson(id: 3, kind: 'event', title: '행사'),
+        ]),
+      );
+    });
+
+    Future<List<Rect>> cardRects(WidgetTester tester, double width) async {
+      tester.view.physicalSize = Size(width, 1400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(testApp(const Scaffold(body: ActivityPage())));
+      await tester.pumpAndSettle();
+      return [
+        for (final element in find.byType(ActivityCard).evaluate())
+          tester.getRect(find.byWidget(element.widget)),
+      ];
+    }
+
+    testWidgets('넓은 화면은 한 줄에 셋을 같은 크기로 놓는다', (tester) async {
+      final rects = await cardRects(tester, 1280);
+      expect(rects, hasLength(3));
+      for (final rect in rects.skip(1)) {
+        expect(rect.top, rects.first.top);
+        expect(rect.width, closeTo(rects.first.width, 0.5));
+        expect(rect.height, closeTo(rects.first.height, 0.5));
+      }
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('휴대폰 폭(360)에서는 한 줄에 하나씩 넘치지 않게 놓는다', (tester) async {
+      final rects = await cardRects(tester, 360);
+      expect(rects, hasLength(3));
+      expect(rects[1].top, greaterThan(rects[0].bottom));
+      expect(rects[2].top, greaterThan(rects[1].bottom));
+      expect(tester.takeException(), isNull);
+    });
+  });
+
   testWidgets('상세는 자료와 첨부를 보여주고, 권한이 없으면 올리기 버튼이 없다', (tester) async {
     backend.on('GET', '/api/activities/12/', (_) => detailJson());
     await tester.pumpWidget(testApp(const Scaffold(
