@@ -89,7 +89,7 @@ class ActivityListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Activity
         fields = (
-            "id", "kind", "semester", "title", "topic", "summary", "status",
+            "id", "kind", "semester", "title", "team_name", "mentor", "summary", "status",
             "start_date", "end_date", "result", "tags", "members", "material_count", "stages",
         )
 
@@ -111,5 +111,5 @@ class ActivityDetailSerializer(ActivityListSerializer):
 
     class Meta(ActivityListSerializer.Meta):
         fields = ActivityListSerializer.Meta.fields + (
-            "description", "team_name", "location", "materials", "can_contribute",
+            "description", "location", "materials", "can_contribute",
         )

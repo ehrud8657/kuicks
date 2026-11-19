@@ -391,6 +391,8 @@ class _SubmissionCard extends StatelessWidget {
                 children: [
                   FilterChip(
                     label: Text(submission.isChecked ? '확인 완료' : '확인 전'),
+                    labelStyle:
+                        selectedChipLabelStyle(context, submission.isChecked),
                     selected: submission.isChecked,
                     onSelected: busy ? null : (_) => onToggleReview(),
                   ),

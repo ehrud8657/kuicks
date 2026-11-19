@@ -12,7 +12,7 @@ def proposal_to_other(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('activities', '0003_default_tags'),
+        ('activities', '0004_project_team_mentor'),
     ]
 
     operations = [

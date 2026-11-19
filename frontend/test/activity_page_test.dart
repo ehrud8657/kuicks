@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:kuics_frontend/models.dart';
 import 'package:kuics_frontend/pages/activity_detail_page.dart';
 import 'package:kuics_frontend/pages/activity_page.dart';
+import 'package:kuics_frontend/widgets/common.dart';
 import 'package:kuics_frontend/widgets/upload_picker.dart';
 
 import 'support/fake_backend.dart';
@@ -12,7 +13,8 @@ Map<String, dynamic> activityJson({
   String kind = 'project',
   String semester = '2026-2',
   String title = 'Team B',
-  String topic = '웹 퍼징 도구',
+  String teamName = 'Null Pointer',
+  String mentor = '김교수',
   List<String> stages = const ['interim'],
 }) =>
     {
@@ -20,7 +22,8 @@ Map<String, dynamic> activityJson({
       'kind': kind,
       'semester': semester,
       'title': title,
-      'topic': topic,
+      'team_name': kind == 'event' ? '' : teamName,
+      'mentor': kind == 'project' ? mentor : '',
       'summary': '',
       'status': 'ongoing',
       'start_date': null,
@@ -70,7 +73,6 @@ Map<String, dynamic> detailJson({
     {
       ...activityJson(),
       'description': '',
-      'team_name': '',
       'location': '',
       'materials': materials ?? [materialJson()],
       'can_contribute': canContribute,
@@ -123,7 +125,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Team B'), findsOneWidget);
-    expect(find.text('웹 퍼징 도구'), findsOneWidget);
+    // 프로젝트는 이름 아래에 팀명·멘토.
+    expect(find.text('팀 Null Pointer · 멘토 김교수'), findsOneWidget);
     expect(find.text('DEFCON Quals'), findsOneWidget);
     expect(find.text('32위'), findsOneWidget);
     // 학기 제목(목록)과 학기 선택 칩에 각각 나온다.
@@ -149,6 +152,63 @@ void main() {
         {'kind': 'contest', 'tag': 'web'});
   });
 
+  testWidgets('선택한 태그 칩은 빨간 바탕에 흰 글자로 보인다', (tester) async {
+    await tester
+        .pumpWidget(testApp(const Scaffold(body: ActivityPage(tag: 'web'))));
+    await tester.pumpAndSettle();
+
+    final label = tester.widget<DefaultTextStyle>(find
+        .ancestor(
+            of: find.text('#web'), matching: find.byType(DefaultTextStyle))
+        .first);
+    expect(label.style.color, Colors.white);
+  });
+
+  group('카드 격자', () {
+    setUp(() {
+      backend.on(
+        'GET',
+        '/api/activities/',
+        (_) => pageOf([
+          activityJson(id: 1, title: '짧은 이름'),
+          activityJson(id: 2, kind: 'contest', title: '이름이 아주 긴 대회 기록 카드'),
+          activityJson(id: 3, kind: 'event', title: '행사'),
+        ]),
+      );
+    });
+
+    Future<List<Rect>> cardRects(WidgetTester tester, double width) async {
+      tester.view.physicalSize = Size(width, 1400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(testApp(const Scaffold(body: ActivityPage())));
+      await tester.pumpAndSettle();
+      return [
+        for (final element in find.byType(ActivityCard).evaluate())
+          tester.getRect(find.byWidget(element.widget)),
+      ];
+    }
+
+    testWidgets('넓은 화면은 한 줄에 셋을 같은 크기로 놓는다', (tester) async {
+      final rects = await cardRects(tester, 1280);
+      expect(rects, hasLength(3));
+      for (final rect in rects.skip(1)) {
+        expect(rect.top, rects.first.top);
+        expect(rect.width, closeTo(rects.first.width, 0.5));
+        expect(rect.height, closeTo(rects.first.height, 0.5));
+      }
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('휴대폰 폭(360)에서는 한 줄에 하나씩 넘치지 않게 놓는다', (tester) async {
+      final rects = await cardRects(tester, 360);
+      expect(rects, hasLength(3));
+      expect(rects[1].top, greaterThan(rects[0].bottom));
+      expect(rects[2].top, greaterThan(rects[1].bottom));
+      expect(tester.takeException(), isNull);
+    });
+  });
+
   testWidgets('상세는 자료와 첨부를 보여주고, 권한이 없으면 올리기 버튼이 없다', (tester) async {
     backend.on('GET', '/api/activities/12/', (_) => detailJson());
     await tester.pumpWidget(testApp(const Scaffold(
@@ -157,6 +217,9 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Team B'), findsOneWidget);
+    // 제목 아래 줄은 KeepAllText라 한글 사이에 줄바꿈 금지 문자가 들어 있다.
+    expect(find.text(keepAll('팀 Null Pointer · 멘토 김교수')), findsOneWidget);
+    expect(find.text('참가 팀'), findsNothing);
     expect(find.text('김팀장 · 팀장'), findsOneWidget);
     expect(find.text('자료 1개'), findsOneWidget);
     expect(find.text('중간 발표'), findsOneWidget);
@@ -235,6 +298,22 @@ void main() {
       'title': '회의록',
       'description': '',
     });
+  });
+
+  testWidgets('대회 상세는 참가 팀명을 따로 한 줄로 보여준다', (tester) async {
+    backend.on(
+      'GET',
+      '/api/activities/5/',
+      (_) => {...detailJson(), ...activityJson(id: 5, kind: 'contest')},
+    );
+    await tester.pumpWidget(testApp(const Scaffold(
+      body: ActivityDetailPage(kind: ActivityKind.contest, activityId: 5),
+    )));
+    await tester.pumpAndSettle();
+
+    expect(find.text('참가 팀'), findsOneWidget);
+    expect(find.text('Null Pointer'), findsOneWidget);
+    expect(find.textContaining('멘토'), findsNothing);
   });
 
   testWidgets('없거나 비공개인 활동은 안내 문구를 보여준다', (tester) async {

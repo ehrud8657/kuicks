@@ -40,6 +40,13 @@ const _buttonShape = RoundedRectangleBorder(
   borderRadius: BorderRadius.all(Radius.circular(8)),
 );
 
+/// FilterChip의 글자 모양. 선택되면 빨간 바탕에 맞춰 흰 글자로 바꾼다.
+///
+/// ChoiceChip과 달리 FilterChip은 테마의 secondaryLabelStyle을 쓰지 않아,
+/// 넘기지 않으면 선택됐을 때 빨간 바탕에 어두운 글자가 올라가 읽히지 않는다.
+TextStyle? selectedChipLabelStyle(BuildContext context, bool selected) =>
+    selected ? ChipTheme.of(context).secondaryLabelStyle : null;
+
 /// 앱 테마. 테스트에서도 같은 모양으로 그리도록 여기에 모아 둔다.
 ThemeData buildAppTheme(TextTheme base) => ThemeData(
       useMaterial3: true,
@@ -169,6 +176,7 @@ ThemeData buildAppTheme(TextTheme base) => ThemeData(
         ),
         // 상태별 글자 모양(WidgetStateTextStyle)을 쓰면 칩이 그 객체를 그대로 글자 모양으로 써서
         // 테마 글꼴이 빠지고 한글 대체 글꼴을 받아온다. 일반 글자 모양 + 선택 시 secondaryLabelStyle로 둔다.
+        // secondaryLabelStyle은 ChoiceChip만 알아서 쓴다. FilterChip은 selectedChipLabelStyle로 직접 넘긴다.
         labelStyle: const TextStyle(
           fontFamily: 'Pretendard',
           fontSize: 14,

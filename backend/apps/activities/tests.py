@@ -3,7 +3,9 @@ import tempfile
 from pathlib import Path
 
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.test import TestCase, override_settings
+from django.db import connection
+from django.db.migrations.executor import MigrationExecutor
+from django.test import TestCase, TransactionTestCase, override_settings
 from django.urls import reverse
 
 from apps.accounts.models import Member
@@ -93,6 +95,15 @@ class ActivityReadTests(ActivityTestBase):
         # 팀장이 먼저, 계정 없이 이름만 적은 참여자도 나오고, 학번은 내려보내지 않는다.
         self.assertEqual(item["members"][0], {"name": "김팀장", "role": "leader"})
         self.assertIn({"name": "졸업생", "role": "member"}, item["members"])
+
+    def test_list_and_detail_show_team_and_mentor(self):
+        Activity.objects.filter(pk=self.project.pk).update(team_name="Null Pointer", mentor="김교수, 이선배")
+        item = self.client.get(reverse("activity-list"), {"kind": "project"}).data["results"][0]
+        self.assertEqual(item["team_name"], "Null Pointer")
+        self.assertEqual(item["mentor"], "김교수, 이선배")
+        self.assertNotIn("topic", item)
+        detail = self.client.get(reverse("activity-detail", args=[self.project.pk])).data
+        self.assertEqual((detail["team_name"], detail["mentor"]), ("Null Pointer", "김교수, 이선배"))
 
     def test_filters_only_list_semesters_and_tags_in_use(self):
         Tag.objects.create(name="unused")
@@ -326,3 +337,57 @@ class MaterialFileTests(ActivityTestBase):
         material = self.add_material(activity=self.hidden, author=self.admin)
         attachment = MaterialFile.objects.create(material=material, file=SimpleUploadedFile("a.pdf", b"x"))
         self.assertEqual(self.client.get(reverse("activity-file", args=[attachment.pk])).status_code, 404)
+
+
+class ProjectNameMigrationTests(TransactionTestCase):
+    """0004: 프로젝트의 이름(팀명)·주제(프로젝트명)를 이름(프로젝트명)·팀명으로 나눈다."""
+
+    # 끝나면 테이블을 비우므로, 마이그레이션이 넣어 둔 기본 태그를 되살려 다른 테스트가 쓰게 한다.
+    serialized_rollback = True
+
+    before = [("activities", "0003_default_tags")]
+    after = [("activities", "0004_project_team_mentor")]
+
+    def setUp(self):
+        executor = MigrationExecutor(connection)
+        executor.migrate(self.before)
+        old_apps = executor.loader.project_state(self.before).apps
+        Semester = old_apps.get_model("studies", "Semester")
+        Activity = old_apps.get_model("activities", "Activity")
+        semester = Semester.objects.create(name="2026-2")
+        Activity.objects.create(kind="project", semester=semester, title="Null Pointer", topic="웹 퍼징 도구")
+        Activity.objects.create(kind="project", semester=semester, title="주제 미정 팀")
+        Activity.objects.create(kind="contest", semester=semester, title="DEFCON Quals", team_name="KUICS-A")
+
+    def tearDown(self):
+        # 다른 테스트가 최신 스키마를 쓰도록 되돌려 둔다.
+        MigrationExecutor(connection).migrate(MigrationExecutor(connection).loader.graph.leaf_nodes())
+
+    def names(self, apps):
+        Activity = apps.get_model("activities", "Activity")
+        return sorted(Activity.objects.values_list("kind", "title", "team_name"))
+
+    def test_forward_and_back(self):
+        executor = MigrationExecutor(connection)
+        executor.migrate(self.after)
+        new_apps = executor.loader.project_state(self.after).apps
+        self.assertEqual(
+            self.names(new_apps),
+            [
+                ("contest", "DEFCON Quals", "KUICS-A"),  # 대회는 그대로
+                ("project", "웹 퍼징 도구", "Null Pointer"),
+                ("project", "주제 미정 팀", "주제 미정 팀"),  # 프로젝트명을 몰라 이름이 남는다
+            ],
+        )
+
+        executor = MigrationExecutor(connection)
+        executor.migrate(self.before)
+        Activity = executor.loader.project_state(self.before).apps.get_model("activities", "Activity")
+        self.assertEqual(
+            sorted(Activity.objects.values_list("kind", "title", "topic", "team_name")),
+            [
+                ("contest", "DEFCON Quals", "", "KUICS-A"),
+                ("project", "Null Pointer", "웹 퍼징 도구", ""),
+                ("project", "주제 미정 팀", "", ""),
+            ],
+        )

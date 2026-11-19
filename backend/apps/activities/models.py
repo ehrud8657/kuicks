@@ -42,9 +42,12 @@ class Activity(models.Model):
 
     kind = models.CharField("종류", max_length=10, choices=Kind.choices)
     semester = models.ForeignKey(Semester, on_delete=models.PROTECT, related_name="activities", verbose_name="학기")
-    title = models.CharField("이름", max_length=150, help_text="프로젝트는 팀명, 대회·행사는 그 이름을 적습니다.")
-    topic = models.CharField(
-        "주제", max_length=200, blank=True, help_text="프로젝트 주제. 아직 정하지 않았으면 비워두면 '주제 선정 중'으로 보입니다."
+    title = models.CharField("이름", max_length=150, help_text="프로젝트는 프로젝트명, 대회·행사는 그 이름을 적습니다.")
+    team_name = models.CharField(
+        "팀명", max_length=100, blank=True, help_text="프로젝트 팀이 정한 이름, 또는 대회에 나간 팀 이름"
+    )
+    mentor = models.CharField(
+        "멘토", max_length=100, blank=True, help_text="프로젝트를 지도하는 교수·선배 등. 여러 명이면 쉼표로 구분합니다."
     )
     summary = models.CharField("한 줄 소개", max_length=200, blank=True)
     description = models.TextField("소개", blank=True)
@@ -52,7 +55,6 @@ class Activity(models.Model):
     start_date = models.DateField("시작일", null=True, blank=True)
     end_date = models.DateField("종료일", null=True, blank=True)
     result = models.CharField("결과", max_length=150, blank=True, help_text="대회 순위·수상 등. 예: 본선 진출, 32위")
-    team_name = models.CharField("참가 팀명", max_length=100, blank=True, help_text="대회에 나간 팀 이름")
     location = models.CharField("장소", max_length=150, blank=True, help_text="행사 장소")
     tags = models.ManyToManyField(Tag, blank=True, related_name="activities", verbose_name="분야 태그")
     is_published = models.BooleanField("사이트에 공개", default=True, help_text="끄면 사이트에 보이지 않습니다.")

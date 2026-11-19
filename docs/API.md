@@ -205,11 +205,11 @@ PUT 요청 본문 (응답은 GET과 같음):
 
 ```json
 {
-  "id": 12, "kind": "project", "semester": "2026-2", "title": "Team B", "topic": "웹 퍼징 도구",
+  "id": 12, "kind": "project", "semester": "2026-2", "title": "웹 퍼징 도구", "team_name": "Team B", "mentor": "김교수",
   "summary": "...", "status": "ongoing", "start_date": "2026-09-01", "end_date": null, "result": "",
   "tags": ["web"], "members": [{"name": "김팀장", "role": "leader"}],
   "material_count": 1, "stages": ["interim"],
-  "description": "...", "team_name": "", "location": "", "can_contribute": false,
+  "description": "...", "location": "", "can_contribute": false,
   "materials": [
     {"id": 31, "stage": "interim", "is_public": true, "title": "중간 발표", "description": "...", "date": "2026-11-10",
      "author_name": "김팀장", "created_at": "...", "updated_at": "...", "can_edit": false,
@@ -229,7 +229,8 @@ PUT 요청 본문 (응답은 GET과 같음):
   | `other` | 기타 | 고를 수 있음(보내지 않으면 `true`) |
 
   정해진 종류는 보낸 `is_public`과 상관없이 위 값으로 저장됩니다(Admin도 같음). 비공개 자료는 그 활동의 참여자(계정 연결)와 운영진에게만 상세 `materials`에 나오고, 첨부도 그 외에는 `404`입니다.
-- 목록 응답은 상세에서 `description`·`team_name`·`location`·`materials`·`can_contribute`를 뺀 모양입니다. `material_count`와 `stages`는 **공개 자료만** 셉니다. `stages`는 공개 자료가 있는 종류(`activity`·`interim`·`final`·`other` 순)입니다.
+- 목록 응답은 상세에서 `description`·`location`·`materials`·`can_contribute`를 뺀 모양입니다. `material_count`와 `stages`는 **공개 자료만** 셉니다. `stages`는 공개 자료가 있는 종류(`activity`·`interim`·`final`·`other` 순)입니다.
+- `title`은 프로젝트면 프로젝트명, 대회·행사면 그 이름입니다. `team_name`은 프로젝트 팀이 정한 이름 또는 대회 참가 팀명, `mentor`는 지도하는 교수·선배 등(여러 명이면 쉼표로 이어 적은 한 줄)입니다. 셋 다 운영진이 Admin에서 입력합니다.
 - `status`: `planning`(준비 중)·`ongoing`·`done`·`archived`(보관됨). **보관된 활동은 운영진만** 자료를 올리거나 고칠 수 있습니다.
 - 참여자는 계정이 지워져도 이름이 남고, 자료의 `author_name`도 올릴 때의 이름으로 남습니다. 공개 응답이라 학번은 내려보내지 않습니다.
 - `is_published`를 끈 활동은 목록·상세·첨부 모두 `404`입니다.
