@@ -36,7 +36,15 @@ class _MaterialFormDialogState extends State<MaterialFormDialog> {
       TextEditingController(text: widget.material?.title ?? '');
   late final descriptionController =
       TextEditingController(text: widget.material?.description ?? '');
-  late MaterialStage stage = widget.material?.stage ?? MaterialStage.interim;
+  late MaterialStage stage =
+      widget.material?.stage ?? MaterialStage.activityReport;
+
+  /// 기타일 때 고른 공개 여부. 다른 종류는 정해진 값을 쓰지만, 종류를 오가도 고른 값이 남게 따로 둔다.
+  late bool otherPublic = widget.material?.stage == MaterialStage.other
+      ? widget.material!.isPublic
+      : true;
+
+  bool get isPublic => stage.fixedPublic ?? otherPublic;
 
   /// 이미 올라가 있는 첨부 중 남길 것.
   late final List<PostAttachment> kept = [...?widget.material?.files];
@@ -103,6 +111,7 @@ class _MaterialFormDialogState extends State<MaterialFormDialog> {
         activityId: widget.activityId,
         materialId: materialId,
         stage: stage,
+        isPublic: isPublic,
         title: titleController.text.trim(),
         description: descriptionController.text.trim(),
       );
@@ -193,6 +202,15 @@ class _MaterialFormDialogState extends State<MaterialFormDialog> {
         ),
       );
 
+  String get _visibilityHint => switch (stage) {
+        MaterialStage.activityReport => '활동 보고서는 이 활동의 참여자와 운영진만 볼 수 있습니다.',
+        MaterialStage.interim ||
+        MaterialStage.finalReport =>
+          '중간·최종 보고서는 누구나 볼 수 있습니다.',
+        MaterialStage.other =>
+          isPublic ? '누구나 볼 수 있습니다.' : '이 활동의 참여자와 운영진만 볼 수 있습니다.',
+      };
+
   @override
   Widget build(BuildContext context) => AppDialog(
         title: widget.material == null ? '자료 올리기' : '자료 수정',
@@ -222,7 +240,24 @@ class _MaterialFormDialogState extends State<MaterialFormDialog> {
                     ? null
                     : (value) => setState(() => stage = value.first),
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 4),
+              CheckboxListTile(
+                contentPadding: EdgeInsets.zero,
+                controlAffinity: ListTileControlAffinity.leading,
+                activeColor: AppColors.crimson,
+                value: isPublic,
+                // 종류에 따라 정해져 있으면 바꿀 수 없다.
+                onChanged: saving || stage.fixedPublic != null
+                    ? null
+                    : (value) => setState(() => otherPublic = value ?? false),
+                title: const Text('공개'),
+                subtitle: Text(
+                  _visibilityHint,
+                  style: const TextStyle(
+                      fontSize: 12.5, color: AppColors.textMuted),
+                ),
+              ),
+              const SizedBox(height: 10),
               TextFormField(
                 controller: titleController,
                 enabled: !saving,
@@ -284,8 +319,7 @@ class _MaterialFormDialogState extends State<MaterialFormDialog> {
               Text(
                 '보고서·발표 자료는 PDF로 함께 올려두면 오래 지나도 바로 열 수 있습니다. '
                 '파일 하나당 최대 ${formatSize(maxActivityFileBytes)}이고, '
-                '코드나 영상처럼 큰 결과물은 설명에 링크로 남겨주세요. '
-                '올린 자료는 누구나 볼 수 있습니다.',
+                '코드나 영상처럼 큰 결과물은 설명에 링크로 남겨주세요.',
                 style:
                     const TextStyle(color: AppColors.textMuted, fontSize: 12.5),
               ),

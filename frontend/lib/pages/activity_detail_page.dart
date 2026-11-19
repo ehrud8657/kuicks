@@ -183,7 +183,7 @@ class _ActivityDetailPageState extends State<ActivityDetailPage> {
         if (data.materials.isEmpty)
           EmptyState(
             message: data.canContribute
-                ? '아직 올린 자료가 없습니다. 제안서나 중간 발표 자료부터 올려보세요.'
+                ? '아직 올린 자료가 없습니다. 활동 보고서부터 올려보세요.'
                 : '아직 올라온 자료가 없습니다.',
             icon: Icons.folder_open_outlined,
           )
@@ -308,7 +308,7 @@ class _Overview extends StatelessWidget {
 }
 
 BadgeTone _stageTone(MaterialStage stage) => switch (stage) {
-      MaterialStage.proposal => BadgeTone.warning,
+      MaterialStage.activityReport => BadgeTone.warning,
       MaterialStage.interim => BadgeTone.info,
       MaterialStage.finalReport => BadgeTone.success,
       MaterialStage.other => BadgeTone.neutral,
@@ -348,6 +348,14 @@ class MaterialCard extends StatelessWidget {
                     label: material.stage.label,
                     tone: _stageTone(material.stage),
                   ),
+                  if (!material.isPublic) ...[
+                    const SizedBox(width: 6),
+                    const Tooltip(
+                      message: '이 활동의 참여자와 운영진만 볼 수 있습니다.',
+                      child:
+                          StatusBadge(label: '비공개', icon: Icons.lock_outline),
+                    ),
+                  ],
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(

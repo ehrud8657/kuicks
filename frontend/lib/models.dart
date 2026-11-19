@@ -895,16 +895,20 @@ enum ActivityStatus {
       values.firstWhere((value) => value.name == name, orElse: () => planning);
 }
 
-/// 자료 단계. 프로젝트는 제안 → 중간 → 최종 순으로 쌓인다.
+/// 자료 종류. 종류마다 공개 여부가 정해져 있고, 기타만 올린 사람이 고른다.
 enum MaterialStage {
-  proposal('제안'),
-  interim('중간'),
-  finalReport('최종', apiName: 'final'),
+  activityReport('활동 보고서', apiName: 'activity', fixedPublic: false),
+  interim('중간 보고서', fixedPublic: true),
+  finalReport('최종 보고서', apiName: 'final', fixedPublic: true),
   other('기타');
 
-  const MaterialStage(this.label, {String? apiName}) : _apiName = apiName;
+  const MaterialStage(this.label, {String? apiName, this.fixedPublic})
+      : _apiName = apiName;
   final String label;
   final String? _apiName;
+
+  /// 정해진 공개 여부. null이면 올린 사람이 고른다. 서버도 같은 규칙으로 저장한다.
+  final bool? fixedPublic;
 
   /// 서버가 쓰는 값. `final`은 Dart 예약어라 이름을 따로 둔다.
   String get apiName => _apiName ?? name;
@@ -925,7 +929,7 @@ class ActivityMemberInfo {
       );
 }
 
-/// 활동 자료(제안서·중간 발표·최종 보고서·write-up 등). 첨부는 [PostAttachment] 모양으로 내려온다.
+/// 활동 자료(활동·중간·최종 보고서, write-up 등). 첨부는 [PostAttachment] 모양으로 내려온다.
 class ActivityMaterial {
   const ActivityMaterial({
     required this.id,
@@ -934,12 +938,16 @@ class ActivityMaterial {
     required this.description,
     required this.date,
     required this.authorName,
+    this.isPublic = true,
     this.files = const [],
     this.canEdit = false,
   });
 
   final int id;
   final MaterialStage stage;
+
+  /// 비공개면 그 활동의 참여자와 운영진에게만 내려온다.
+  final bool isPublic;
   final String title;
   final String description;
   final DateTime? date;
@@ -959,6 +967,7 @@ class ActivityMaterial {
       ActivityMaterial(
         id: json['id'] as int,
         stage: MaterialStage.parse(json['stage']),
+        isPublic: json['is_public'] as bool? ?? true,
         title: json['title'] as String? ?? '',
         description: json['description'] as String? ?? '',
         date: DateTime.tryParse(json['date'] as String? ?? ''),
@@ -1005,7 +1014,7 @@ class Activity {
   final List<ActivityMemberInfo> members;
   final int materialCount;
 
-  /// 자료가 하나라도 있는 단계.
+  /// 공개 자료가 하나라도 있는 종류.
   final List<MaterialStage> stages;
 
   List<String> get leaderNames => [

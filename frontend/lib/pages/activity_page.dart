@@ -301,8 +301,8 @@ class ActivityCard extends StatelessWidget {
   /// 전체 탭처럼 여러 종류가 섞여 있을 때 종류 배지를 붙인다.
   final bool showKind;
 
+  // 활동 보고서는 비공개라 목록에서 셀 수 없으므로 공개 보고서만 표시한다.
   static const _progressStages = [
-    MaterialStage.proposal,
     MaterialStage.interim,
     MaterialStage.finalReport,
   ];
@@ -381,7 +381,7 @@ class ActivityCard extends StatelessWidget {
                       ),
                     ),
                   if (activity.kind == ActivityKind.project)
-                    // 제안 ✓ 중간 ✓ 최종 – 처럼 결과물이 어디까지 올라왔는지 보여준다.
+                    // 중간 보고서 ✓ 최종 보고서 – 처럼 결과물이 어디까지 올라왔는지 보여준다.
                     for (final stage in _progressStages)
                       _StageMark(
                         stage: stage,

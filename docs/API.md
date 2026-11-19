@@ -190,17 +190,17 @@ PUT 요청 본문 (응답은 GET과 같음):
 
 ## 활동 아카이브
 
-프로젝트·대회·행사 기록과 그 자료(제안·중간·최종 결과물, write-up, 사진 등)입니다. **열람은 누구나** 할 수 있습니다. 활동과 참여자는 운영진이 Admin에서 등록하고, 자료는 기여자가 사이트에서 올립니다.
+프로젝트·대회·행사 기록과 그 자료(활동·중간·최종 보고서, write-up, 사진 등)입니다. **열람은 누구나** 할 수 있습니다(비공개 자료는 그 활동의 참여자와 운영진만). 활동과 참여자는 운영진이 Admin에서 등록하고, 자료는 기여자가 사이트에서 올립니다.
 
 | Method | Path | 인증 | 설명 |
 |---|---|---|---|
 | GET | `/activities/` | 공개 | 활동 목록 (`?kind=project\|contest\|event`, `?semester=2026-2`, `?tag=web`, `?page=2`, 20개 단위) |
 | GET | `/activities/filters/` | 공개 | 공개된 활동이 있는 학기(최신순)와 쓰이는 태그 `{"semesters": [...], "tags": [...]}` |
 | GET | `/activities/{id}/` | 공개 | 활동 상세(참여자, 자료, `can_contribute`) |
-| POST | `/activities/{id}/materials/` | 기여자 | 자료 작성 `{"stage", "title", "description"}`. 날짜는 올린 날로 들어감 |
+| POST | `/activities/{id}/materials/` | 기여자 | 자료 작성 `{"stage", "is_public", "title", "description"}`. 날짜는 올린 날로 들어감 |
 | PATCH·DELETE | `/activities/materials/{id}/` | 올린 본인·운영진 | 자료 수정·삭제 |
 | POST | `/activities/materials/{id}/files/` | 올린 본인·운영진 | 파일 하나 첨부 (multipart `file`, 형식 무관) |
-| GET | `/activities/files/{id}/` | 공개 | 첨부 내려받기 (사진은 바로 보기, `?download=1`이면 내려받기) |
+| GET | `/activities/files/{id}/` | 공개(비공개 자료는 참여자·운영진) | 첨부 내려받기 (사진은 바로 보기, `?download=1`이면 내려받기) |
 | DELETE | `/activities/files/{id}/` | 올린 본인·운영진 | 첨부 삭제 |
 
 ```json
@@ -211,7 +211,7 @@ PUT 요청 본문 (응답은 GET과 같음):
   "material_count": 1, "stages": ["interim"],
   "description": "...", "team_name": "", "location": "", "can_contribute": false,
   "materials": [
-    {"id": 31, "stage": "interim", "title": "중간 발표", "description": "...", "date": "2026-11-10",
+    {"id": 31, "stage": "interim", "is_public": true, "title": "중간 발표", "description": "...", "date": "2026-11-10",
      "author_name": "김팀장", "created_at": "...", "updated_at": "...", "can_edit": false,
      "files": [{"id": 41, "name": "중간발표.pdf", "size": 2048, "content_type": "application/pdf",
                 "is_image": false, "url": "https://.../api/activities/files/41/"}]}
@@ -219,7 +219,17 @@ PUT 요청 본문 (응답은 GET과 같음):
 }
 ```
 
-- 목록 응답은 상세에서 `description`·`team_name`·`location`·`materials`·`can_contribute`를 뺀 모양입니다. `stages`는 자료가 있는 단계(`proposal`·`interim`·`final`·`other` 순)입니다.
+- `stage`(종류)와 공개 여부:
+
+  | `stage` | 이름 | `is_public` |
+  |---|---|---|
+  | `activity` | 활동 보고서 | 항상 `false` |
+  | `interim` | 중간 보고서 | 항상 `true` |
+  | `final` | 최종 보고서 | 항상 `true` |
+  | `other` | 기타 | 고를 수 있음(보내지 않으면 `true`) |
+
+  정해진 종류는 보낸 `is_public`과 상관없이 위 값으로 저장됩니다(Admin도 같음). 비공개 자료는 그 활동의 참여자(계정 연결)와 운영진에게만 상세 `materials`에 나오고, 첨부도 그 외에는 `404`입니다.
+- 목록 응답은 상세에서 `description`·`team_name`·`location`·`materials`·`can_contribute`를 뺀 모양입니다. `material_count`와 `stages`는 **공개 자료만** 셉니다. `stages`는 공개 자료가 있는 종류(`activity`·`interim`·`final`·`other` 순)입니다.
 - `status`: `planning`(준비 중)·`ongoing`·`done`·`archived`(보관됨). **보관된 활동은 운영진만** 자료를 올리거나 고칠 수 있습니다.
 - 참여자는 계정이 지워져도 이름이 남고, 자료의 `author_name`도 올릴 때의 이름으로 남습니다. 공개 응답이라 학번은 내려보내지 않습니다.
 - `is_published`를 끈 활동은 목록·상세·첨부 모두 `404`입니다.

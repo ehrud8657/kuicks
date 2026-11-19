@@ -567,11 +567,13 @@ class ApiClient {
     required int activityId,
     int? materialId,
     required MaterialStage stage,
+    required bool isPublic,
     required String title,
     required String description,
   }) async {
     final body = {
       'stage': stage.apiName,
+      'is_public': stage.fixedPublic ?? isPublic,
       'title': title,
       'description': description,
     };
