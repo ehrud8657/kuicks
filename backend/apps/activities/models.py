@@ -112,16 +112,31 @@ class ActivityMember(models.Model):
 
 
 class Material(models.Model):
-    """활동 자료 하나(제안서·중간 발표·최종 보고서·write-up·사진 등). 누구나 볼 수 있다."""
+    """활동 자료 하나(활동·중간·최종 보고서, write-up·사진 등).
+
+    공개 자료는 누구나, 비공개 자료는 그 활동의 참여자와 운영진만 본다.
+    """
 
     class Stage(models.TextChoices):
-        PROPOSAL = "proposal", "제안"
-        INTERIM = "interim", "중간"
-        FINAL = "final", "최종"
+        ACTIVITY = "activity", "활동 보고서"
+        INTERIM = "interim", "중간 보고서"
+        FINAL = "final", "최종 보고서"
         OTHER = "other", "기타"
 
+    # 종류별로 공개 여부가 정해져 있다. 여기 없는 종류(기타)만 올린 사람이 고른다.
+    FIXED_VISIBILITY = {
+        Stage.ACTIVITY: False,  # 내부 진행 기록이라 참여자·운영진만 본다.
+        Stage.INTERIM: True,
+        Stage.FINAL: True,
+    }
+
     activity = models.ForeignKey(Activity, on_delete=models.CASCADE, related_name="materials")
-    stage = models.CharField("단계", max_length=10, choices=Stage.choices, default=Stage.OTHER)
+    stage = models.CharField("종류", max_length=10, choices=Stage.choices, default=Stage.OTHER)
+    is_public = models.BooleanField(
+        "공개",
+        default=True,
+        help_text="끄면 이 활동의 참여자와 운영진만 봅니다. 활동 보고서는 항상 비공개, 중간·최종 보고서는 항상 공개입니다.",
+    )
     title = models.CharField("제목", max_length=200)
     description = models.TextField("설명", blank=True, help_text="GitHub·영상 링크도 여기에 적으면 눌러서 열 수 있습니다.")
     date = models.DateField("날짜", default=timezone.localdate)
@@ -136,6 +151,12 @@ class Material(models.Model):
     def save(self, *args, **kwargs):
         if not self.author_name and self.author_id:
             self.author_name = self.author.name
+        # API·Admin 어디서 저장하든 종류에 정해진 공개 여부를 따른다.
+        fixed = self.FIXED_VISIBILITY.get(self.stage)
+        if fixed is not None:
+            self.is_public = fixed
+            if kwargs.get("update_fields") is not None:
+                kwargs["update_fields"] = {*kwargs["update_fields"], "is_public"}
         super().save(*args, **kwargs)
 
     def __str__(self):

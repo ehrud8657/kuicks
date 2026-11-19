@@ -1,6 +1,6 @@
 """활동 아카이브 API (/api/activities/...).
 
-열람은 누구나 할 수 있다. 자료 작성은 그 활동의 참여자 중 정회원 이상과 운영진만 한다
+열람은 누구나 할 수 있다(비공개 자료는 그 활동의 참여자와 운영진만). 자료 작성은 그 활동의 참여자 중 정회원 이상과 운영진만 한다
 (permissions.can_contribute). 활동 자체는 운영진이 Admin에서 만든다.
 """
 
@@ -18,7 +18,7 @@ from apps.studies.files import content_type_of, validate_upload
 from apps.studies.models import Semester
 
 from .models import Activity, Material, MaterialFile, Tag
-from .permissions import can_contribute, can_edit_material
+from .permissions import can_contribute, can_edit_material, can_view_material
 from .serializers import (
     ActivityDetailSerializer,
     ActivityListSerializer,
@@ -38,7 +38,10 @@ class ActivityListView(generics.ListAPIView):
 
     def get_queryset(self):
         queryset = published_activities().select_related("semester").prefetch_related(
-            "tags", "members", Prefetch("materials", queryset=Material.objects.only("id", "activity_id", "stage"))
+            "tags", "members", Prefetch(
+                "materials",
+                queryset=Material.objects.filter(is_public=True).only("id", "activity_id", "stage", "is_public"),
+            )
         )
         params = self.request.query_params
         if kind := params.get("kind"):
@@ -143,10 +146,14 @@ class MaterialFileView(APIView):
         return super().get_permissions()
 
     def _get_file(self, pk):
-        return get_object_or_404(
+        attachment = get_object_or_404(
             MaterialFile.objects.filter(material__activity__is_published=True).select_related("material__activity"),
             pk=pk,
         )
+        # 비공개 자료의 첨부는 볼 수 없는 사람에게 있다는 것조차 알리지 않는다.
+        if not can_view_material(self.request.user, attachment.material):
+            raise NotFound()
+        return attachment
 
     def get(self, request, pk):
         attachment = self._get_file(pk)

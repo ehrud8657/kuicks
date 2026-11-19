@@ -23,7 +23,7 @@ class MaterialInline(admin.TabularInline):
 
     model = Material
     extra = 0
-    fields = ("stage", "title", "date", "author_name", "file_count", "edit_link")
+    fields = ("stage", "is_public", "title", "date", "author_name", "file_count", "edit_link")
     readonly_fields = ("author_name", "file_count", "edit_link")
     show_change_link = False
 
@@ -91,12 +91,12 @@ class MaterialFileInline(admin.TabularInline):
 
 @admin.register(Material)
 class MaterialAdmin(admin.ModelAdmin):
-    list_display = ("title", "activity", "stage", "date", "author_name")
-    list_filter = ("stage", "activity__kind", "activity__semester")
+    list_display = ("title", "activity", "stage", "is_public", "date", "author_name")
+    list_filter = ("stage", "is_public", "activity__kind", "activity__semester")
     search_fields = ("title", "description", "activity__title")
     autocomplete_fields = ("activity", "author")
     inlines = (MaterialFileInline,)
-    fields = ("activity", "stage", "title", "description", "date", "author", "author_name")
+    fields = ("activity", "stage", "is_public", "title", "description", "date", "author", "author_name")
 
     def save_model(self, request, obj, form, change):
         # Admin에서 새로 올리면 올린 사람을 운영진 본인으로 채운다.

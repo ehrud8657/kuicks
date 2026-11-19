@@ -55,9 +55,13 @@ class ActivityTestBase(TestCase):
         super().tearDownClass()
         shutil.rmtree(TEMP_MEDIA, ignore_errors=True)
 
-    def add_material(self, author=None, stage=Material.Stage.INTERIM, activity=None):
+    def add_material(self, author=None, stage=Material.Stage.INTERIM, activity=None, is_public=True):
         return Material.objects.create(
-            activity=activity or self.project, stage=stage, title="중간 발표", author=author or self.leader
+            activity=activity or self.project,
+            stage=stage,
+            is_public=is_public,
+            title="중간 발표",
+            author=author or self.leader,
         )
 
     def upload(self, material, name="slides.pdf", data=b"%PDF-1.4"):
@@ -198,6 +202,78 @@ class MaterialWriteTests(ActivityTestBase):
         self.client.force_login(self.admin)
         self.assertEqual(self.client.delete(url).status_code, 204)
         self.assertFalse(Material.objects.exists())
+
+
+class MaterialVisibilityTests(ActivityTestBase):
+    def create(self, **data):
+        return self.client.post(
+            reverse("material-create", args=[self.project.pk]), {"title": "자료", **data}, content_type="application/json"
+        )
+
+    def test_stage_decides_visibility(self):
+        self.client.force_login(self.leader)
+        for stage, sent, expected in (
+            ("activity", True, False),
+            ("interim", False, True),
+            ("final", False, True),
+            ("other", False, False),
+            ("other", True, True),
+        ):
+            response = self.create(stage=stage, is_public=sent)
+            self.assertEqual(response.status_code, 201, stage)
+            self.assertIs(response.data["is_public"], expected, (stage, sent))
+            self.assertIs(Material.objects.get(pk=response.data["id"]).is_public, expected)
+
+    def test_other_defaults_to_public(self):
+        self.client.force_login(self.leader)
+        self.assertTrue(self.create(stage="other").data["is_public"])
+
+    def test_changing_stage_applies_its_visibility(self):
+        material = self.add_material(stage=Material.Stage.OTHER, is_public=True)
+        self.client.force_login(self.leader)
+        url = reverse("material-detail", args=[material.pk])
+        response = self.client.patch(url, {"stage": "activity"}, content_type="application/json")
+        self.assertFalse(response.data["is_public"])
+        # 기타로 되돌리면 다시 고를 수 있다.
+        response = self.client.patch(url, {"stage": "other", "is_public": True}, content_type="application/json")
+        self.assertTrue(response.data["is_public"])
+
+    def test_private_material_only_for_participants_and_admin(self):
+        public = self.add_material(stage=Material.Stage.FINAL)
+        private = self.add_material(stage=Material.Stage.ACTIVITY)
+        url = reverse("activity-detail", args=[self.project.pk])
+
+        def visible_ids():
+            return {item["id"] for item in self.client.get(url).data["materials"]}
+
+        self.assertEqual(visible_ids(), {public.pk})
+        for member, expected in (
+            (self.outsider, {public.pk}),
+            (self.teammate, {public.pk, private.pk}),
+            (self.dormant, {public.pk, private.pk}),  # 참여자면 휴회원도 본다.
+            (self.admin, {public.pk, private.pk}),
+        ):
+            self.client.force_login(member)
+            self.assertEqual(visible_ids(), expected, member.name)
+
+    def test_list_counts_only_public_materials(self):
+        self.add_material(stage=Material.Stage.ACTIVITY)
+        self.add_material(stage=Material.Stage.OTHER, is_public=False)
+        self.add_material(stage=Material.Stage.INTERIM)
+        self.client.force_login(self.leader)
+        item = self.client.get(reverse("activity-list"), {"kind": "project"}).data["results"][0]
+        self.assertEqual(item["material_count"], 1)
+        self.assertEqual(item["stages"], ["interim"])
+
+    def test_private_file_is_hidden_from_outsiders(self):
+        material = self.add_material(stage=Material.Stage.ACTIVITY)
+        attachment = MaterialFile.objects.create(material=material, file=SimpleUploadedFile("a.pdf", b"x"))
+        url = reverse("activity-file", args=[attachment.pk])
+        self.assertEqual(self.client.get(url).status_code, 404)
+        self.client.force_login(self.outsider)
+        self.assertEqual(self.client.get(url).status_code, 404)
+        self.client.force_login(self.teammate)
+        self.assertEqual(self.client.get(url).status_code, 200)
 
 
 class MaterialFileTests(ActivityTestBase):

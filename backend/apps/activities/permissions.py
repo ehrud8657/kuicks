@@ -28,3 +28,16 @@ def can_edit_material(user, material):
     if is_admin(user):
         return True
     return material.author_id == user.pk and can_contribute(user, material.activity)
+
+
+def can_view_private(user, activity):
+    """비공개 자료를 볼 수 있는지. 운영진과 그 활동의 참여자(계정을 연결한 사람)."""
+    if not user.is_authenticated:
+        return False
+    if is_admin(user):
+        return True
+    return any(entry.member_id == user.pk for entry in activity.members.all())
+
+
+def can_view_material(user, material):
+    return material.is_public or can_view_private(user, material.activity)

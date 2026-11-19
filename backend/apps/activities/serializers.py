@@ -2,7 +2,7 @@ from django.urls import reverse
 from rest_framework import serializers
 
 from .models import Activity, ActivityMember, Material, MaterialFile
-from .permissions import can_contribute, can_edit_material
+from .permissions import can_contribute, can_edit_material, can_view_private
 
 
 class MaterialFileSerializer(serializers.ModelSerializer):
@@ -37,6 +37,15 @@ class MaterialSerializer(serializers.ModelSerializer):
         request = self.context.get("request")
         return bool(request) and can_edit_material(request.user, material)
 
+    def validate(self, attrs):
+        # 활동·중간·최종 보고서는 공개 여부가 정해져 있어 보낸 값과 상관없이 그에 맞춘다(Material.save).
+        # 기타는 처음 올릴 때 값을 보내지 않으면 공개로 둔다.
+        stage = attrs.get("stage", getattr(self.instance, "stage", None))
+        fixed = Material.FIXED_VISIBILITY.get(stage)
+        if fixed is not None:
+            attrs["is_public"] = fixed
+        return attrs
+
     def validate_title(self, value):
         value = value.strip()
         if not value:
@@ -46,7 +55,7 @@ class MaterialSerializer(serializers.ModelSerializer):
     class Meta:
         model = Material
         fields = (
-            "id", "stage", "title", "description", "date",
+            "id", "stage", "is_public", "title", "description", "date",
             "author_name", "created_at", "updated_at", "files", "can_edit",
         )
         # 날짜는 올린 날로 자동으로 들어간다. 지난 기록을 소급할 때는 Admin에서 고친다.
@@ -68,6 +77,7 @@ class ActivityListSerializer(serializers.ModelSerializer):
     stages = serializers.SerializerMethodField()
 
     # 아래 두 값은 prefetch된 materials로 계산해 활동마다 쿼리가 늘지 않게 한다.
+    # 목록은 누구에게나 같게 보이도록 공개 자료만 센다(views에서 공개 자료만 prefetch한다).
     def get_material_count(self, activity):
         return len(activity.materials.all())
 
@@ -85,8 +95,15 @@ class ActivityListSerializer(serializers.ModelSerializer):
 
 
 class ActivityDetailSerializer(ActivityListSerializer):
-    materials = MaterialSerializer(many=True, read_only=True)
+    materials = serializers.SerializerMethodField()
     can_contribute = serializers.SerializerMethodField()
+
+    def get_materials(self, activity):
+        """비공개 자료는 그 활동의 참여자와 운영진에게만 내려보낸다."""
+        request = self.context.get("request")
+        show_private = bool(request) and can_view_private(request.user, activity)
+        materials = [m for m in activity.materials.all() if m.is_public or show_private]
+        return MaterialSerializer(materials, many=True, context=self.context).data
 
     def get_can_contribute(self, activity):
         request = self.context.get("request")
